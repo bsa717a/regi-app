@@ -4,16 +4,19 @@
 # NEXT_PUBLIC_* vars must be present at `npm run build` time — Next.js inlines
 # them into the browser bundle. Pass via --build-arg (see cloudbuild.yaml).
 
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
-RUN npm ci
+# Skip postinstall (prisma generate) — schema is not copied until the builder stage.
+RUN npm ci --ignore-scripts
 
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Generate Prisma client now that schema.prisma is present
+RUN npx prisma generate
 
 ARG NEXT_PUBLIC_FIREBASE_API_KEY
 ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -35,10 +38,9 @@ ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://regi:regi_password@localhost:5435/regi"
 
-RUN npx prisma generate
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
