@@ -1,0 +1,339 @@
+// REGI — full data model (Postgres via Prisma)
+// State-specific values live in state_rules.config jsonb (State Engine).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum MemberRole {
+  owner
+  viewer
+
+  @@map("member_role")
+}
+
+enum InviteStatus {
+  pending
+  accepted
+  declined
+
+  @@map("invite_status")
+}
+
+enum RenewalStatus {
+  Requested
+  DocumentsReceived
+  Reviewing
+  Processing
+  Submitted
+  Completed
+  StickerMailed
+
+  @@map("renewal_status")
+}
+
+enum DocumentType {
+  registration
+  insurance
+  title
+  emissions
+  temp_permit
+
+  @@map("document_type")
+}
+
+enum NotificationChannel {
+  push
+  email
+  sms
+
+  @@map("notification_channel")
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+  cancelled
+
+  @@map("notification_status")
+}
+
+enum PaymentStatus {
+  pending
+  requires_action
+  succeeded
+  failed
+  refunded
+  cancelled
+
+  @@map("payment_status")
+}
+
+enum StaffRole {
+  admin
+  agent
+
+  @@map("staff_role")
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id                String   @id @default(cuid())
+  firebaseUid       String   @unique @map("firebase_uid")
+  name              String?
+  email             String   @unique
+  phone             String?
+  notificationPrefs Json     @default("{}") @map("notification_prefs")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  ownedHouseholds   Household[]       @relation("HouseholdOwner")
+  memberships       HouseholdMember[]
+  createdVehicles   Vehicle[]         @relation("VehicleCreator")
+  requestedRenewals Renewal[]         @relation("RenewalRequester")
+  uploadedDocuments Document[]        @relation("DocumentUploader")
+  notifications     Notification[]
+  payments          Payment[]
+  pushTokens        PushToken[]
+
+  @@map("users")
+}
+
+/// FCM web-push device tokens for a user (one row per browser/device).
+model PushToken {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  token      String   @unique
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+model Household {
+  id          String @id @default(cuid())
+  name        String
+  /// Unique: each user owns at most one household (household-of-one).
+  ownerUserId String @unique @map("owner_user_id")
+
+  owner   User              @relation("HouseholdOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  members HouseholdMember[]
+  vehicles Vehicle[]
+
+  @@map("households")
+}
+
+model HouseholdMember {
+  id           String       @id @default(cuid())
+  householdId  String       @map("household_id")
+  /// Null while an invite is pending and the invitee has no account yet.
+  userId       String?      @map("user_id")
+  inviteEmail  String?      @map("invite_email")
+  inviteToken  String?      @unique @map("invite_token")
+  role         MemberRole
+  inviteStatus InviteStatus @default(pending) @map("invite_status")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([householdId, userId])
+  @@unique([householdId, inviteEmail])
+  @@index([userId])
+  @@index([inviteEmail])
+  @@map("household_members")
+}
+
+model Vehicle {
+  id                    String   @id @default(cuid())
+  householdId           String   @map("household_id")
+  vin                   String?
+  plate                 String?
+  state                 String   @db.Char(2)
+  make                  String?
+  model                 String?
+  year                  Int?
+  nickname              String?
+  photoUrl              String?  @map("photo_url")
+  bodyClass             String?  @map("body_class")
+  registrationExpiresOn DateTime @db.Date @map("registration_expires_on")
+  createdBy             String   @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  household     Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  creator       User           @relation("VehicleCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  renewals      Renewal[]
+  documents     Document[]
+  notifications Notification[]
+
+  @@index([householdId])
+  @@index([createdBy])
+  @@index([registrationExpiresOn])
+  @@index([state])
+  @@map("vehicles")
+}
+
+/// State Engine config lives in `config` jsonb. See src/lib/stateEngine/types.ts.
+model StateRule {
+  stateCode String  @id @db.Char(2) @map("state_code")
+  config    Json
+  active    Boolean @default(true)
+
+  @@map("state_rules")
+}
+
+model Renewal {
+  id                    String        @id @default(cuid())
+  vehicleId             String        @map("vehicle_id")
+  status                RenewalStatus @default(Requested)
+  requestedBy           String        @map("requested_by")
+  feeBreakdown          Json          @default("{}") @map("fee_breakdown")
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  staffNotes            String?       @map("staff_notes") @db.Text
+
+  // Timestamps for each concierge status transition
+  requestedAt          DateTime  @default(now()) @map("requested_at")
+  documentsReceivedAt  DateTime? @map("documents_received_at")
+  reviewingAt          DateTime? @map("reviewing_at")
+  processingAt         DateTime? @map("processing_at")
+  submittedAt          DateTime? @map("submitted_at")
+  completedAt          DateTime? @map("completed_at")
+  stickerMailedAt      DateTime? @map("sticker_mailed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vehicle   Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  requester User       @relation("RenewalRequester", fields: [requestedBy], references: [id], onDelete: Restrict)
+  documents Document[]
+  payments  Payment[]
+
+  @@index([vehicleId])
+  @@index([requestedBy])
+  @@index([status])
+  @@map("renewals")
+}
+
+model Document {
+  id               String       @id @default(cuid())
+  vehicleId        String       @map("vehicle_id")
+  renewalId        String?      @map("renewal_id")
+  type             DocumentType
+  gcsPath          String       @map("gcs_path")
+  originalFilename String       @map("original_filename")
+  uploadedBy       String       @map("uploaded_by")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  vehicle  Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  renewal  Renewal? @relation(fields: [renewalId], references: [id], onDelete: SetNull)
+  uploader User     @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+
+  @@index([vehicleId])
+  @@index([renewalId])
+  @@index([uploadedBy])
+  @@index([type])
+  @@map("documents")
+}
+
+model Notification {
+  id           String              @id @default(cuid())
+  userId       String              @map("user_id")
+  vehicleId    String?             @map("vehicle_id")
+  channel      NotificationChannel
+  templateKey  String              @map("template_key")
+  scheduledFor DateTime            @map("scheduled_for")
+  sentAt       DateTime?           @map("sent_at")
+  status       NotificationStatus  @default(pending)
+  /// Idempotency key for reminder scheduling (e.g. vehicleId:templateKey:YYYY-MM-DD)
+  dedupeKey    String              @unique @map("dedupe_key")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  /// One scheduled send per user × vehicle × channel × template × day
+  @@unique([userId, vehicleId, channel, templateKey, scheduledFor])
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@map("notifications")
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  userId                String        @map("user_id")
+  renewalId             String        @map("renewal_id")
+  stripePaymentIntentId String?       @map("stripe_payment_intent_id")
+  stripeChargeId        String?       @map("stripe_charge_id")
+  stripeCustomerId      String?       @map("stripe_customer_id")
+  amount                Int
+  registrationFeeAmount Int           @default(0) @map("registration_fee_amount")
+  regiServiceFeeAmount  Int           @default(0) @map("regi_service_fee_amount")
+  lateFeeAmount         Int           @default(0) @map("late_fee_amount")
+  status                PaymentStatus @default(pending)
+  receiptUrl            String?       @map("receipt_url")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  renewal Renewal @relation(fields: [renewalId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([renewalId])
+  @@index([status])
+  @@map("payments")
+}
+
+model StaffUser {
+  id          String    @id @default(cuid())
+  firebaseUid String    @unique @map("firebase_uid")
+  name        String
+  role        StaffRole @default(agent)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("staff_users")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String
+  action    String
+  entity    String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([actor])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String
+  state     String   @db.Char(2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([email, state])
+  @@index([state])
+  @@map("waitlist")
+}

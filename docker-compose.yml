@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: regi-postgres
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: regi
+      POSTGRES_USER: regi
+      POSTGRES_PASSWORD: regi_password
+    volumes:
+      - regi_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regi -d regi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  regi_pg_data:
