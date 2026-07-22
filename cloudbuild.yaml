@@ -1,0 +1,65 @@
+# REGI — Cloud Build → Artifact Registry (Cloud Run deploy separate)
+# Image: us-central1-docker.pkg.dev/regi-app-v1/regi/app:latest
+#
+# Pass NEXT_PUBLIC_* at build time (inlined into the client bundle).
+# Set substitutions in the Cloud Build trigger or via `gcloud builds submit --substitutions=...`
+
+substitutions:
+  _REGION: us-central1
+  _AR_REPO: regi
+  _IMAGE: app
+  _PROJECT_ID: regi-app-v1
+  _NEXT_PUBLIC_FIREBASE_API_KEY: ""
+  _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ""
+  _NEXT_PUBLIC_FIREBASE_PROJECT_ID: regi-app-v1
+  _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ""
+  _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ""
+  _NEXT_PUBLIC_FIREBASE_APP_ID: ""
+  _NEXT_PUBLIC_FIREBASE_VAPID_KEY: ""
+  _NEXT_PUBLIC_APP_URL: ""
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build
+    args:
+      - build
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}
+      - --build-arg
+      - NEXT_PUBLIC_FIREBASE_VAPID_KEY=${_NEXT_PUBLIC_FIREBASE_VAPID_KEY}
+      - --build-arg
+      - NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL}
+      - -t
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:$COMMIT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    id: Push SHA
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:$COMMIT_SHA
+
+  - name: gcr.io/cloud-builders/docker
+    id: Push latest
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
