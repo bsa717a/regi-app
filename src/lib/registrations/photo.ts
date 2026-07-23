@@ -5,6 +5,7 @@ import {
   type AllowedPhotoContentType,
 } from "@/lib/registrations/photoTypes";
 import { createDownloadSignedUrl } from "@/lib/storage/gcs";
+import { isVehiclePhotoGcsPath } from "@/lib/storage/gcsPaths";
 
 export {
   ALLOWED_PHOTO_CONTENT_TYPES,
@@ -32,10 +33,7 @@ export function validatePhotoGcsPath(
   return gcsPath.startsWith(prefix) && !gcsPath.includes("..");
 }
 
-/** True for private garage hero photos — these must not become vault documents. */
-export function isVehiclePhotoGcsPath(gcsPath: string): boolean {
-  return /\/registrations\/[^/]+\/photo\//.test(gcsPath);
-}
+export { isVehiclePhotoGcsPath } from "@/lib/storage/gcsPaths";
 
 export type PhotoUploadUrlRequest = {
   filename: string;

@@ -1,5 +1,5 @@
 import type { DocumentType } from "@prisma/client";
-import { isVehiclePhotoGcsPath } from "@/lib/registrations/photo";
+import { isVehiclePhotoGcsPath } from "@/lib/storage/gcsPaths";
 import {
   ALLOWED_CONTENT_TYPES,
   DOCUMENT_TYPES,
