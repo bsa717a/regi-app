@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import {
   ApiError,
   getDocumentDownloadUrl,
@@ -87,10 +88,14 @@ export function VehicleCard({
     null,
   );
   const [registrationDocLoading, setRegistrationDocLoading] = useState(false);
-  const [openingDoc, setOpeningDoc] = useState(false);
   const [registrationDocError, setRegistrationDocError] = useState<
     string | null
   >(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -129,27 +134,36 @@ export function VehicleCard({
     };
   }, [vehicle.id, idToken, getIdToken]);
 
-  async function openRegistrationDoc() {
-    if (!registrationDoc || openingDoc) return;
-    setOpeningDoc(true);
-    setRegistrationDocError(null);
+  async function openRegistrationPreview() {
+    if (!registrationDoc) return;
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewFilename(registrationDoc.originalFilename);
     try {
-      const token = idToken ?? (await getIdToken());
+      const token = await getToken();
       if (!token) throw new Error("Please sign in again.");
-      const { downloadUrl } = await getDocumentDownloadUrl(
-        token,
-        registrationDoc.id,
-      );
-      window.open(downloadUrl, "_blank", "noopener,noreferrer");
+      const signed = await getDocumentDownloadUrl(token, registrationDoc.id);
+      setPreviewUrl(signed.downloadUrl);
+      setPreviewFilename(signed.filename || registrationDoc.originalFilename);
     } catch (err) {
-      setRegistrationDocError(
+      setPreviewError(
         err instanceof ApiError
           ? err.message
-          : "Could not open registration document.",
+          : "Could not load registration document.",
       );
     } finally {
-      setOpeningDoc(false);
+      setPreviewLoading(false);
     }
+  }
+
+  function closeRegistrationPreview() {
+    setPreviewOpen(false);
+    setPreviewLoading(false);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewFilename("");
   }
 
   return (
@@ -218,11 +232,10 @@ export function VehicleCard({
         <div className="border-t border-slate-100 px-4 py-2.5">
           <button
             type="button"
-            onClick={() => void openRegistrationDoc()}
-            disabled={openingDoc}
-            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline disabled:opacity-60"
+            onClick={() => void openRegistrationPreview()}
+            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline"
           >
-            {openingDoc ? "Opening registration card…" : "Registration card"}
+            Registration card
           </button>
         </div>
       ) : null}
@@ -286,11 +299,10 @@ export function VehicleCard({
             {registrationDoc ? (
               <button
                 type="button"
-                onClick={() => void openRegistrationDoc()}
-                disabled={openingDoc}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                onClick={() => void openRegistrationPreview()}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 sm:w-auto"
               >
-                {openingDoc ? "Opening…" : "View registration card"}
+                View registration card
               </button>
             ) : registrationDocLoading ? (
               <p className="text-sm text-slate-500">Loading registration card…</p>
@@ -330,6 +342,17 @@ export function VehicleCard({
           </div>
         </div>
       </div>
+
+      <DocumentPreviewModal
+        open={previewOpen}
+        onClose={closeRegistrationPreview}
+        title={label}
+        filename={previewFilename || registrationDoc?.originalFilename || "registration"}
+        downloadUrl={previewUrl}
+        loading={previewLoading}
+        error={previewError}
+        onRetry={() => void openRegistrationPreview()}
+      />
     </article>
   );
 }
