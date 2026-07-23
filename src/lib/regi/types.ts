@@ -17,6 +17,9 @@ export type RegiGarageVehicleContext = {
   label: string;
   type: string;
   state: string;
+  year: number | null;
+  make: string | null;
+  model: string | null;
   plate: string | null;
   status: string;
   daysUntilExpiration: number;
