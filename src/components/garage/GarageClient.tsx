@@ -20,6 +20,7 @@ export function GarageClient() {
   const [view, setView] = useState<ViewState>("list");
   const [editingRegistration, setEditingRegistration] =
     useState<RegistrationDto | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -203,7 +204,16 @@ export function GarageClient() {
           <ul className="space-y-4">
             {vehicles.map((vehicle) => (
               <li key={vehicle.id}>
-                <VehicleCard vehicle={vehicle} onEdit={startEditing} />
+                <VehicleCard
+                  vehicle={vehicle}
+                  expanded={expandedId === vehicle.id}
+                  onToggle={() =>
+                    setExpandedId((current) =>
+                      current === vehicle.id ? null : vehicle.id,
+                    )
+                  }
+                  onEdit={startEditing}
+                />
               </li>
             ))}
           </ul>
