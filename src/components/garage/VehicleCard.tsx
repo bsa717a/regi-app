@@ -54,8 +54,8 @@ function DetailItem({
   if (!value?.trim()) return null;
   return (
     <div>
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-medium text-slate-900">{value}</dd>
+      <dt className="text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="font-medium text-slate-900 dark:text-slate-100">{value}</dd>
     </div>
   );
 }
@@ -169,7 +169,7 @@ export function VehicleCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/60 transition hover:shadow-md">
+    <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/60 transition hover:shadow-md dark:border-slate-700/80 dark:bg-slate-900 dark:shadow-none dark:hover:shadow-lg dark:hover:shadow-black/20">
       <button
         type="button"
         className="w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
@@ -185,7 +185,7 @@ export function VehicleCard({
             registrationType={vehicle.type}
           />
           <div className="absolute left-3 top-3">
-            <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200/80 backdrop-blur">
+            <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200/80 backdrop-blur dark:bg-slate-900/90 dark:text-slate-100 dark:ring-slate-600/80">
               {typeLabel}
             </span>
           </div>
@@ -197,13 +197,13 @@ export function VehicleCard({
           <div className="min-w-0">
             {vehicle.nickname ? (
               <>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                   {vehicle.nickname}
                 </h3>
-                <p className="text-sm text-slate-600">{headline}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{headline}</p>
               </>
             ) : (
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 {headline}
               </h3>
             )}
@@ -231,7 +231,7 @@ export function VehicleCard({
       </button>
 
       {registrationDoc ? (
-        <div className="border-t border-slate-100 px-4 py-2.5">
+        <div className="border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
           <button
             type="button"
             onClick={() => void openRegistrationPreview()}
@@ -249,7 +249,7 @@ export function VehicleCard({
         }`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-4 border-t border-slate-100 px-4 pb-4 pt-3">
+          <div className="space-y-4 border-t border-slate-100 px-4 pb-4 pt-3 dark:border-slate-800">
             <dl className="grid grid-cols-1 gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
               <DetailItem label="Type" value={typeLabel} />
               <DetailItem label="State" value={stateName(vehicle.state)} />

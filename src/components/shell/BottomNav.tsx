@@ -20,7 +20,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/95"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-4">
         {items.map((item) => {
@@ -32,8 +32,8 @@ export function BottomNav() {
                 href={item.href}
                 className={`flex min-h-16 flex-col items-center justify-center gap-1 px-2 text-xs font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-teal-700 ${
                   active
-                    ? "text-teal-800"
-                    : "text-slate-500 hover:text-slate-800"
+                    ? "text-teal-800 dark:text-teal-300"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
@@ -56,7 +56,7 @@ function GarageIcon({ active }: { active: boolean }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className={active ? "stroke-teal-800" : "stroke-current"}
+      className={active ? "stroke-teal-800 dark:stroke-teal-300" : "stroke-current"}
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -76,7 +76,7 @@ function DashboardIcon({ active }: { active: boolean }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className={active ? "stroke-teal-800" : "stroke-current"}
+      className={active ? "stroke-teal-800 dark:stroke-teal-300" : "stroke-current"}
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -97,7 +97,7 @@ function DocumentsIcon({ active }: { active: boolean }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className={active ? "stroke-teal-800" : "stroke-current"}
+      className={active ? "stroke-teal-800 dark:stroke-teal-300" : "stroke-current"}
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -117,7 +117,7 @@ function SettingsIcon({ active }: { active: boolean }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className={active ? "stroke-teal-800" : "stroke-current"}
+      className={active ? "stroke-teal-800 dark:stroke-teal-300" : "stroke-current"}
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"

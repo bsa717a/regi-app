@@ -10,6 +10,7 @@ import {
   labelClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { ThemeSetting } from "@/components/settings/ThemeSetting";
 import { HouseholdPanel } from "@/components/settings/HouseholdPanel";
 import { PushPrefToggle } from "@/components/settings/PushPrefToggle";
 
@@ -20,15 +21,15 @@ export function SettingsPanel() {
   if (profileLoading && !profile) {
     return (
       <div className="space-y-4" role="status" aria-live="polite">
-        <div className="h-28 animate-pulse rounded-2xl bg-slate-200/80" />
-        <div className="h-40 animate-pulse rounded-2xl bg-slate-200/80" />
+        <div className="h-28 animate-pulse rounded-2xl bg-slate-200/80 dark:bg-slate-800/80" />
+        <div className="h-40 animate-pulse rounded-2xl bg-slate-200/80 dark:bg-slate-800/80" />
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950" role="status">
+      <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100" role="status">
         We couldn&apos;t load your profile yet. Try refreshing in a moment.
       </p>
     );
@@ -113,8 +114,18 @@ function SettingsForm({
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="text-lg font-semibold text-slate-900">Profile</h2>
-        <p className="mt-1 text-sm text-slate-600">Signed in as {userEmail}</p>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Appearance
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Choose light or dark mode, or follow your device setting.
+        </p>
+        <ThemeSetting />
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Signed in as {userEmail}</p>
         <form onSubmit={saveProfile} className="mt-4 space-y-4">
           <div>
             <label htmlFor="settings-name" className={labelClassName}>
@@ -152,8 +163,8 @@ function SettingsForm({
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-slate-900">Household</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Household</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           Share your garage with a spouse or partner. They can view and get
           reminders — only you can edit or renew.
         </p>
@@ -163,8 +174,8 @@ function SettingsForm({
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Notifications</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           Choose how REGI nudges you before a registration expires.
         </p>
         <ul className="mt-4 space-y-3">
@@ -197,21 +208,21 @@ function SettingsForm({
       </section>
 
       {message ? (
-        <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm text-teal-900" role="status">
+        <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm text-teal-900 dark:bg-teal-950/40 dark:text-teal-100" role="status">
           {message}
         </p>
       ) : null}
       {error ? (
-        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200" role="alert">
           {error}
         </p>
       ) : null}
 
-      <section className="border-t border-slate-200 pt-6">
+      <section className="border-t border-slate-200 pt-6 dark:border-slate-700">
         <button
           type="button"
           onClick={() => void logOut()}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:focus-visible:outline-slate-400"
         >
           Sign out
         </button>
@@ -240,19 +251,19 @@ function PrefToggle({
   const isDisabled = Boolean(disabled || comingSoon);
 
   return (
-    <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+    <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
       <div>
         <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-slate-900" id={`${id}-label`}>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100" id={`${id}-label`}>
             {label}
           </p>
           {comingSoon ? (
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
               Coming soon
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 text-sm text-slate-600" id={`${id}-desc`}>
+        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400" id={`${id}-desc`}>
           {description}
         </p>
       </div>
@@ -266,7 +277,7 @@ function PrefToggle({
         disabled={isDisabled}
         onClick={() => onChange(!checked)}
         className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-          checked ? "bg-teal-700" : "bg-slate-300"
+          checked ? "bg-teal-700 dark:bg-teal-500" : "bg-slate-300 dark:bg-slate-600"
         }`}
       >
         <span
