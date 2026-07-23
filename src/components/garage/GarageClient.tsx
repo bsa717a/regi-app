@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AddVehicleFlow } from "@/components/garage/AddVehicleFlow";
+import { EditVehicleFlow } from "@/components/garage/EditVehicleFlow";
 import { VehicleCard } from "@/components/garage/VehicleCard";
 import { ApiError, listVehicles } from "@/lib/api/client";
 import type { VehicleDto } from "@/lib/vehicles/types";
@@ -15,6 +16,7 @@ export function GarageClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<VehicleDto | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -57,6 +59,33 @@ export function GarageClient() {
       cancelled = true;
     };
   }, [authLoading, idToken, getIdToken, reloadKey]);
+
+  if (editing) {
+    return (
+      <AppShell title="Garage">
+        <EditVehicleFlow
+          vehicle={editing}
+          onCancel={() => setEditing(null)}
+          onSaved={(updated) => {
+            setVehicles((prev) =>
+              prev
+                .map((v) => (v.id === updated.id ? updated : v))
+                .sort((a, b) =>
+                  a.registrationExpiresOn.localeCompare(
+                    b.registrationExpiresOn,
+                  ),
+                ),
+            );
+            setEditing(null);
+          }}
+          onDeleted={(vehicleId) => {
+            setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+            setEditing(null);
+          }}
+        />
+      </AppShell>
+    );
+  }
 
   if (adding) {
     return (
@@ -160,7 +189,10 @@ export function GarageClient() {
           <ul className="space-y-4">
             {vehicles.map((vehicle) => (
               <li key={vehicle.id}>
-                <VehicleCard vehicle={vehicle} />
+                <VehicleCard
+                  vehicle={vehicle}
+                  onEdit={(v) => setEditing(v)}
+                />
               </li>
             ))}
           </ul>
