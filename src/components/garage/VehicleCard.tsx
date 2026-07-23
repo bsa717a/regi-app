@@ -142,7 +142,7 @@ export function VehicleCard({
     setPreviewUrl(null);
     setPreviewFilename(registrationDoc.originalFilename);
     try {
-      const token = await getToken();
+      const token = idToken ?? (await getIdToken());
       if (!token) throw new Error("Please sign in again.");
       const signed = await getDocumentDownloadUrl(token, registrationDoc.id);
       setPreviewUrl(signed.downloadUrl);
@@ -151,7 +151,9 @@ export function VehicleCard({
       setPreviewError(
         err instanceof ApiError
           ? err.message
-          : "Could not load registration document.",
+          : err instanceof Error
+            ? err.message
+            : "Could not load registration document.",
       );
     } finally {
       setPreviewLoading(false);
