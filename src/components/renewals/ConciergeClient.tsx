@@ -5,9 +5,9 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { DocumentType } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
-  fieldClassName,
   labelClassName,
   primaryButtonClassName,
+  selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { AppShell } from "@/components/shell/AppShell";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
@@ -341,7 +341,7 @@ function DraftView({
           </label>
           <select
             id="renewal-county"
-            className={fieldClassName}
+            className={selectClassName}
             value={county}
             disabled={countySaving}
             onChange={(e) => {

@@ -1,5 +1,7 @@
 "use client";
 
+import { selectClassName } from "@/components/auth/AuthFormStyles";
+
 const MONTHS = [
   "January",
   "February",
@@ -14,6 +16,8 @@ const MONTHS = [
   "November",
   "December",
 ] as const;
+
+const expirationSelectClassName = `${selectClassName} mt-0 rounded-2xl font-semibold`;
 
 function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -59,7 +63,7 @@ export function ExpirationPicker({
             Month
           </span>
           <select
-            className="w-full appearance-none rounded-2xl border border-slate-300 bg-white px-3 py-3.5 text-base font-semibold text-slate-900 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            className={expirationSelectClassName}
             value={month}
             onChange={(e) => emit(year, Number(e.target.value), day)}
             aria-label="Expiration month"
@@ -76,7 +80,7 @@ export function ExpirationPicker({
             Year
           </span>
           <select
-            className="w-full appearance-none rounded-2xl border border-slate-300 bg-white px-3 py-3.5 text-base font-semibold text-slate-900 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            className={expirationSelectClassName}
             value={year}
             onChange={(e) => emit(Number(e.target.value), month, day)}
             aria-label="Expiration year"
@@ -93,7 +97,7 @@ export function ExpirationPicker({
             Day
           </span>
           <select
-            className="w-full appearance-none rounded-2xl border border-slate-300 bg-white px-3 py-3.5 text-base font-semibold text-slate-900 shadow-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+            className={expirationSelectClassName}
             value={Math.min(day, maxDay)}
             onChange={(e) => emit(year, month, Number(e.target.value))}
             aria-label="Expiration day"

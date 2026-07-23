@@ -11,9 +11,9 @@ import {
 import type { DocumentType } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
-  fieldClassName,
   labelClassName,
   primaryButtonClassName,
+  selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { AppShell } from "@/components/shell/AppShell";
 import {
@@ -240,7 +240,7 @@ export function DocumentsClient() {
             </label>
             <select
               id="vault-vehicle"
-              className={fieldClassName}
+              className={selectClassName}
               value={selectedVehicleId ?? ""}
               onChange={(e) => setSelectedVehicleId(e.target.value)}
             >
@@ -574,7 +574,7 @@ function UploadSheet({
           </label>
           <select
             id="doc-type"
-            className={fieldClassName}
+            className={selectClassName}
             value={type}
             disabled={submitting}
             onChange={(e) => setType(e.target.value as DocumentType)}

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import type { RegistrationType } from "@prisma/client";
 import {
   fieldClassName,
   labelClassName,
   primaryButtonClassName,
+  selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
+import { YearMakeModelPickers } from "@/components/garage/YearMakeModelPickers";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   ApiError,
@@ -160,6 +162,12 @@ export function AddRegistrationFlow({
     if (!token) throw new Error("Please sign in again.");
     return token;
   }
+
+  const getToken = useCallback(async (): Promise<string> => {
+    const token = await getIdToken();
+    if (!token) throw new Error("Please sign in again.");
+    return token;
+  }, [getIdToken]);
 
   const stateIsAvailable = (code: string) =>
     availableStates.includes(code.toUpperCase());
@@ -730,7 +738,7 @@ export function AddRegistrationFlow({
             <select
               id="state"
               name="state"
-              className={fieldClassName}
+              className={selectClassName}
               value={state}
               onChange={(e) => setState(e.target.value)}
             >
@@ -849,50 +857,66 @@ export function AddRegistrationFlow({
       {step === "manual" && draft ? (
         <form onSubmit={onManualContinue} className="mt-6 space-y-4">
           <p className="text-sm text-slate-600">
-            Quick manual entry — year, make, and model.
+            {registrationType === "passenger"
+              ? "Choose year, make, and model from the lists below."
+              : "Quick manual entry — year, make, and model."}
           </p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-1">
-              <label htmlFor="year" className={labelClassName}>
-                Year
-              </label>
-              <input
-                id="year"
-                inputMode="numeric"
-                className={fieldClassName}
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                placeholder="2021"
-                required
-              />
-            </div>
-            <div className="col-span-2">
-              <label htmlFor="make" className={labelClassName}>
-                Make
-              </label>
-              <input
-                id="make"
-                className={fieldClassName}
-                value={make}
-                onChange={(e) => setMake(e.target.value)}
-                placeholder="Chevrolet"
-                required
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="model" className={labelClassName}>
-              Model
-            </label>
-            <input
-              id="model"
-              className={fieldClassName}
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="Tahoe"
-              required
+          {registrationType === "passenger" ? (
+            <YearMakeModelPickers
+              year={year}
+              make={make}
+              model={model}
+              onYearChange={setYear}
+              onMakeChange={setMake}
+              onModelChange={setModel}
+              getToken={getToken}
             />
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-1">
+                  <label htmlFor="year" className={labelClassName}>
+                    Year
+                  </label>
+                  <input
+                    id="year"
+                    inputMode="numeric"
+                    className={fieldClassName}
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    placeholder="2021"
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label htmlFor="make" className={labelClassName}>
+                    Make
+                  </label>
+                  <input
+                    id="make"
+                    className={fieldClassName}
+                    value={make}
+                    onChange={(e) => setMake(e.target.value)}
+                    placeholder="Chevrolet"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="model" className={labelClassName}>
+                  Model
+                </label>
+                <input
+                  id="model"
+                  className={fieldClassName}
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="Tahoe"
+                  required
+                />
+              </div>
+            </>
+          )}
           <button type="submit" className={primaryButtonClassName}>
             Continue
           </button>

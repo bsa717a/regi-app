@@ -39,7 +39,11 @@ export function AuthPageShell({
 }
 
 export const fieldClassName =
-  "mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20";
+  "mt-1.5 w-full min-h-12 rounded-xl border border-slate-300 bg-white px-3.5 py-3.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20";
+
+/** Matches text field height; native selects ignore vertical padding without appearance-none. */
+export const selectClassName =
+  "mt-1.5 w-full min-h-12 appearance-none rounded-xl border border-slate-300 bg-white bg-[length:1.25rem] bg-[position:right_0.875rem_center] bg-no-repeat px-3.5 py-3.5 pr-10 text-base text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22/%3E%3C/svg%3E')]";
 
 export const labelClassName = "block text-sm font-medium text-slate-700";
 
