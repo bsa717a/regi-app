@@ -202,10 +202,13 @@ model Registration {
 
   household     Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
   creator       User           @relation("RegistrationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
-  renewals      Renewal[]
-  documents     Document[]
-  notifications Notification[]
-  photos        RegistrationPhoto[]
+  renewals         Renewal[]
+  documents        Document[]
+  notifications    Notification[]
+  photos           RegistrationPhoto[]
+  maintenanceTasks MaintenanceTask[]
+  maintenanceLogs  MaintenanceLog[]
+  usageReadings    UsageReading[]
 
   @@index([householdId])
   @@index([createdBy])
@@ -213,6 +216,73 @@ model Registration {
   @@index([state])
   @@index([type])
   @@map("registrations")
+}
+
+/// Scheduled maintenance task for a registration (preset or custom).
+model MaintenanceTask {
+  id               String    @id @default(cuid())
+  registrationId   String    @map("registration_id")
+  name             String
+  /// Stable key when created from a preset (e.g. "ohv_oil_change").
+  presetKey        String?   @map("preset_key")
+  intervalMonths   Int?      @map("interval_months")
+  intervalHours    Float?    @map("interval_hours")
+  intervalMiles    Float?    @map("interval_miles")
+  notes            String?
+  /// One-shot calendar reminder date ("remind me in X days"). Cleared after send.
+  remindOn         DateTime? @db.Date @map("remind_on")
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  registration Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  logs         MaintenanceLog[]
+
+  @@index([registrationId])
+  @@index([registrationId, active])
+  @@index([remindOn])
+  @@map("maintenance_tasks")
+}
+
+/// Completed service entry for a registration (optionally linked to a task).
+model MaintenanceLog {
+  id               String   @id @default(cuid())
+  registrationId   String   @map("registration_id")
+  taskId           String?  @map("task_id")
+  performedOn      DateTime @db.Date @map("performed_on")
+  hoursAtService   Float?   @map("hours_at_service")
+  milesAtService   Float?   @map("miles_at_service")
+  costCents        Int?     @map("cost_cents")
+  notes            String?
+  /// Optional garage receipt photo in GCS.
+  receiptGcsPath   String?  @map("receipt_gcs_path")
+  receiptFilename  String?  @map("receipt_filename")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  registration Registration     @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  task         MaintenanceTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([registrationId])
+  @@index([taskId])
+  @@index([performedOn])
+  @@map("maintenance_logs")
+}
+
+/// User-logged hours/odometer reading for a registration.
+model UsageReading {
+  id             String   @id @default(cuid())
+  registrationId String   @map("registration_id")
+  readingOn      DateTime @db.Date @map("reading_on")
+  hours          Float?
+  miles          Float?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([registrationId])
+  @@index([registrationId, readingOn])
+  @@map("usage_readings")
 }
 
 model RegistrationPhoto {

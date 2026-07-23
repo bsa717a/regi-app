@@ -30,6 +30,17 @@ import type {
   RegistrationDto,
 } from "@/lib/registrations/types";
 import type { RegiChatResponse } from "@/lib/regi/types";
+import type {
+  CreateMaintenanceLogInput,
+  CreateMaintenanceTaskInput,
+  CreateUsageReadingInput,
+  MaintenanceLogDto,
+  MaintenanceOverviewDto,
+  MaintenanceTaskDto,
+  PatchMaintenanceTaskInput,
+  ReceiptScanDto,
+  UsageReadingDto,
+} from "@/lib/maintenance/types";
 
 export class ApiError extends Error {
   status: number;
@@ -747,6 +758,129 @@ export async function adminResendRenewalEmail(
 
 export async function adminGetStats(token: string): Promise<AdminStatsDto> {
   return apiFetch<AdminStatsDto>("/api/admin/stats", { token });
+}
+
+export async function getMaintenanceOverview(
+  token: string,
+  registrationId: string,
+): Promise<MaintenanceOverviewDto> {
+  const data = await apiFetch<{ maintenance: MaintenanceOverviewDto }>(
+    `/api/registrations/${registrationId}/maintenance`,
+    { token },
+  );
+  return data.maintenance;
+}
+
+export async function createMaintenanceTask(
+  token: string,
+  registrationId: string,
+  input: CreateMaintenanceTaskInput,
+): Promise<MaintenanceTaskDto> {
+  const data = await apiFetch<{ task: MaintenanceTaskDto }>(
+    `/api/registrations/${registrationId}/maintenance/tasks`,
+    { method: "POST", token, body: input },
+  );
+  return data.task;
+}
+
+export async function updateMaintenanceTask(
+  token: string,
+  registrationId: string,
+  taskId: string,
+  input: PatchMaintenanceTaskInput,
+): Promise<MaintenanceTaskDto> {
+  const data = await apiFetch<{ task: MaintenanceTaskDto }>(
+    `/api/registrations/${registrationId}/maintenance/tasks/${taskId}`,
+    { method: "PATCH", token, body: input },
+  );
+  return data.task;
+}
+
+export async function deleteMaintenanceTask(
+  token: string,
+  registrationId: string,
+  taskId: string,
+): Promise<void> {
+  await apiFetch<{ ok: true }>(
+    `/api/registrations/${registrationId}/maintenance/tasks/${taskId}`,
+    { method: "DELETE", token },
+  );
+}
+
+export async function createMaintenanceLog(
+  token: string,
+  registrationId: string,
+  input: CreateMaintenanceLogInput,
+): Promise<MaintenanceLogDto> {
+  const data = await apiFetch<{ log: MaintenanceLogDto }>(
+    `/api/registrations/${registrationId}/maintenance/logs`,
+    { method: "POST", token, body: input },
+  );
+  return data.log;
+}
+
+export async function deleteMaintenanceLog(
+  token: string,
+  registrationId: string,
+  logId: string,
+): Promise<void> {
+  await apiFetch<{ ok: true }>(
+    `/api/registrations/${registrationId}/maintenance/logs/${logId}`,
+    { method: "DELETE", token },
+  );
+}
+
+export async function createUsageReading(
+  token: string,
+  registrationId: string,
+  input: CreateUsageReadingInput,
+): Promise<UsageReadingDto> {
+  const data = await apiFetch<{ usage: UsageReadingDto }>(
+    `/api/registrations/${registrationId}/usage`,
+    { method: "POST", token, body: input },
+  );
+  return data.usage;
+}
+
+export async function scanMaintenanceReceipt(
+  token: string,
+  registrationId: string,
+  input: { imageBase64: string; mimeType: string },
+): Promise<ReceiptScanDto> {
+  const data = await apiFetch<{ scan: ReceiptScanDto }>(
+    `/api/registrations/${registrationId}/maintenance/receipt/scan`,
+    { method: "POST", token, body: input },
+  );
+  return data.scan;
+}
+
+export async function requestMaintenanceReceiptUploadUrl(
+  token: string,
+  registrationId: string,
+  logId: string,
+  input: {
+    filename: string;
+    contentType: string;
+    contentLength: number;
+  },
+): Promise<UploadUrlResponse> {
+  return apiFetch<UploadUrlResponse>(
+    `/api/registrations/${registrationId}/maintenance/logs/${logId}/receipt/upload-url`,
+    { method: "POST", token, body: input },
+  );
+}
+
+export async function confirmMaintenanceReceipt(
+  token: string,
+  registrationId: string,
+  logId: string,
+  input: { gcsPath: string; filename?: string },
+): Promise<MaintenanceLogDto> {
+  const data = await apiFetch<{ log: MaintenanceLogDto }>(
+    `/api/registrations/${registrationId}/maintenance/logs/${logId}/receipt`,
+    { method: "POST", token, body: input },
+  );
+  return data.log;
 }
 
 /** PUT file bytes directly to the private GCS signed URL. */

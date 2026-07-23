@@ -5,6 +5,7 @@ import { runReminderTick } from "./tick";
 type MockDb = {
   registration: { findMany: ReturnType<typeof vi.fn> };
   stateRule: { findMany: ReturnType<typeof vi.fn> };
+  maintenanceTask: { updateMany: ReturnType<typeof vi.fn> };
   notification: {
     findUnique: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
@@ -52,6 +53,7 @@ describe("runReminderTick", () => {
     db = {
       registration: { findMany: vi.fn() },
       stateRule: { findMany: vi.fn() },
+      maintenanceTask: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       notification: {
         findUnique: vi.fn(),
         create: vi.fn(),
@@ -61,11 +63,18 @@ describe("runReminderTick", () => {
     };
   });
 
+  function mockRegistrationFindMany(expiryRows: unknown[]) {
+    // First call: expiry planner. Second call: maintenance planner (empty = no maint rows).
+    db.registration.findMany
+      .mockResolvedValueOnce(expiryRows)
+      .mockResolvedValueOnce([]);
+  }
+
   it("upserts planned rows and dispatches due notifications", async () => {
     const asOf = new Date(Date.UTC(2026, 6, 22)); // Jul 22
     const expires = new Date(Date.UTC(2026, 9, 20)); // Oct 20 = +90 days
 
-    db.registration.findMany.mockResolvedValue([
+    mockRegistrationFindMany([
       {
         id: "reg-1",
         state: "UT",
@@ -130,7 +139,7 @@ describe("runReminderTick", () => {
     const asOf = new Date(Date.UTC(2026, 6, 22));
     const expires = new Date(Date.UTC(2026, 9, 20));
 
-    db.registration.findMany.mockResolvedValue([
+    mockRegistrationFindMany([
       {
         id: "reg-1",
         state: "UT",
@@ -162,7 +171,7 @@ describe("runReminderTick", () => {
 
   it("skips dispatch when email prefs are disabled", async () => {
     const asOf = new Date(Date.UTC(2026, 6, 22));
-    db.registration.findMany.mockResolvedValue([]);
+    mockRegistrationFindMany([]);
     db.stateRule.findMany.mockResolvedValue([]);
     db.notification.findMany.mockResolvedValue([
       {
@@ -212,7 +221,7 @@ describe("runReminderTick", () => {
         throw new Error("smtp down");
       }),
     };
-    db.registration.findMany.mockResolvedValue([]);
+    mockRegistrationFindMany([]);
     db.stateRule.findMany.mockResolvedValue([]);
     db.notification.findMany.mockResolvedValue([
       {
@@ -259,7 +268,7 @@ describe("runReminderTick", () => {
     // Jul 22 + 45 days = Sep 5
     const expires45 = new Date(Date.UTC(2026, 8, 5));
 
-    db.registration.findMany.mockResolvedValue([
+    mockRegistrationFindMany([
       {
         id: "reg-custom",
         state: "NV",

@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { parseNotificationPrefs } from "@/lib/auth/notificationPrefs";
+import { planMaintenanceReminders } from "@/lib/maintenance/reminders";
 import type { NotificationService } from "@/lib/notifications/NotificationService";
 import { parseStateRulesConfig } from "@/lib/stateEngine/parseConfig";
 import { daysUntilExpiration } from "@/lib/stateEngine/status";
@@ -12,6 +13,7 @@ export type ReminderTickResult = {
   asOf: string;
   registrationsEvaluated: number;
   planned: number;
+  maintenancePlanned: number;
   upserted: number;
   skippedDuplicate: number;
   dispatched: number;
@@ -125,6 +127,25 @@ export async function runReminderTick(
     );
   }
 
+  let maintenancePlanned: Array<
+    PlannedNotification & { taskId?: string }
+  > = [];
+  try {
+    const maintenancePlan = await planMaintenanceReminders(deps.db, asOf);
+    // Cast: maintenance variables are a superset; dispatch merges them onto the payload.
+    maintenancePlanned = maintenancePlan.planned as Array<
+      PlannedNotification & { taskId?: string }
+    >;
+    allPlanned.push(...maintenancePlanned);
+  } catch (err) {
+    // Fail soft so registration expiry reminders still run if maintenance planning fails.
+    const message = err instanceof Error ? err.message : String(err);
+    errors.push(`maintenance plan: ${message}`);
+  }
+
+  // Task IDs whose one-shot remindOn rows were upserted or already existed.
+  const remindOnReadyToClear = new Set<string>();
+
   // Upsert planned rows (idempotent via dedupeKey unique).
   for (const planned of allPlanned) {
     try {
@@ -134,6 +155,10 @@ export async function runReminderTick(
       });
       if (existing) {
         skippedDuplicate += 1;
+        const taskId = (planned as { taskId?: string }).taskId;
+        if (planned.templateKey === "maintenance_scheduled" && taskId) {
+          remindOnReadyToClear.add(taskId);
+        }
         continue;
       }
 
@@ -149,14 +174,35 @@ export async function runReminderTick(
         },
       });
       upserted += 1;
+      const taskId = (planned as { taskId?: string }).taskId;
+      if (planned.templateKey === "maintenance_scheduled" && taskId) {
+        remindOnReadyToClear.add(taskId);
+      }
     } catch (err) {
       // Unique race: treat as duplicate, keep going.
       const message = err instanceof Error ? err.message : String(err);
       if (/unique|dedupe/i.test(message)) {
         skippedDuplicate += 1;
+        const taskId = (planned as { taskId?: string }).taskId;
+        if (planned.templateKey === "maintenance_scheduled" && taskId) {
+          remindOnReadyToClear.add(taskId);
+        }
       } else {
         errors.push(`upsert ${planned.dedupeKey}: ${message}`);
       }
+    }
+  }
+
+  // Clear one-shot remindOn only after notification rows are durable.
+  if (remindOnReadyToClear.size > 0) {
+    try {
+      await deps.db.maintenanceTask.updateMany({
+        where: { id: { in: [...remindOnReadyToClear] } },
+        data: { remindOn: null },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`clear remindOn: ${message}`);
     }
   }
 
@@ -228,9 +274,11 @@ export async function runReminderTick(
 
     const plannedMatch = allPlanned.find((p) => p.dedupeKey === row.dedupeKey);
     if (plannedMatch) {
-      variables.daysLeft = plannedMatch.variables.daysLeft;
-      variables.daysAfter = plannedMatch.variables.daysAfter;
-      variables.vehicleName = plannedMatch.variables.vehicleName;
+      for (const [key, value] of Object.entries(plannedMatch.variables)) {
+        if (value !== undefined && value !== null) {
+          variables[key] = value as string | number | boolean;
+        }
+      }
     }
 
     try {
@@ -271,6 +319,7 @@ export async function runReminderTick(
     asOf: asOf.toISOString(),
     registrationsEvaluated: registrations.length,
     planned: allPlanned.length,
+    maintenancePlanned: maintenancePlanned.length,
     upserted,
     skippedDuplicate,
     dispatched,
