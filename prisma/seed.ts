@@ -144,7 +144,6 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
       pluralLabel: "Motorhomes",
       identityFields: ["vin", "plate", "yearMakeModel"],
       decode: "nhtsa_vin",
-      notes: "Utah motor home fees differ from passenger vehicles.",
     },
     {
       type: "motorcycle",
@@ -159,7 +158,6 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
       pluralLabel: "Trailers",
       identityFields: ["vin", "plate", "yearMakeModel"],
       decode: "none",
-      notes: "Utah trailer fees may vary by unladen weight.",
       requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
     },
     {
@@ -168,7 +166,6 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
       pluralLabel: "OHVs",
       identityFields: ["vin", "plate", "serial", "yearMakeModel"],
       decode: "none",
-      notes: "Off-highway vehicles use OHV stickers / plates per Utah rules.",
       requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
     },
     {
@@ -185,7 +182,6 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
       pluralLabel: "Boats",
       identityFields: ["hin", "plate", "yearMakeModel"],
       decode: "none",
-      notes: "Use Hull Identification Number (HIN) when available.",
       requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
     },
   ],

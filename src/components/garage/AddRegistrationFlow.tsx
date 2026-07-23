@@ -235,14 +235,19 @@ export function AddRegistrationFlow({
   function getTypeRule(
     type: RegistrationType,
     stateCode: string,
-  ): Pick<ActiveStateRegistrationTypeDto, "label" | "decode" | "identityFields" | "notes"> {
+  ): Pick<ActiveStateRegistrationTypeDto, "label" | "decode" | "identityFields"> {
     const rule = stateRules
       .get(stateCode.toUpperCase())
       ?.registrationTypes?.find((t) => t.type === type);
-    if (rule) return rule;
+    if (rule) {
+      return {
+        label: rule.label,
+        decode: rule.decode,
+        identityFields: rule.identityFields,
+      };
+    }
     return {
       label: REGISTRATION_TYPE_LABELS[type],
-      notes: null,
       ...FALLBACK_TYPE_RULES[type],
     };
   }
@@ -265,7 +270,7 @@ export function AddRegistrationFlow({
     () =>
       supportedTypes.map((type) => {
         const rule = getTypeRule(type, state);
-        return { type, label: rule.label, notes: rule.notes };
+        return { type, label: rule.label };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuilds when state rules resolve
     [state, stateRules, supportedTypes],
@@ -1085,11 +1090,6 @@ export function AddRegistrationFlow({
                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {card.label}
                       </p>
-                      {card.notes ? (
-                        <p className="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">
-                          {card.notes}
-                        </p>
-                      ) : null}
                     </div>
                   </button>
                 ))}
