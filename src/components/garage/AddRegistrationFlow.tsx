@@ -25,6 +25,7 @@ import {
   ApiError,
   createRegistration,
   decodeVinApi,
+  getRegistration,
   joinWaitlist,
   listActiveStates,
   scanRegistration,
@@ -617,6 +618,9 @@ export function AddRegistrationFlow({
             type: "registration",
             file: scannedFile,
           });
+          if (!pendingPhotoFile) {
+            saved = await getRegistration(token, vehicle.id);
+          }
         } catch {
           // Keep the vehicle add successful even if vault upload fails.
         }
