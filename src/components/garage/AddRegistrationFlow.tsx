@@ -46,8 +46,10 @@ import { US_STATES, stateName } from "@/lib/registrations/states";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
 import { prepareScanImage } from "@/lib/images/compress";
 import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
-import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
-import { uploadRegistrationPhoto } from "@/lib/registrations/photoUpload";
+import {
+  attachGaragePhoto,
+  attachRegistrationDocument,
+} from "@/lib/registrations/attachRegistrationAssets";
 import {
   MOTORHOME_CLASSES,
   MOTORHOME_CLASS_LABELS,
@@ -759,7 +761,7 @@ export function AddRegistrationFlow({
       let photoWarning: string | undefined;
       if (pendingPhotoFile) {
         try {
-          saved = await uploadRegistrationPhoto({
+          saved = await attachGaragePhoto({
             token,
             registrationId: vehicle.id,
             file: pendingPhotoFile,
@@ -767,17 +769,16 @@ export function AddRegistrationFlow({
         } catch (err) {
           photoWarning =
             err instanceof ApiError
-              ? `Registration saved, but the photo could not be uploaded: ${err.message}`
-              : "Registration saved, but the photo could not be uploaded. Edit the registration to try again.";
+              ? `Registration saved, but the garage photo could not be uploaded: ${err.message}`
+              : "Registration saved, but the garage photo could not be uploaded. Edit the registration to try again.";
         }
       }
 
       if (scannedFile) {
         try {
-          await uploadDocumentToVault({
+          await attachRegistrationDocument({
             token,
             registrationId: vehicle.id,
-            type: "registration",
             file: scannedFile,
           });
         } catch {
@@ -921,7 +922,7 @@ export function AddRegistrationFlow({
                 </span>
                 <span className="mt-1 text-sm leading-relaxed text-teal-800 dark:text-teal-200">
                   Take a photo of your registration card and we&apos;ll fill in
-                  the details.
+                  the details. The card is saved to Documents.
                 </span>
               </button>
 

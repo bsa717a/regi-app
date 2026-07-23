@@ -133,4 +133,18 @@ describe("parseCreateDocumentBody", () => {
       }).ok,
     ).toBe(false);
   });
+
+  it("rejects garage hero photo paths", () => {
+    const parsed = parseCreateDocumentBody({
+      registrationId: "reg_1",
+      type: "registration",
+      gcsPath:
+        "households/hh/registrations/reg_1/photo/11111111-2222-3333-4444-555555555555.jpg",
+      originalFilename: "card.jpg",
+    });
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) {
+      expect(parsed.error).toMatch(/garage photo/i);
+    }
+  });
 });

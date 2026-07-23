@@ -32,6 +32,11 @@ export function validatePhotoGcsPath(
   return gcsPath.startsWith(prefix) && !gcsPath.includes("..");
 }
 
+/** True for private garage hero photos — these must not become vault documents. */
+export function isVehiclePhotoGcsPath(gcsPath: string): boolean {
+  return /\/registrations\/[^/]+\/photo\//.test(gcsPath);
+}
+
 export type PhotoUploadUrlRequest = {
   filename: string;
   contentType: AllowedPhotoContentType;

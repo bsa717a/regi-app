@@ -1,4 +1,5 @@
 import type { DocumentType } from "@prisma/client";
+import { isVehiclePhotoGcsPath } from "@/lib/registrations/photo";
 import {
   ALLOWED_CONTENT_TYPES,
   DOCUMENT_TYPES,
@@ -164,6 +165,12 @@ export function parseCreateDocumentBody(
     !gcsPath.startsWith("households/")
   ) {
     return { ok: false, error: "Invalid gcsPath" };
+  }
+  if (isVehiclePhotoGcsPath(gcsPath)) {
+    return {
+      ok: false,
+      error: "Garage photos cannot be stored as documents",
+    };
   }
 
   let renewalId: string | null | undefined;

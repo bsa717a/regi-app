@@ -57,8 +57,11 @@ export function RegistrationPhotoPicker({
   return (
     <div>
       <p className={labelClassName}>
-        Vehicle photo{" "}
-        <span className="font-normal text-slate-500">(optional)</span>
+        Garage photo{" "}
+        <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
+      </p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        Shown on your garage card only — not saved to Documents.
       </p>
 
       {hasPhoto ? (
