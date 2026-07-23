@@ -156,6 +156,41 @@ export async function decodeVinApi(
   );
 }
 
+export type VehicleMakeDto = {
+  id: number;
+  name: string;
+};
+
+export type VehicleModelDto = {
+  name: string;
+};
+
+export async function listVehicleMakes(
+  token: string,
+): Promise<VehicleMakeDto[]> {
+  const data = await apiFetch<{ makes: VehicleMakeDto[] }>(
+    "/api/vehicles/makes",
+    { token },
+  );
+  return data.makes;
+}
+
+export async function listVehicleModels(
+  token: string,
+  make: string,
+  year: number,
+): Promise<VehicleModelDto[]> {
+  const params = new URLSearchParams({
+    make,
+    year: String(year),
+  });
+  const data = await apiFetch<{ models: VehicleModelDto[] }>(
+    `/api/vehicles/models?${params.toString()}`,
+    { token },
+  );
+  return data.models;
+}
+
 export async function listRegistrations(
   token: string,
 ): Promise<RegistrationDto[]> {
