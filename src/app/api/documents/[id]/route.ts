@@ -68,19 +68,19 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  const parsed = parsePatchDocumentBody(body, access.document.originalFilename);
-  if (!parsed.ok) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400, headers: rateLimitHeaders(limited) },
-    );
-  }
-
   const access = await loadEditableDocument(profile.id, id.trim());
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },
       { status: access.status, headers: rateLimitHeaders(limited) },
+    );
+  }
+
+  const parsed = parsePatchDocumentBody(body, access.document.originalFilename);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error },
+      { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
