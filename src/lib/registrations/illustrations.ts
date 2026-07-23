@@ -26,6 +26,22 @@ export function illustrationKindFromType(
   return illustrationKindFromBodyClass(bodyClass);
 }
 
+/** Catalog-style type art (same approach as Metabolic badge PNGs). */
+export const REGISTRATION_TYPE_ART: Record<RegistrationType, string> = {
+  passenger: "/images/registration-types/passenger.webp",
+  motorcycle: "/images/registration-types/motorcycle.webp",
+  trailer: "/images/registration-types/trailer.webp",
+  ohv: "/images/registration-types/ohv.webp",
+  snowmobile: "/images/registration-types/snowmobile.webp",
+  boat: "/images/registration-types/boat.webp",
+};
+
+export function registrationTypeArtUrl(type: RegistrationType): string {
+  // Plain public path only — Next.js Image rejects query strings unless
+  // images.localPatterns allows them.
+  return REGISTRATION_TYPE_ART[type];
+}
+
 export function illustrationKindFromBodyClass(
   bodyClass: string | null | undefined,
 ): RegistrationIllustrationKind {

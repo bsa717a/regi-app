@@ -550,7 +550,7 @@ export function AddRegistrationFlow({
               onClick={() => selectType(card.type)}
               className="flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-left shadow-sm transition hover:border-teal-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
             >
-              <div className="h-20 w-full">
+              <div className="relative h-32 w-full">
                 <VehicleIllustration registrationType={card.type} label={card.label} />
               </div>
               <div className="px-3 py-3">
