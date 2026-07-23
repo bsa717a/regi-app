@@ -21,7 +21,8 @@ export type PreparedScanImage = {
   mimeType: string;
 };
 
-function inferImageContentType(file: File): string | null {
+/** Infer MIME type from File metadata (mobile camera captures often omit type). */
+export function inferImageContentType(file: File): string | null {
   const typed = file.type.trim().toLowerCase();
   if (typed.startsWith("image/")) return typed;
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -131,7 +132,13 @@ export async function compressImageFile(file: File): Promise<File> {
     if (!mimeType) {
       throw new Error("Unsupported image type.");
     }
-    return file;
+    if (file.type.trim().toLowerCase() === mimeType) {
+      return file;
+    }
+    return new File([file], file.name, {
+      type: mimeType,
+      lastModified: file.lastModified,
+    });
   }
 }
 

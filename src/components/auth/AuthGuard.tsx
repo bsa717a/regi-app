@@ -1,13 +1,29 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
+const AUTH_GUARD_TIMEOUT_MS = 6_000;
+
 export function AuthGuard({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, logOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setTimedOut(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setTimedOut(true);
+    }, AUTH_GUARD_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -16,7 +32,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     }
   }, [loading, user, router, pathname]);
 
-  if (loading) {
+  if (loading && !timedOut) {
     return (
       <div
         className="flex flex-1 items-center justify-center px-6 py-16"
@@ -26,6 +42,35 @@ export function AuthGuard({ children }: { children: ReactNode }) {
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-pulse rounded-full bg-teal-600/20" />
           <p className="mt-4 text-sm text-slate-600">Checking your session…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && timedOut) {
+    return (
+      <div
+        className="flex flex-1 items-center justify-center px-6 py-16"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="max-w-sm text-center">
+          <p className="text-sm text-slate-700">
+            We couldn&apos;t restore your sign-in. This can happen after an app
+            update or if the browser blocked storage.
+          </p>
+          <button
+            type="button"
+            className="mt-4 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+            onClick={() => {
+              void logOut().finally(() => {
+                const next = encodeURIComponent(pathname || "/dashboard");
+                router.replace(`/login?next=${next}`);
+              });
+            }}
+          >
+            Sign in again
+          </button>
         </div>
       </div>
     );

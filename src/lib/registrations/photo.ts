@@ -1,26 +1,19 @@
 import type { Registration } from "@prisma/client";
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
+import {
+  isAllowedPhotoContentType,
+  type AllowedPhotoContentType,
+} from "@/lib/registrations/photoTypes";
 import { createDownloadSignedUrl } from "@/lib/storage/gcs";
+
+export {
+  ALLOWED_PHOTO_CONTENT_TYPES,
+  isAllowedPhotoContentType,
+  type AllowedPhotoContentType,
+} from "@/lib/registrations/photoTypes";
 
 /** Signed read URL TTL for vehicle photos shown in the garage UI. */
 export const PHOTO_READ_URL_TTL_MS = 24 * 60 * 60 * 1000;
-
-export const ALLOWED_PHOTO_CONTENT_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-] as const;
-
-export type AllowedPhotoContentType =
-  (typeof ALLOWED_PHOTO_CONTENT_TYPES)[number];
-
-export function isAllowedPhotoContentType(
-  value: string,
-): value is AllowedPhotoContentType {
-  return (ALLOWED_PHOTO_CONTENT_TYPES as readonly string[]).includes(value);
-}
 
 export function buildPhotoGcsPath(input: {
   householdId: string;

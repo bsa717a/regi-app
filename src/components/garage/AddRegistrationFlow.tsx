@@ -616,9 +616,11 @@ export function AddRegistrationFlow({
             registrationId: vehicle.id,
             file: pendingPhotoFile,
           });
-        } catch {
+        } catch (err) {
           photoWarning =
-            "Registration saved, but the photo could not be uploaded. Edit the registration to try again.";
+            err instanceof ApiError
+              ? `Registration saved, but the photo could not be uploaded: ${err.message}`
+              : "Registration saved, but the photo could not be uploaded. Edit the registration to try again.";
         }
       }
 
