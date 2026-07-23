@@ -30,8 +30,11 @@ import {
   DOCUMENT_TYPES,
   MAX_UPLOAD_BYTES,
 } from "@/lib/documents/constants";
+import { DocumentEnhancePreview } from "@/components/images/DocumentEnhancePreview";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import type { DocumentDto } from "@/lib/documents/types";
+import type { PreparedScanImage } from "@/lib/images/compress";
+import { prepareAndEnhanceDocument } from "@/lib/images/enhancePipeline";
 import { REGISTRATION_TYPE_LABELS } from "@/lib/registrations/illustrations";
 import type { RegistrationDto } from "@/lib/registrations/types";
 
@@ -623,6 +626,7 @@ function UploadSheet({
 }) {
   const titleId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const enhanceGenerationRef = useRef(0);
   const [vehicleId, setVehicleId] = useState(
     initialVehicleId ?? vehicles[0]?.id ?? "",
   );
@@ -632,17 +636,90 @@ function UploadSheet({
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+  const [showEnhancePreview, setShowEnhancePreview] = useState(false);
+  const [enhanceOriginal, setEnhanceOriginal] =
+    useState<PreparedScanImage | null>(null);
+  const [enhanceEnhanced, setEnhanceEnhanced] =
+    useState<PreparedScanImage | null>(null);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
 
   const vehicle = vehicles.find((row) => row.id === vehicleId) ?? vehicles[0];
+  const previewBlocking = enhancing || showEnhancePreview;
 
-  function acceptFile(next: File | null | undefined) {
+  function isPdf(next: File): boolean {
+    return (
+      next.type === "application/pdf" ||
+      next.name.toLowerCase().endsWith(".pdf")
+    );
+  }
+
+  function looksLikeImage(next: File): boolean {
+    return (
+      next.type.startsWith("image/") ||
+      /\.(jpe?g|png|webp|heic|heif)$/i.test(next.name)
+    );
+  }
+
+  function clearEnhanceState() {
+    setShowEnhancePreview(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
+  }
+
+  async function acceptFile(next: File | null | undefined) {
     if (!next) return;
     setError(null);
-    setFile(next);
+
+    if (isPdf(next) || !looksLikeImage(next)) {
+      enhanceGenerationRef.current += 1;
+      clearEnhanceState();
+      setEnhancing(false);
+      setFile(next);
+      return;
+    }
+
+    const generation = ++enhanceGenerationRef.current;
+    setFile(null);
+    setEnhancing(true);
+    clearEnhanceState();
+    try {
+      const token = await getToken();
+      if (!token) throw new ApiError("Not signed in", 401);
+      const choice = await prepareAndEnhanceDocument({ token, file: next });
+      if (generation !== enhanceGenerationRef.current) return;
+      setEnhanceOriginal(choice.original);
+      setEnhanceEnhanced(choice.enhanced);
+      setEnhanceError(choice.enhanceError);
+      setShowEnhancePreview(true);
+    } catch (err) {
+      if (generation !== enhanceGenerationRef.current) return;
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not process that photo. Try again.",
+      );
+    } finally {
+      if (generation === enhanceGenerationRef.current) {
+        setEnhancing(false);
+      }
+    }
+  }
+
+  function onEnhanceConfirm(chosen: PreparedScanImage) {
+    clearEnhanceState();
+    setFile(chosen.file);
+  }
+
+  function onEnhanceCancel() {
+    enhanceGenerationRef.current += 1;
+    clearEnhanceState();
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (previewBlocking) return;
     if (!vehicle) {
       setError("Choose a registration to upload to.");
       return;
@@ -689,9 +766,24 @@ function UploadSheet({
       aria-modal="true"
       aria-labelledby={titleId}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !submitting) onClose();
+        if (e.target === e.currentTarget && !submitting && !previewBlocking) {
+          onClose();
+        }
       }}
     >
+      {enhanceOriginal ? (
+        <DocumentEnhancePreview
+          open={showEnhancePreview}
+          title="Review document scan"
+          original={enhanceOriginal}
+          enhanced={enhanceEnhanced}
+          enhanceError={enhanceError}
+          enhancing={enhancing}
+          busy={submitting}
+          onConfirm={onEnhanceConfirm}
+          onCancel={onEnhanceCancel}
+        />
+      ) : null}
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white shadow-xl sm:rounded-3xl">
         <form onSubmit={handleSubmit} className="px-5 pb-6 pt-5">
           <div className="mb-5 flex items-start justify-between gap-3">
@@ -708,7 +800,7 @@ function UploadSheet({
             </div>
             <button
               type="button"
-              disabled={submitting}
+              disabled={submitting || previewBlocking}
               onClick={onClose}
               className="rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
             >
@@ -725,7 +817,7 @@ function UploadSheet({
                 id="upload-vehicle"
                 className={selectClassName}
                 value={vehicleId}
-                disabled={submitting}
+                disabled={submitting || previewBlocking}
                 onChange={(e) => setVehicleId(e.target.value)}
               >
                 {vehicles.map((row) => (
@@ -748,7 +840,7 @@ function UploadSheet({
             id="doc-type"
             className={selectClassName}
             value={type}
-            disabled={submitting}
+            disabled={submitting || previewBlocking}
             onChange={(e) => setType(e.target.value as DocumentType)}
           >
             {DOCUMENT_TYPES.map((t) => (
@@ -779,19 +871,24 @@ function UploadSheet({
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
-              acceptFile(e.dataTransfer.files?.[0]);
+              void acceptFile(e.dataTransfer.files?.[0]);
             }}
           >
             <p className="text-base font-medium text-slate-900">
-              {file ? file.name : "Photo or PDF"}
+              {enhancing
+                ? "Enhancing scan…"
+                : file
+                  ? file.name
+                  : "Photo or PDF"}
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              JPEG, PNG, WebP, HEIC, or PDF · up to {maxMb} MB
+              JPEG, PNG, WebP, HEIC, or PDF · up to {maxMb} MB. Photos are
+              auto-enhanced into a clean scan.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
               <button
                 type="button"
-                disabled={submitting}
+                disabled={submitting || previewBlocking}
                 className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
                 onClick={() => inputRef.current?.click()}
               >
@@ -804,8 +901,8 @@ function UploadSheet({
                   accept="image/*"
                   capture="environment"
                   className="sr-only"
-                  disabled={submitting}
-                  onChange={(e) => acceptFile(e.target.files?.[0])}
+                  disabled={submitting || previewBlocking}
+                  onChange={(e) => void acceptFile(e.target.files?.[0])}
                 />
               </label>
             </div>
@@ -814,8 +911,8 @@ function UploadSheet({
               type="file"
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
               className="sr-only"
-              disabled={submitting}
-              onChange={(e) => acceptFile(e.target.files?.[0])}
+              disabled={submitting || previewBlocking}
+              onChange={(e) => void acceptFile(e.target.files?.[0])}
             />
           </div>
 
@@ -842,7 +939,7 @@ function UploadSheet({
 
           <button
             type="submit"
-            disabled={submitting || !file || !vehicle}
+            disabled={submitting || previewBlocking || !file || !vehicle}
             className={`${primaryButtonClassName} mt-6`}
           >
             {submitting ? "Uploading…" : "Upload to vault"}
