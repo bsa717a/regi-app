@@ -20,6 +20,7 @@ import {
   userCanAccessHousehold,
 } from "@/lib/registrations/household";
 import { serializeRegistration } from "@/lib/registrations/serialize";
+import { resolvePhotoUrl } from "@/lib/registrations/photo";
 import type {
   RegistrationDetails,
   RegistrationDto,
@@ -131,9 +132,10 @@ export async function GET(request: Request, context: RouteContext) {
     (await getMembershipRole(profile.id, registration.householdId)) ??
     "viewer";
   const config = await loadStateRules(registration.state);
+  const resolved = await resolvePhotoUrl(registration);
   const dto = config
-    ? serializeRegistration(registration, config, new Date(), role)
-    : serializeWithoutRules(registration, role);
+    ? serializeRegistration(resolved, config, new Date(), role)
+    : serializeWithoutRules(resolved, role);
 
   return NextResponse.json(
     { registration: dto },
@@ -239,10 +241,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     },
   });
 
+  const resolved = await resolvePhotoUrl(registration);
+
   return NextResponse.json(
     {
       registration: serializeRegistration(
-        registration,
+        resolved,
         stateRules,
         new Date(),
         "owner",

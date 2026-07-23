@@ -181,6 +181,7 @@ model Registration {
   year                  Int?
   nickname              String?
   photoUrl              String?          @map("photo_url")
+  photoGcsPath          String?          @map("photo_gcs_path")
   bodyClass             String?          @map("body_class")
   /// Type-specific fields (HIN, OHV class, trailer weight, boat length/HP, etc.).
   details               Json             @default("{}")

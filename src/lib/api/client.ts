@@ -282,6 +282,55 @@ export async function deleteRegistration(
   });
 }
 
+export async function requestRegistrationPhotoUploadUrl(
+  token: string,
+  registrationId: string,
+  input: {
+    filename: string;
+    contentType: string;
+    contentLength: number;
+  },
+): Promise<UploadUrlResponse> {
+  return apiFetch<UploadUrlResponse>(
+    `/api/registrations/${registrationId}/photo/upload-url`,
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+}
+
+export async function confirmRegistrationPhoto(
+  token: string,
+  registrationId: string,
+  input: { gcsPath: string },
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${registrationId}/photo`,
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+  return data.registration;
+}
+
+export async function deleteRegistrationPhoto(
+  token: string,
+  registrationId: string,
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${registrationId}/photo`,
+    {
+      method: "DELETE",
+      token,
+    },
+  );
+  return data.registration;
+}
+
 export async function joinWaitlist(
   token: string,
   input: { email?: string; state: string },

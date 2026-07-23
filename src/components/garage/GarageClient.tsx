@@ -22,6 +22,7 @@ export function GarageClient() {
     useState<RegistrationDto | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -74,12 +75,13 @@ export function GarageClient() {
       <AppShell title="Garage">
         <AddRegistrationFlow
           onCancel={() => setView("list")}
-          onCreated={(vehicle) => {
+          onCreated={(vehicle, options) => {
             setVehicles((prev) =>
               [...prev, vehicle].sort((a, b) =>
                 a.registrationExpiresOn.localeCompare(b.registrationExpiresOn),
               ),
             );
+            setNotice(options?.warning ?? null);
             setView("list");
           }}
         />
@@ -149,6 +151,22 @@ export function GarageClient() {
               </div>
             </div>
           ))}
+        </div>
+      ) : null}
+
+      {!loading && notice ? (
+        <div
+          role="status"
+          className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+        >
+          <p>{notice}</p>
+          <button
+            type="button"
+            className="mt-2 text-sm font-semibold text-amber-900 underline-offset-4 hover:underline"
+            onClick={() => setNotice(null)}
+          >
+            Dismiss
+          </button>
         </div>
       ) : null}
 

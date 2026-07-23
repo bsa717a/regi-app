@@ -17,6 +17,7 @@ import {
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
+import { RegistrationPhotoPicker } from "@/components/garage/RegistrationPhotoPicker";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import { YearMakeModelPickers } from "@/components/garage/YearMakeModelPickers";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -43,6 +44,7 @@ import { US_STATES, stateName } from "@/lib/registrations/states";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
 import { prepareScanImage } from "@/lib/images/compress";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
+import { uploadRegistrationPhoto } from "@/lib/registrations/photoUpload";
 
 type Mode = "vin" | "plate";
 type Step = "pickType" | "identity" | "confirm" | "manual" | "details" | "waitlist";
@@ -129,7 +131,7 @@ export function AddRegistrationFlow({
 }: {
   /** When omitted, the back control is hidden (e.g. empty-garage dashboard). */
   onCancel?: () => void;
-  onCreated: (vehicle: RegistrationDto) => void;
+  onCreated: (vehicle: RegistrationDto, options?: { warning?: string }) => void;
   cancelLabel?: string;
   /** Pre-select a type and skip the picker. */
   registrationType?: RegistrationType;
@@ -159,7 +161,7 @@ export function AddRegistrationFlow({
 
   const [expiresOn, setExpiresOn] = useState(defaultExpiration);
   const [nickname, setNickname] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [unladenWeightLbs, setUnladenWeightLbs] = useState("");
   const [lengthFeet, setLengthFeet] = useState("");
   const [horsepower, setHorsepower] = useState("");
@@ -588,10 +590,24 @@ export function AddRegistrationFlow({
         model: draft.model,
         bodyClass: draft.bodyClass,
         nickname: nickname.trim() || null,
-        photoUrl: photoUrl.trim() || null,
         details: Object.keys(details).length > 0 ? details : undefined,
         registrationExpiresOn: expiresOn,
       });
+
+      let saved = vehicle;
+      let photoWarning: string | undefined;
+      if (pendingPhotoFile) {
+        try {
+          saved = await uploadRegistrationPhoto({
+            token,
+            registrationId: vehicle.id,
+            file: pendingPhotoFile,
+          });
+        } catch {
+          photoWarning =
+            "Registration saved, but the photo could not be uploaded. Edit the registration to try again.";
+        }
+      }
 
       if (scannedFile) {
         try {
@@ -606,7 +622,7 @@ export function AddRegistrationFlow({
         }
       }
 
-      onCreated(vehicle);
+      onCreated(saved, photoWarning ? { warning: photoWarning } : undefined);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -1216,20 +1232,11 @@ export function AddRegistrationFlow({
             />
           </div>
 
-          <div>
-            <label htmlFor="photoUrl" className={labelClassName}>
-              Photo URL{" "}
-              <span className="font-normal text-slate-500">(optional)</span>
-            </label>
-            <input
-              id="photoUrl"
-              type="url"
-              className={fieldClassName}
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="https://… or leave blank for an illustration"
-            />
-          </div>
+          <RegistrationPhotoPicker
+            pendingFile={pendingPhotoFile}
+            onPendingFileChange={setPendingPhotoFile}
+            disabled={busy}
+          />
 
           <button
             type="submit"
