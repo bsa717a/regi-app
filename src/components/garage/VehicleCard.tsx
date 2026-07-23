@@ -1,6 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
+import {
+  ApiError,
+  getDocumentDownloadUrl,
+  listDocuments,
+} from "@/lib/api/client";
+import type { DocumentDto } from "@/lib/documents/types";
 import type { RegistrationDto } from "@/lib/registrations/types";
 import {
   REGISTRATION_TYPE_LABELS,
@@ -74,6 +83,91 @@ export function VehicleCard({
     vehicle.canEdit &&
     (vehicle.status === "Due Soon" || vehicle.status === "Expired");
 
+  const { getIdToken, idToken } = useAuth();
+  const [registrationDoc, setRegistrationDoc] = useState<DocumentDto | null>(
+    null,
+  );
+  const [registrationDocLoading, setRegistrationDocLoading] = useState(false);
+  const [registrationDocError, setRegistrationDocError] = useState<
+    string | null
+  >(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRegistrationDoc() {
+      setRegistrationDocLoading(true);
+      setRegistrationDocError(null);
+      try {
+        const token = idToken ?? (await getIdToken());
+        if (!token || cancelled) return;
+
+        const documents = await listDocuments(token, vehicle.id);
+        if (cancelled) return;
+
+        const doc =
+          documents.find((row) => row.type === "registration") ?? null;
+        setRegistrationDoc(doc);
+      } catch (err) {
+        if (!cancelled) {
+          setRegistrationDocError(
+            err instanceof ApiError
+              ? err.message
+              : "Could not load registration document.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setRegistrationDocLoading(false);
+        }
+      }
+    }
+
+    void loadRegistrationDoc();
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicle.id, idToken, getIdToken]);
+
+  async function openRegistrationPreview() {
+    if (!registrationDoc) return;
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewFilename(registrationDoc.originalFilename);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+      const signed = await getDocumentDownloadUrl(token, registrationDoc.id);
+      setPreviewUrl(signed.downloadUrl);
+      setPreviewFilename(signed.filename || registrationDoc.originalFilename);
+    } catch (err) {
+      setPreviewError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load registration document.",
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closeRegistrationPreview() {
+    setPreviewOpen(false);
+    setPreviewLoading(false);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewFilename("");
+  }
+
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/60 transition hover:shadow-md">
       <button
@@ -136,6 +230,18 @@ export function VehicleCard({
         </div>
       </button>
 
+      {registrationDoc ? (
+        <div className="border-t border-slate-100 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => void openRegistrationPreview()}
+            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline"
+          >
+            Registration card
+          </button>
+        </div>
+      ) : null}
+
       <div
         id={detailsId}
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${
@@ -192,6 +298,24 @@ export function VehicleCard({
               />
             </dl>
 
+            {registrationDoc ? (
+              <button
+                type="button"
+                onClick={() => void openRegistrationPreview()}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 sm:w-auto"
+              >
+                View registration card
+              </button>
+            ) : registrationDocLoading ? (
+              <p className="text-sm text-slate-500">Loading registration card…</p>
+            ) : null}
+
+            {registrationDocError ? (
+              <p className="text-sm text-rose-700" role="alert">
+                {registrationDocError}
+              </p>
+            ) : null}
+
             {!vehicle.canEdit ? (
               <p className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700">
                 Shared with you · view only
@@ -220,6 +344,17 @@ export function VehicleCard({
           </div>
         </div>
       </div>
+
+      <DocumentPreviewModal
+        open={previewOpen}
+        onClose={closeRegistrationPreview}
+        title={label}
+        filename={previewFilename || registrationDoc?.originalFilename || "registration"}
+        downloadUrl={previewUrl}
+        loading={previewLoading}
+        error={previewError}
+        onRetry={() => void openRegistrationPreview()}
+      />
     </article>
   );
 }
