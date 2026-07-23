@@ -1,4 +1,5 @@
 import type { DocumentType } from "@prisma/client";
+import { isVehiclePhotoGcsPath } from "@/lib/storage/gcsPaths";
 import {
   ALLOWED_CONTENT_TYPES,
   DOCUMENT_TYPES,
@@ -165,6 +166,12 @@ export function parseCreateDocumentBody(
   ) {
     return { ok: false, error: "Invalid gcsPath" };
   }
+  if (isVehiclePhotoGcsPath(gcsPath)) {
+    return {
+      ok: false,
+      error: "Garage photos cannot be stored as documents",
+    };
+  }
 
   let renewalId: string | null | undefined;
   if (body.renewalId === undefined) {
@@ -186,6 +193,50 @@ export function parseCreateDocumentBody(
       originalFilename: sanitizeFilename(body.originalFilename.trim()),
       renewalId,
     },
+  };
+}
+
+export type PatchDocumentRequest = {
+  originalFilename: string;
+};
+
+function filenameExtension(filename: string): string {
+  const base = filename.trim();
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0 || dot === base.length - 1) return "";
+  return base.slice(dot).toLowerCase();
+}
+
+/** Keep the stored file extension when the user omits it on rename. */
+export function preserveFilenameExtension(
+  nextFilename: string,
+  currentFilename: string,
+): string {
+  const sanitized = sanitizeFilename(nextFilename);
+  if (filenameExtension(sanitized)) return sanitized;
+  const extension = filenameExtension(currentFilename);
+  return extension ? `${sanitized}${extension}` : sanitized;
+}
+
+export function parsePatchDocumentBody(
+  body: Record<string, unknown>,
+  currentFilename?: string,
+): { ok: true; data: PatchDocumentRequest } | { ok: false; error: string } {
+  if (
+    typeof body.originalFilename !== "string" ||
+    !body.originalFilename.trim()
+  ) {
+    return { ok: false, error: "originalFilename is required" };
+  }
+
+  const sanitized = sanitizeFilename(body.originalFilename.trim());
+  const originalFilename = currentFilename
+    ? preserveFilenameExtension(sanitized, currentFilename)
+    : sanitized;
+
+  return {
+    ok: true,
+    data: { originalFilename },
   };
 }
 

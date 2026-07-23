@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 export function HomeRedirect() {
   const { user, loading } = useAuth();
@@ -10,7 +11,7 @@ export function HomeRedirect() {
 
   useEffect(() => {
     if (loading) return;
-    router.replace(user ? "/dashboard" : "/login");
+    router.replace(user ? DEFAULT_SIGNED_IN_HOME : "/login");
   }, [loading, user, router]);
 
   return (

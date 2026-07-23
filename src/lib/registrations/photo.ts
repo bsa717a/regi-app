@@ -5,6 +5,7 @@ import {
   type AllowedPhotoContentType,
 } from "@/lib/registrations/photoTypes";
 import { createDownloadSignedUrl } from "@/lib/storage/gcs";
+import { isVehiclePhotoGcsPath } from "@/lib/storage/gcsPaths";
 
 export {
   ALLOWED_PHOTO_CONTENT_TYPES,
@@ -31,6 +32,8 @@ export function validatePhotoGcsPath(
   const prefix = `households/${input.householdId}/registrations/${input.registrationId}/photo/`;
   return gcsPath.startsWith(prefix) && !gcsPath.includes("..");
 }
+
+export { isVehiclePhotoGcsPath } from "@/lib/storage/gcsPaths";
 
 export type PhotoUploadUrlRequest = {
   filename: string;

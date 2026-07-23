@@ -7,7 +7,9 @@ import {
   buildGcsPath,
   contentLengthRangeValue,
   parseCreateDocumentBody,
+  parsePatchDocumentBody,
   parseUploadUrlBody,
+  preserveFilenameExtension,
   sanitizeFilename,
   validateClientFile,
 } from "@/lib/documents/validation";
@@ -98,6 +100,38 @@ describe("content-type and size validation", () => {
   });
 });
 
+describe("parsePatchDocumentBody", () => {
+  it("sanitizes and accepts originalFilename", () => {
+    const parsed = parsePatchDocumentBody({
+      originalFilename: "  My Registration Card.jpg  ",
+    });
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.originalFilename).toBe("My Registration Card.jpg");
+    }
+  });
+
+  it("rejects missing originalFilename", () => {
+    expect(parsePatchDocumentBody({}).ok).toBe(false);
+    expect(parsePatchDocumentBody({ originalFilename: "  " }).ok).toBe(false);
+  });
+
+  it("preserves the file extension when omitted on rename", () => {
+    expect(
+      preserveFilenameExtension("Registration card", "scan.pdf"),
+    ).toBe("Registration card.pdf");
+    expect(
+      parsePatchDocumentBody(
+        { originalFilename: "Registration card" },
+        "scan.pdf",
+      ),
+    ).toMatchObject({
+      ok: true,
+      data: { originalFilename: "Registration card.pdf" },
+    });
+  });
+});
+
 describe("parseCreateDocumentBody", () => {
   it("accepts optional renewalId for the concierge hook", () => {
     const parsed = parseCreateDocumentBody({
@@ -132,5 +166,19 @@ describe("parseCreateDocumentBody", () => {
         originalFilename: "a.pdf",
       }).ok,
     ).toBe(false);
+  });
+
+  it("rejects garage hero photo paths", () => {
+    const parsed = parseCreateDocumentBody({
+      registrationId: "reg_1",
+      type: "registration",
+      gcsPath:
+        "households/hh/registrations/reg_1/photo/11111111-2222-3333-4444-555555555555.jpg",
+      originalFilename: "card.jpg",
+    });
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) {
+      expect(parsed.error).toMatch(/garage photo/i);
+    }
   });
 });

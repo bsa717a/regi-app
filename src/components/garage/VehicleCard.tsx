@@ -353,6 +353,7 @@ export function VehicleCard({
       <DocumentPreviewModal
         open={previewOpen}
         onClose={closeRegistrationPreview}
+        categoryLabel="Registration card"
         title={label}
         filename={previewFilename || registrationDoc?.originalFilename || "registration"}
         downloadUrl={previewUrl}

@@ -16,6 +16,7 @@ import {
   linkClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 function mapAuthError(error: unknown): string {
   if (error instanceof FirebaseError) {
@@ -47,7 +48,7 @@ export function GarageDoorLogin() {
   function destination(): string {
     const next = searchParams.get("next");
     if (next && next.startsWith("/") && !next.startsWith("//")) return next;
-    return "/dashboard";
+    return DEFAULT_SIGNED_IN_HOME;
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {

@@ -38,14 +38,14 @@ messaging.onBackgroundMessage((payload) => {
     body: bodyText,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    data: Object.assign({ url: "/dashboard" }, payload.data || {}),
+    data: Object.assign({ url: "/garage" }, payload.data || {}),
   });
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target =
-    (event.notification.data && event.notification.data.url) || "/dashboard";
+    (event.notification.data && event.notification.data.url) || "/garage";
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })

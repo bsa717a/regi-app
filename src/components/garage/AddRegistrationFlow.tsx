@@ -46,8 +46,10 @@ import { US_STATES, stateName } from "@/lib/registrations/states";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
 import { prepareScanImage } from "@/lib/images/compress";
 import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
-import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
-import { uploadRegistrationPhoto } from "@/lib/registrations/photoUpload";
+import {
+  attachGaragePhoto,
+  attachRegistrationDocument,
+} from "@/lib/registrations/attachRegistrationAssets";
 import {
   MOTORHOME_CLASSES,
   MOTORHOME_CLASS_LABELS,
@@ -235,14 +237,19 @@ export function AddRegistrationFlow({
   function getTypeRule(
     type: RegistrationType,
     stateCode: string,
-  ): Pick<ActiveStateRegistrationTypeDto, "label" | "decode" | "identityFields" | "notes"> {
+  ): Pick<ActiveStateRegistrationTypeDto, "label" | "decode" | "identityFields"> {
     const rule = stateRules
       .get(stateCode.toUpperCase())
       ?.registrationTypes?.find((t) => t.type === type);
-    if (rule) return rule;
+    if (rule) {
+      return {
+        label: rule.label,
+        decode: rule.decode,
+        identityFields: rule.identityFields,
+      };
+    }
     return {
       label: REGISTRATION_TYPE_LABELS[type],
-      notes: null,
       ...FALLBACK_TYPE_RULES[type],
     };
   }
@@ -265,7 +272,7 @@ export function AddRegistrationFlow({
     () =>
       supportedTypes.map((type) => {
         const rule = getTypeRule(type, state);
-        return { type, label: rule.label, notes: rule.notes };
+        return { type, label: rule.label };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuilds when state rules resolve
     [state, stateRules, supportedTypes],
@@ -754,7 +761,7 @@ export function AddRegistrationFlow({
       let photoWarning: string | undefined;
       if (pendingPhotoFile) {
         try {
-          saved = await uploadRegistrationPhoto({
+          saved = await attachGaragePhoto({
             token,
             registrationId: vehicle.id,
             file: pendingPhotoFile,
@@ -762,17 +769,16 @@ export function AddRegistrationFlow({
         } catch (err) {
           photoWarning =
             err instanceof ApiError
-              ? `Registration saved, but the photo could not be uploaded: ${err.message}`
-              : "Registration saved, but the photo could not be uploaded. Edit the registration to try again.";
+              ? `Registration saved, but the garage photo could not be uploaded: ${err.message}`
+              : "Registration saved, but the garage photo could not be uploaded. Edit the registration to try again.";
         }
       }
 
       if (scannedFile) {
         try {
-          await uploadDocumentToVault({
+          await attachRegistrationDocument({
             token,
             registrationId: vehicle.id,
-            type: "registration",
             file: scannedFile,
           });
         } catch {
@@ -916,7 +922,7 @@ export function AddRegistrationFlow({
                 </span>
                 <span className="mt-1 text-sm leading-relaxed text-teal-800 dark:text-teal-200">
                   Take a photo of your registration card and we&apos;ll fill in
-                  the details.
+                  the details. The card is saved to Documents.
                 </span>
               </button>
 
@@ -1085,11 +1091,6 @@ export function AddRegistrationFlow({
                       <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {card.label}
                       </p>
-                      {card.notes ? (
-                        <p className="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">
-                          {card.notes}
-                        </p>
-                      ) : null}
                     </div>
                   </button>
                 ))}
