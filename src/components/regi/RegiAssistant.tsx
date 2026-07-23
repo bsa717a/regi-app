@@ -260,7 +260,7 @@ function RegiChatHeader({
         >
           Regi
         </h2>
-        <p className="text-sm text-slate-500">Ask about your garage</p>
+        <p className="text-sm text-slate-500">Registrations, maintenance, and more</p>
       </div>
       <button
         type="button"

@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import type { RegiChatRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
+  continueRegiReply,
   generateRegiBootstrap,
   generateRegiReply,
   isCompleteRegiMessage,
+  isTruncatedRegiMessage,
 } from "@/lib/ai/regiChat";
 import { getOrCreateUser } from "@/lib/auth/getOrCreateUser";
 import {
@@ -86,6 +88,32 @@ export async function GET(request: Request) {
         data: { content: opener },
       });
       messages = [repaired];
+    } else if (rows.length >= 2) {
+      const last = rows[rows.length - 1];
+      const previous = rows[rows.length - 2];
+      if (
+        last?.role === "assistant" &&
+        previous?.role === "user" &&
+        isTruncatedRegiMessage(last.content)
+      ) {
+        const history = rows.slice(0, -2).map((row) => ({
+          role: row.role as "user" | "assistant",
+          content: row.content,
+        }));
+        const reply = await continueRegiReply({
+          context,
+          history,
+          userMessage: previous.content,
+          partialReply: last.content,
+        });
+        if (!isTruncatedRegiMessage(reply) && reply !== last.content) {
+          const repaired = await prisma.regiChatMessage.update({
+            where: { id: last.id },
+            data: { content: reply },
+          });
+          messages = [...rows.slice(0, -1), repaired];
+        }
+      }
     }
 
     return NextResponse.json(

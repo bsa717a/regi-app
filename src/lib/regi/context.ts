@@ -59,6 +59,9 @@ export async function loadRegiGarageContext(
       label: vehicleLabel(registration),
       type: registration.type,
       state: registration.state,
+      year: registration.year,
+      make: registration.make,
+      model: registration.model,
       plate: registration.plate,
       status: days < 0 ? "Expired" : days <= 30 ? "Expiring soon" : "Current",
       daysUntilExpiration: days,
@@ -88,7 +91,11 @@ export function formatGarageContextForPrompt(context: RegiGarageContext): string
 
   const lines = context.vehicles.map((vehicle) => {
     const countdown = formatExpirationCountdown(vehicle.expiresOn);
-    return `- ${vehicle.label} (${vehicle.type}, ${vehicle.state}): ${vehicle.status}, expires ${vehicle.expiresOn} (${countdown}, ${vehicle.daysUntilExpiration} days), ${vehicle.documentCount} document(s)`;
+    const identity = [vehicle.year, vehicle.make, vehicle.model]
+      .filter(Boolean)
+      .join(" ");
+    const identitySuffix = identity ? ` · ${identity}` : "";
+    return `- ${vehicle.label}${identitySuffix} (${vehicle.type}, ${vehicle.state}): ${vehicle.status}, expires ${vehicle.expiresOn} (${countdown}, ${vehicle.daysUntilExpiration} days), ${vehicle.documentCount} document(s)`;
   });
 
   return [

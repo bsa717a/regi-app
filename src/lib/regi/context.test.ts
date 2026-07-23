@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cannedRegiReply, isCompleteRegiMessage } from "@/lib/ai/regiChat";
+import { cannedRegiReply, isCompleteRegiMessage, isTruncatedRegiMessage } from "@/lib/ai/regiChat";
 import { buildQuickActions } from "@/lib/regi/context";
 import { REGI_APP_FEATURES_REPLY } from "@/lib/regi/constants";
 import type { RegiGarageContext } from "@/lib/regi/types";
@@ -21,6 +21,9 @@ const garageWithVehicles: RegiGarageContext = {
     label: "2021 Chevy Tahoe",
     type: "passenger",
     state: "UT",
+    year: 2021,
+    make: "Chevrolet",
+    model: "Tahoe",
     plate: "ABC123",
     status: "Expiring soon",
     daysUntilExpiration: 12,
@@ -49,11 +52,33 @@ describe("cannedRegiReply", () => {
   });
 });
 
+describe("isTruncatedRegiMessage", () => {
+  it("detects cut-off replies", () => {
+    expect(isTruncatedRegiMessage("That doesn")).toBe(true);
+    expect(
+      isTruncatedRegiMessage("Hey Derek! Looks like your Truck registration"),
+    ).toBe(true);
+  });
+
+  it("accepts short but complete sentences", () => {
+    expect(isTruncatedRegiMessage("Derek, check the Garage tab.")).toBe(false);
+  });
+
+  it("accepts multi-line listings without terminal punctuation", () => {
+    expect(
+      isTruncatedRegiMessage(
+        "Here's what's on the board:\n2021 Chevy Tahoe: expiring soon, 12 day(s) (2026-08-04)",
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("isCompleteRegiMessage", () => {
   it("rejects truncated greetings", () => {
     expect(isCompleteRegiMessage("Hey Derek! Looks like your Truck registration")).toBe(
       false,
     );
+    expect(isCompleteRegiMessage("That doesn")).toBe(false);
   });
 
   it("accepts finished sentences", () => {
