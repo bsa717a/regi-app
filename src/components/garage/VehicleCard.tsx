@@ -18,7 +18,13 @@ function formatExpiresOn(isoDate: string): string {
   }).format(date);
 }
 
-export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
+export function VehicleCard({
+  vehicle,
+  onEdit,
+}: {
+  vehicle: VehicleDto;
+  onEdit?: (vehicle: VehicleDto) => void;
+}) {
   const make = titleCaseMakeModel(vehicle.make);
   const model = titleCaseMakeModel(vehicle.model);
   const headline = [vehicle.year, make, model].filter(Boolean).join(" ") ||
@@ -39,7 +45,7 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
       </div>
       <div className="space-y-2 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             {vehicle.nickname ? (
               <>
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">
@@ -53,6 +59,15 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
               </h3>
             )}
           </div>
+          {vehicle.canEdit && onEdit ? (
+            <button
+              type="button"
+              onClick={() => onEdit(vehicle)}
+              className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            >
+              Edit
+            </button>
+          ) : null}
         </div>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
           <div>
