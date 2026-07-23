@@ -29,7 +29,14 @@ export function parseStateRulesConfig(value: unknown): StateRulesConfig | null {
     return null;
   }
 
-  return value as StateRulesConfig;
+  const registrationTypes = Array.isArray(record.registrationTypes)
+    ? record.registrationTypes
+    : [];
+
+  return {
+    ...(value as StateRulesConfig),
+    registrationTypes: registrationTypes as StateRulesConfig["registrationTypes"],
+  };
 }
 
 /** Read the Due Soon threshold — always from state_rules.config, never a constant. */

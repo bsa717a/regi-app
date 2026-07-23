@@ -10,7 +10,8 @@ export function getRegistrationTypeRules(
   config: StateRulesConfig,
   type: RegistrationType,
 ): RegistrationTypeRules | null {
-  return config.registrationTypes.find((entry) => entry.type === type) ?? null;
+  const types = config.registrationTypes ?? [];
+  return types.find((entry) => entry.type === type) ?? null;
 }
 
 /** Required docs for a type — type override when present, else state defaults. */

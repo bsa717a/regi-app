@@ -195,7 +195,7 @@ export function AddRegistrationFlow({
   ): Pick<ActiveStateRegistrationTypeDto, "label" | "decode" | "identityFields" | "notes"> {
     const rule = stateRules
       .get(stateCode.toUpperCase())
-      ?.registrationTypes.find((t) => t.type === type);
+      ?.registrationTypes?.find((t) => t.type === type);
     if (rule) return rule;
     return {
       label: REGISTRATION_TYPE_LABELS[type],

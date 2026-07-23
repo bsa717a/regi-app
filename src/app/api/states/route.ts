@@ -52,7 +52,7 @@ export async function GET(request: Request) {
         code: row.stateCode,
         name: config.displayName || stateName(row.stateCode),
         dueSoonThresholdDays: config.renewalWindow.dueSoonThresholdDays,
-        registrationTypes: config.registrationTypes.map((type) => ({
+        registrationTypes: (config.registrationTypes ?? []).map((type) => ({
           type: type.type,
           label: type.label,
           pluralLabel: type.pluralLabel,

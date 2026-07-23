@@ -145,6 +145,9 @@ export type StateRulesConfig = {
   fees: FeeStructure;
   reminderSchedule: ReminderSchedule;
   conciergeWorkflow: ConciergeWorkflowStep[];
-  /** Supported registration types for this state (Utah DMV core set). */
-  registrationTypes: RegistrationTypeRules[];
+  /**
+   * Supported registration types for this state (Utah DMV core set).
+   * May be empty/missing on older state_rules rows until re-seeded.
+   */
+  registrationTypes?: RegistrationTypeRules[];
 };
