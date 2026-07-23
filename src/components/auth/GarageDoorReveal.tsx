@@ -10,6 +10,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
+import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 export const GARAGE_DOOR_OPEN_MS = 1700;
 const PANEL_COUNT = 6;
@@ -111,7 +112,7 @@ export function GarageDoorRevealProvider({
   const revealTo = useCallback(
     (href: string) => {
       const safe =
-        href.startsWith("/") && !href.startsWith("//") ? href : "/dashboard";
+        href.startsWith("/") && !href.startsWith("//") ? href : DEFAULT_SIGNED_IN_HOME;
 
       if (prefersReducedMotion()) {
         cancelReveal();

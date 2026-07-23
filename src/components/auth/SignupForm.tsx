@@ -12,6 +12,7 @@ import {
   linkClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 function mapAuthError(error: unknown): string {
   if (error instanceof FirebaseError) {
@@ -46,7 +47,7 @@ export function SignupForm() {
     setSubmitting(true);
     try {
       await signUp({ name, email, phone, password });
-      router.replace("/dashboard");
+      router.replace(DEFAULT_SIGNED_IN_HOME);
     } catch (err) {
       setError(mapAuthError(err));
     } finally {

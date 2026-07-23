@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 const AUTH_GUARD_TIMEOUT_MS = 6_000;
 
@@ -27,7 +28,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      const next = encodeURIComponent(pathname || "/dashboard");
+      const next = encodeURIComponent(pathname || DEFAULT_SIGNED_IN_HOME);
       router.replace(`/login?next=${next}`);
     }
   }, [loading, user, router, pathname]);
@@ -64,7 +65,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
             className="mt-4 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
             onClick={() => {
               void logOut().finally(() => {
-                const next = encodeURIComponent(pathname || "/dashboard");
+                const next = encodeURIComponent(pathname || DEFAULT_SIGNED_IN_HOME);
                 router.replace(`/login?next=${next}`);
               });
             }}

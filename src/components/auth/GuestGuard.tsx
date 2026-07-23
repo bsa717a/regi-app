@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGarageDoorReveal } from "@/components/auth/GarageDoorReveal";
+import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 export function GuestGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -18,7 +19,7 @@ export function GuestGuard({ children }: { children: ReactNode }) {
       const safeNext =
         next && next.startsWith("/") && !next.startsWith("//")
           ? next
-          : "/dashboard";
+          : DEFAULT_SIGNED_IN_HOME;
       router.replace(safeNext);
     }
   }, [loading, user, revealing, router, searchParams]);
@@ -47,7 +48,7 @@ export function GuestGuard({ children }: { children: ReactNode }) {
         role="status"
         aria-live="polite"
       >
-        <p className="text-sm text-slate-600">Taking you to your dashboard…</p>
+        <p className="text-sm text-slate-600">Taking you to your garage…</p>
       </div>
     );
   }
