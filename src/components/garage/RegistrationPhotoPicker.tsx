@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { labelClassName } from "@/components/auth/AuthFormStyles";
+import { inferImageContentType } from "@/lib/images/compress";
+import { isAllowedPhotoContentType } from "@/lib/registrations/photoTypes";
 
 export function RegistrationPhotoPicker({
   currentPhotoUrl,
@@ -33,8 +35,23 @@ export function RegistrationPhotoPicker({
   const hasPhoto = Boolean(displayUrl);
 
   function acceptFile(file: File | undefined) {
-    if (!file || !file.type.startsWith("image/")) return;
-    onPendingFileChange(file);
+    if (!file) return;
+
+    let contentType = inferImageContentType(file);
+    // Camera captures on mobile often omit both MIME type and file extension.
+    if (!contentType && !file.name.includes(".")) {
+      contentType = "image/jpeg";
+    }
+    if (!contentType || !isAllowedPhotoContentType(contentType)) return;
+
+    const normalized =
+      file.type.trim().toLowerCase() === contentType
+        ? file
+        : new File([file], file.name, {
+            type: contentType,
+            lastModified: file.lastModified,
+          });
+    onPendingFileChange(normalized);
   }
 
   return (

@@ -1,5 +1,5 @@
 /* REGI PWA service worker — app-shell cache + offline fallback. */
-const CACHE_NAME = "regi-shell-v2";
+const CACHE_NAME = "regi-shell-v3";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = ["/", "/offline.html", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
