@@ -31,6 +31,8 @@ describe("cleanVinDecodeResult", () => {
       make: "CHEVROLET",
       model: "Tahoe",
       bodyClass: "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)",
+      vehicleType: null,
+      trailerType: null,
     });
     expect(hasUsableDecode(cleaned)).toBe(true);
   });
@@ -47,6 +49,8 @@ describe("cleanVinDecodeResult", () => {
       make: null,
       model: null,
       bodyClass: null,
+      vehicleType: null,
+      trailerType: null,
     });
     expect(hasUsableDecode(cleaned)).toBe(false);
   });
@@ -74,6 +78,7 @@ describe("decodeVin", () => {
             Make: "CHEVROLET",
             Model: "Tahoe",
             BodyClass: "Sport Utility Vehicle (SUV)/Multi-Purpose Vehicle (MPV)",
+            VehicleType: "MULTIPURPOSE PASSENGER VEHICLE (MPV)",
           },
         ],
       }),
@@ -87,6 +92,7 @@ describe("decodeVin", () => {
       expect(result.vehicle.make).toBe("CHEVROLET");
       expect(result.vehicle.model).toBe("Tahoe");
       expect(result.vehicle.bodyClass).toMatch(/Sport Utility/i);
+      expect(result.registrationType).toBe("passenger");
     }
     expect(fetchImpl).toHaveBeenCalledOnce();
   });

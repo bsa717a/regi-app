@@ -16,6 +16,7 @@ import {
   identityLine,
   titleCaseMakeModel,
 } from "@/lib/registrations/illustrations";
+import { formatMotorhomeClass } from "@/lib/registrations/motorhome";
 import { stateName } from "@/lib/registrations/states";
 import { StatusBadge } from "@/components/garage/StatusBadge";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
@@ -271,6 +272,10 @@ export function VehicleCard({
               <DetailItem
                 label="OHV class"
                 value={vehicle.details.ohvClass ?? null}
+              />
+              <DetailItem
+                label="Motorhome class"
+                value={formatMotorhomeClass(vehicle.details.motorhomeClass)}
               />
               <DetailItem
                 label="Unladen weight"

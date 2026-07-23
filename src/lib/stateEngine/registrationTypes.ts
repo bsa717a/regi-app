@@ -41,6 +41,7 @@ export function isValidRegistrationType(
 ): value is RegistrationType {
   return (
     value === "passenger" ||
+    value === "motorhome" ||
     value === "motorcycle" ||
     value === "trailer" ||
     value === "ohv" ||

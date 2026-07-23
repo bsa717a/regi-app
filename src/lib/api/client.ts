@@ -133,6 +133,7 @@ export type VinDecodeApiSuccess = {
   make: string | null;
   model: string | null;
   bodyClass: string | null;
+  registrationType: RegistrationType | null;
 };
 
 export type VinDecodeApiFailure = {

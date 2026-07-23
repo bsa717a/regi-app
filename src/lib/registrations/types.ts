@@ -6,6 +6,7 @@ export type RegistrationDetails = {
   hin?: string | null;
   serial?: string | null;
   ohvClass?: string | null;
+  motorhomeClass?: string | null;
   unladenWeightLbs?: number | null;
   lengthFeet?: number | null;
   horsepower?: number | null;

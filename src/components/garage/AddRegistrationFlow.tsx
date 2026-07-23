@@ -13,6 +13,7 @@ import type { RegistrationType } from "@prisma/client";
 import {
   fieldClassName,
   labelClassName,
+  linkClassName,
   primaryButtonClassName,
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
@@ -31,6 +32,7 @@ import {
   type ActiveStateDto,
   type ActiveStateRegistrationTypeDto,
   type RegistrationScanDto,
+  type VinDecodeApiSuccess,
 } from "@/lib/api/client";
 import type {
   RegistrationDetails,
@@ -46,6 +48,11 @@ import { prepareScanImage } from "@/lib/images/compress";
 import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import { uploadRegistrationPhoto } from "@/lib/registrations/photoUpload";
+import {
+  MOTORHOME_CLASSES,
+  MOTORHOME_CLASS_LABELS,
+  isValidMotorhomeClass,
+} from "@/lib/registrations/motorhome";
 
 type Mode = "vin" | "plate";
 type Step = "pickType" | "identity" | "confirm" | "manual" | "details" | "waitlist";
@@ -68,6 +75,7 @@ const FALLBACK_TYPE_RULES: Record<
   Pick<ActiveStateRegistrationTypeDto, "decode" | "identityFields">
 > = {
   passenger: { decode: "nhtsa_vin", identityFields: ["vin", "plate", "yearMakeModel"] },
+  motorhome: { decode: "nhtsa_vin", identityFields: ["vin", "plate", "yearMakeModel"] },
   motorcycle: { decode: "nhtsa_vin", identityFields: ["vin", "plate", "yearMakeModel"] },
   trailer: { decode: "none", identityFields: ["vin", "plate", "yearMakeModel"] },
   ohv: { decode: "none", identityFields: ["vin", "plate", "serial", "yearMakeModel"] },
@@ -77,6 +85,7 @@ const FALLBACK_TYPE_RULES: Record<
 
 const TYPE_ORDER: RegistrationType[] = [
   "passenger",
+  "motorhome",
   "motorcycle",
   "trailer",
   "ohv",
@@ -167,6 +176,7 @@ export function AddRegistrationFlow({
   const [lengthFeet, setLengthFeet] = useState("");
   const [horsepower, setHorsepower] = useState("");
   const [ohvClass, setOhvClass] = useState("");
+  const [motorhomeClass, setMotorhomeClass] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -176,6 +186,9 @@ export function AddRegistrationFlow({
   const [scanPrefill, setScanPrefill] = useState<RegistrationScanDto | null>(
     null,
   );
+  const [vinDecodePrefill, setVinDecodePrefill] =
+    useState<VinDecodeApiSuccess | null>(null);
+  const [showManualTypePicker, setShowManualTypePicker] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const scanGenerationRef = useRef(0);
 
@@ -234,14 +247,28 @@ export function AddRegistrationFlow({
     };
   }
 
+  function isTypeSupportedInState(type: RegistrationType, stateCode: string) {
+    const configured = stateRules.get(stateCode.toUpperCase())?.registrationTypes;
+    if (!configured || configured.length === 0) return true;
+    return configured.some((entry) => entry.type === type);
+  }
+
+  const supportedTypes = useMemo(() => {
+    const configured = stateRules.get(state.toUpperCase())?.registrationTypes;
+    if (!configured || configured.length === 0) return TYPE_ORDER;
+    return TYPE_ORDER.filter((type) =>
+      configured.some((entry) => entry.type === type),
+    );
+  }, [state, stateRules]);
+
   const typeCards = useMemo(
     () =>
-      TYPE_ORDER.map((type) => {
+      supportedTypes.map((type) => {
         const rule = getTypeRule(type, state);
         return { type, label: rule.label, notes: rule.notes };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuilds when state rules resolve
-    [state, stateRules],
+    [state, stateRules, supportedTypes],
   );
 
   const typeRule = registrationType ? getTypeRule(registrationType, state) : null;
@@ -269,6 +296,12 @@ export function AddRegistrationFlow({
     if (scanPrefill && scannedFile) {
       void applyScanResult(scanPrefill, scannedFile, type);
       setScanPrefill(null);
+      return;
+    }
+
+    if (vinDecodePrefill) {
+      applyVinDecodeResult(vinDecodePrefill, type);
+      setVinDecodePrefill(null);
       return;
     }
 
@@ -358,6 +391,95 @@ export function AddRegistrationFlow({
     setStep("manual");
   }
 
+  function applyVinDecodeResult(
+    decoded: VinDecodeApiSuccess,
+    type: RegistrationType,
+  ) {
+    setRegistrationType(type);
+    const rule = getTypeRule(type, state);
+    setMode(rule.decode === "nhtsa_vin" ? "vin" : "plate");
+    setVin(decoded.vin);
+    setError(null);
+    setInfo(null);
+
+    if (!stateIsAvailable(state)) {
+      setDraft({
+        vin: decoded.vin,
+        plate: null,
+        hin: null,
+        serial: null,
+        state,
+        year: decoded.year,
+        make: decoded.make,
+        model: decoded.model,
+        bodyClass: decoded.bodyClass,
+      });
+      setStep("waitlist");
+      setInfo("We found your vehicle, but that state isn't live yet.");
+      return;
+    }
+
+    setDraft({
+      vin: decoded.vin,
+      plate: null,
+      hin: null,
+      serial: null,
+      state,
+      year: decoded.year,
+      make: decoded.make,
+      model: decoded.model,
+      bodyClass: decoded.bodyClass,
+    });
+    setStep("confirm");
+  }
+
+  async function onVinLookupSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setInfo(null);
+    setVinDecodePrefill(null);
+    setScanPrefill(null);
+    setShowManualTypePicker(false);
+
+    const normalized = normalizeVin(vin);
+    if (!isValidVinFormat(normalized)) {
+      setError("Enter a 17-character VIN (no I, O, or Q).");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const token = await tokenOrThrow();
+      const decoded = await decodeVinApi(token, normalized);
+      if (!decoded.ok) {
+        setError(decoded.error);
+        return;
+      }
+
+      if (decoded.registrationType && isTypeSupportedInState(decoded.registrationType, state)) {
+        applyVinDecodeResult(decoded, decoded.registrationType);
+        return;
+      }
+
+      setVinDecodePrefill(decoded);
+      setVin(decoded.vin);
+      setShowManualTypePicker(true);
+      setInfo(
+        decoded.registrationType && !isTypeSupportedInState(decoded.registrationType, state)
+          ? "We found your vehicle — pick a supported registration type to continue."
+          : "We found your vehicle — pick the registration type to continue.",
+      );
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "VIN lookup failed. Try again or add manually.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onScanFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -367,6 +489,8 @@ export function AddRegistrationFlow({
     setError(null);
     setInfo(null);
     setScanPrefill(null);
+    setVinDecodePrefill(null);
+    setShowManualTypePicker(false);
     setScanning(true);
     try {
       const prepared = await prepareScanImage(file);
@@ -382,8 +506,19 @@ export function AddRegistrationFlow({
       if (!scan.registrationType) {
         setScanPrefill(scan);
         setScannedFile(prepared.file);
+        setShowManualTypePicker(true);
         setInfo(
           "We read some details — pick the registration type to continue.",
+        );
+        return;
+      }
+
+      if (!isTypeSupportedInState(scan.registrationType, scan.state ?? state)) {
+        setScanPrefill(scan);
+        setScannedFile(prepared.file);
+        setShowManualTypePicker(true);
+        setInfo(
+          "We read your registration — pick a supported registration type to continue.",
         );
         return;
       }
@@ -592,6 +727,14 @@ export function AddRegistrationFlow({
       if (registrationType === "ohv" && ohvClass.trim()) {
         details.ohvClass = ohvClass.trim();
       }
+      if (registrationType === "motorhome") {
+        if (!isValidMotorhomeClass(motorhomeClass)) {
+          setError("Select a motorhome class (A, B, or C).");
+          setBusy(false);
+          return;
+        }
+        details.motorhomeClass = motorhomeClass;
+      }
 
       const vehicle = await createRegistration(token, {
         type: registrationType,
@@ -674,6 +817,7 @@ export function AddRegistrationFlow({
   function changeType() {
     setRegistrationType(null);
     setStep("pickType");
+    setShowManualTypePicker(true);
     setError(null);
     setInfo(null);
   }
@@ -694,35 +838,37 @@ export function AddRegistrationFlow({
         <button
           type="button"
           onClick={onCancel}
-          className="text-sm font-medium text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+          className="text-sm font-medium text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:focus-visible:outline-teal-400"
         >
           {cancelLabel}
         </button>
       ) : null}
 
       <h2
-        className={`${onCancel ? "mt-4" : ""} text-2xl font-semibold tracking-tight text-slate-900`}
+        className={`${onCancel ? "mt-4" : ""} text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100`}
       >
         Add a registration
       </h2>
-      <p className="mt-1 text-base text-slate-600">
+      <p className="mt-1 text-base text-slate-600 dark:text-slate-400">
         {step === "pickType"
-          ? "Choose what you're registering — we'll tailor the next steps."
+          ? showManualTypePicker || scanPrefill || vinDecodePrefill
+            ? "Choose what you're registering — we'll tailor the next steps."
+            : "Scan your registration, enter your VIN, or add manually."
           : "Under 30 seconds. We'll fill in what we can."}
       </p>
 
       {registrationType && step !== "pickType" && step !== "waitlist" ? (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-teal-50 px-4 py-3">
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-teal-50 px-4 py-3 dark:bg-teal-950/40">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
               Registration type
             </p>
-            <p className="text-base font-semibold text-teal-950">{typeLabel}</p>
+            <p className="text-base font-semibold text-teal-950 dark:text-teal-100">{typeLabel}</p>
           </div>
           <button
             type="button"
             onClick={changeType}
-            className="shrink-0 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className="shrink-0 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:focus-visible:outline-teal-400"
           >
             Change type
           </button>
@@ -732,7 +878,7 @@ export function AddRegistrationFlow({
       {error ? (
         <p
           role="alert"
-          className="mt-4 rounded-2xl bg-rose-50 px-3.5 py-3 text-sm text-rose-800"
+          className="mt-4 rounded-2xl bg-rose-50 px-3.5 py-3 text-sm text-rose-800 dark:bg-rose-950/40 dark:text-rose-200"
         >
           {error}
         </p>
@@ -740,7 +886,7 @@ export function AddRegistrationFlow({
       {info ? (
         <p
           role="status"
-          className="mt-4 rounded-2xl bg-amber-50 px-3.5 py-3 text-sm text-amber-950"
+          className="mt-4 rounded-2xl bg-amber-50 px-3.5 py-3 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
         >
           {info}
         </p>
@@ -756,54 +902,200 @@ export function AddRegistrationFlow({
             className="sr-only"
             onChange={onScanFileChange}
           />
-          <button
-            type="button"
-            disabled={scanning || busy}
-            onClick={() => scanInputRef.current?.click()}
-            className="flex w-full flex-col overflow-hidden rounded-3xl border-2 border-dashed border-teal-300 bg-teal-50/80 px-5 py-6 text-left shadow-sm transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <span className="text-base font-semibold text-teal-950">
-              {scanning ? "Reading your registration…" : "Scan your registration"}
-            </span>
-            <span className="mt-1 text-sm leading-relaxed text-teal-800">
-              Take a photo of your registration card and we&apos;ll fill in the
-              details.
-            </span>
-          </button>
 
-          <div className="relative flex items-center gap-3 py-1">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              or choose type
-            </span>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
+          {!showManualTypePicker && !scanPrefill && !vinDecodePrefill ? (
+            <>
+              <button
+                type="button"
+                disabled={scanning || busy}
+                onClick={() => scanInputRef.current?.click()}
+                className="flex w-full flex-col overflow-hidden rounded-3xl border-2 border-dashed border-teal-300 bg-teal-50/80 px-5 py-6 text-left shadow-sm transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-teal-600 dark:bg-teal-950/40 dark:hover:border-teal-500 dark:hover:bg-teal-950/60"
+              >
+                <span className="text-base font-semibold text-teal-950 dark:text-teal-100">
+                  {scanning ? "Reading your registration…" : "Scan your registration"}
+                </span>
+                <span className="mt-1 text-sm leading-relaxed text-teal-800 dark:text-teal-200">
+                  Take a photo of your registration card and we&apos;ll fill in
+                  the details.
+                </span>
+              </button>
 
-          <div className="grid grid-cols-2 gap-3">
-          {typeCards.map((card) => (
-            <button
-              key={card.type}
-              type="button"
-              disabled={scanning || busy}
-              onClick={() => selectType(card.type)}
-              className="flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-left shadow-sm transition hover:border-teal-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
-            >
-              <div className="relative h-32 w-full">
-                <VehicleIllustration registrationType={card.type} label={card.label} />
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white px-3 text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+                    or
+                  </span>
+                </div>
               </div>
-              <div className="px-3 py-3">
-                <p className="text-sm font-semibold text-slate-900">
-                  {card.label}
-                </p>
-                {card.notes ? (
-                  <p className="mt-1 text-xs leading-snug text-slate-500">
-                    {card.notes}
+
+              <form onSubmit={onVinLookupSubmit} className="space-y-3">
+                <div>
+                  <label htmlFor="pick-type-vin" className={labelClassName}>
+                    VIN
+                  </label>
+                  <div className="relative mt-1.5">
+                    <input
+                      id="pick-type-vin"
+                      type="text"
+                      inputMode="text"
+                      autoComplete="off"
+                      spellCheck={false}
+                      maxLength={17}
+                      value={vin}
+                      onChange={(event) =>
+                        setVin(event.target.value.toUpperCase())
+                      }
+                      placeholder="17-character VIN"
+                      disabled={scanning || busy}
+                      className={`${fieldClassName} !mt-0 pr-12`}
+                    />
+                    <button
+                      type="submit"
+                      disabled={scanning || busy || !vin.trim()}
+                      aria-label={busy ? "Looking up VIN" : "Look up VIN"}
+                      className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-teal-700 text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-teal-600 dark:hover:bg-teal-500 dark:focus-visible:outline-teal-400"
+                    >
+                      {busy ? (
+                        <span
+                          aria-hidden
+                          className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                        />
+                      ) : (
+                        <svg
+                          aria-hidden
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className="h-5 w-5"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    We&apos;ll look up your vehicle and choose the right
+                    registration type.
                   </p>
-                ) : null}
+                </div>
+              </form>
+
+              <p className="text-center">
+                <button
+                  type="button"
+                  disabled={scanning || busy}
+                  onClick={() => setShowManualTypePicker(true)}
+                  className={`${linkClassName} text-sm`}
+                >
+                  Or add manually
+                </button>
+              </p>
+            </>
+          ) : (
+            <>
+              {!scanPrefill && !vinDecodePrefill ? (
+                <p className="text-center">
+                  <button
+                    type="button"
+                    disabled={scanning || busy}
+                    onClick={() => {
+                      setShowManualTypePicker(false);
+                      setVinDecodePrefill(null);
+                      setScanPrefill(null);
+                      setError(null);
+                      setInfo(null);
+                    }}
+                    className={`${linkClassName} text-sm`}
+                  >
+                    Scan your registration instead
+                  </button>
+                </p>
+              ) : scanPrefill ? (
+                <button
+                  type="button"
+                  disabled={scanning || busy}
+                  onClick={() => scanInputRef.current?.click()}
+                  className="flex w-full flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white px-4 py-3 text-left shadow-sm transition hover:border-teal-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {scanning ? "Reading your registration…" : "Scan again"}
+                  </span>
+                </button>
+              ) : (
+                <p className="text-center">
+                  <button
+                    type="button"
+                    disabled={scanning || busy}
+                    onClick={() => {
+                      setShowManualTypePicker(false);
+                      setVinDecodePrefill(null);
+                      setScanPrefill(null);
+                      setError(null);
+                      setInfo(null);
+                      setVin("");
+                    }}
+                    className={`${linkClassName} text-sm`}
+                  >
+                    Enter a different VIN
+                  </button>
+                </p>
+              )}
+
+              {vinDecodePrefill ? (
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                    {[
+                      vinDecodePrefill.year,
+                      titleCaseMakeModel(vinDecodePrefill.make),
+                      titleCaseMakeModel(vinDecodePrefill.model),
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || "Vehicle found"}
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">
+                    {vinDecodePrefill.vin}
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-3">
+                {typeCards.map((card) => (
+                  <button
+                    key={card.type}
+                    type="button"
+                    disabled={scanning || busy}
+                    onClick={() => selectType(card.type)}
+                    className="flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-left shadow-sm transition hover:border-teal-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal-600"
+                  >
+                    <div className="relative h-32 w-full">
+                      <VehicleIllustration
+                        registrationType={card.type}
+                        label={card.label}
+                      />
+                    </div>
+                    <div className="px-3 py-3">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {card.label}
+                      </p>
+                      {card.notes ? (
+                        <p className="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">
+                          {card.notes}
+                        </p>
+                      ) : null}
+                    </div>
+                  </button>
+                ))}
               </div>
-            </button>
-          ))}
-          </div>
+            </>
+          )}
         </div>
       ) : null}
 
@@ -811,13 +1103,13 @@ export function AddRegistrationFlow({
         <form onSubmit={onIdentitySubmit} className="mt-6 space-y-4">
           {typeRule.decode === "nhtsa_vin" ? (
             <>
-              <div className="flex rounded-2xl bg-slate-100 p-1">
+              <div className="flex rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
                 <button
                   type="button"
                   className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
                     mode === "vin"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600"
+                      ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                      : "text-slate-600 dark:text-slate-400"
                   }`}
                   onClick={() => setMode("vin")}
                 >
@@ -827,8 +1119,8 @@ export function AddRegistrationFlow({
                   type="button"
                   className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
                     mode === "plate"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600"
+                      ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                      : "text-slate-600 dark:text-slate-400"
                   }`}
                   onClick={() => setMode("plate")}
                 >
@@ -878,7 +1170,7 @@ export function AddRegistrationFlow({
           ) : (
             <div className="space-y-4">
               {identityHelperText(registrationType) ? (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   {identityHelperText(registrationType)}
                 </p>
               ) : null}
@@ -887,7 +1179,7 @@ export function AddRegistrationFlow({
                 <div>
                   <label htmlFor="plate" className={labelClassName}>
                     {plateFieldLabel(registrationType)}{" "}
-                    <span className="font-normal text-slate-500">(optional)</span>
+                    <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
                   </label>
                   <input
                     id="plate"
@@ -926,7 +1218,7 @@ export function AddRegistrationFlow({
                 <div>
                   <label htmlFor="serial" className={labelClassName}>
                     Serial number{" "}
-                    <span className="font-normal text-slate-500">(optional)</span>
+                    <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
                   </label>
                   <input
                     id="serial"
@@ -944,7 +1236,7 @@ export function AddRegistrationFlow({
               {typeRule.identityFields.includes("vin") ? (
                 <div>
                   <label htmlFor="vin" className={labelClassName}>
-                    VIN <span className="font-normal text-slate-500">(optional)</span>
+                    VIN <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
                   </label>
                   <input
                     id="vin"
@@ -981,7 +1273,7 @@ export function AddRegistrationFlow({
               ))}
             </select>
             {!stateIsAvailable(state) ? (
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 Coming soon — join the waitlist after you continue.
               </p>
             ) : null}
@@ -1003,7 +1295,7 @@ export function AddRegistrationFlow({
 
       {step === "waitlist" ? (
         <form onSubmit={onWaitlist} className="mt-6 space-y-4">
-          <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+          <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800 dark:text-slate-300">
             {stateName(state)} isn&apos;t live yet. Drop your email and we&apos;ll
             invite you when REGI expands.
           </p>
@@ -1029,7 +1321,7 @@ export function AddRegistrationFlow({
           </button>
           <button
             type="button"
-            className="w-full text-sm font-medium text-slate-600"
+            className="w-full text-sm font-medium text-slate-600 dark:text-slate-400"
             onClick={() => {
               setState(availableStates[0] ?? "UT");
               setStep("identity");
@@ -1043,7 +1335,7 @@ export function AddRegistrationFlow({
 
       {step === "confirm" && draft ? (
         <div className="mt-6 space-y-4">
-          <div className="overflow-hidden rounded-3xl border border-teal-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-3xl border border-teal-200 bg-white shadow-sm dark:border-teal-800 dark:bg-slate-900">
             <div className="h-28">
               <VehicleIllustration
                 bodyClass={draft.bodyClass}
@@ -1052,12 +1344,12 @@ export function AddRegistrationFlow({
               />
             </div>
             <div className="px-4 py-5">
-              <p className="text-sm font-medium text-teal-800">Looks right?</p>
-              <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
+              <p className="text-sm font-medium text-teal-800 dark:text-teal-300">Looks right?</p>
+              <p className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 {confirmLabel} — is this your registration? ✓
               </p>
               {draft.vin ? (
-                <p className="mt-2 font-mono text-xs tracking-wide text-slate-500">
+                <p className="mt-2 font-mono text-xs tracking-wide text-slate-500 dark:text-slate-400">
                   VIN {draft.vin}
                 </p>
               ) : null}
@@ -1072,7 +1364,7 @@ export function AddRegistrationFlow({
           </button>
           <button
             type="button"
-            className="w-full text-sm font-medium text-slate-600 underline-offset-4 hover:underline"
+            className="w-full text-sm font-medium text-slate-600 underline-offset-4 hover:underline dark:text-slate-400"
             onClick={() => {
               setYear(draft.year ? String(draft.year) : "");
               setMake(draft.make ?? "");
@@ -1087,7 +1379,7 @@ export function AddRegistrationFlow({
 
       {step === "manual" && draft ? (
         <form onSubmit={onManualContinue} className="mt-6 space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {registrationType === "passenger"
               ? "Choose year, make, and model from the lists below."
               : "Quick manual entry — year, make, and model."}
@@ -1156,7 +1448,7 @@ export function AddRegistrationFlow({
 
       {step === "details" && draft && registrationType ? (
         <form onSubmit={onSave} className="mt-6 space-y-5">
-          <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700/80 dark:bg-slate-900">
             <div className="h-28">
               <VehicleIllustration
                 bodyClass={draft.bodyClass}
@@ -1165,7 +1457,7 @@ export function AddRegistrationFlow({
                 registrationType={registrationType}
               />
             </div>
-            <div className="rounded-b-3xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900">
+            <div className="rounded-b-3xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
               {detailsHeadline || typeLabel}
             </div>
           </div>
@@ -1176,7 +1468,7 @@ export function AddRegistrationFlow({
             <div>
               <label htmlFor="unladenWeightLbs" className={labelClassName}>
                 Unladen weight (lbs){" "}
-                <span className="font-normal text-slate-500">(optional)</span>
+                <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
               </label>
               <input
                 id="unladenWeightLbs"
@@ -1194,7 +1486,7 @@ export function AddRegistrationFlow({
               <div>
                 <label htmlFor="lengthFeet" className={labelClassName}>
                   Length (feet){" "}
-                  <span className="font-normal text-slate-500">(optional)</span>
+                  <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
                 </label>
                 <input
                   id="lengthFeet"
@@ -1208,7 +1500,7 @@ export function AddRegistrationFlow({
               <div>
                 <label htmlFor="horsepower" className={labelClassName}>
                   Horsepower{" "}
-                  <span className="font-normal text-slate-500">(optional)</span>
+                  <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
                 </label>
                 <input
                   id="horsepower"
@@ -1226,7 +1518,7 @@ export function AddRegistrationFlow({
             <div>
               <label htmlFor="ohvClass" className={labelClassName}>
                 OHV class{" "}
-                <span className="font-normal text-slate-500">(optional)</span>
+                <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
               </label>
               <input
                 id="ohvClass"
@@ -1238,9 +1530,31 @@ export function AddRegistrationFlow({
             </div>
           ) : null}
 
+          {registrationType === "motorhome" ? (
+            <div>
+              <label htmlFor="motorhomeClass" className={labelClassName}>
+                Motorhome class
+              </label>
+              <select
+                id="motorhomeClass"
+                required
+                className={selectClassName}
+                value={motorhomeClass}
+                onChange={(e) => setMotorhomeClass(e.target.value)}
+              >
+                <option value="">Select class…</option>
+                {MOTORHOME_CLASSES.map((motorhomeClassOption) => (
+                  <option key={motorhomeClassOption} value={motorhomeClassOption}>
+                    {MOTORHOME_CLASS_LABELS[motorhomeClassOption]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
           <div>
             <label htmlFor="nickname" className={labelClassName}>
-              Nickname <span className="font-normal text-slate-500">(optional)</span>
+              Nickname <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
             </label>
             <input
               id="nickname"

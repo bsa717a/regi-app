@@ -73,6 +73,7 @@ export async function POST(request: Request) {
       make: result.vehicle.make,
       model: result.vehicle.model,
       bodyClass: result.vehicle.bodyClass,
+      registrationType: result.registrationType,
     },
     { headers: rateLimitHeaders(limited) },
   );
