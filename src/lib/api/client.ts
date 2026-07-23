@@ -156,6 +156,35 @@ export async function decodeVinApi(
   );
 }
 
+export type RegistrationScanDto = {
+  registrationType: RegistrationType | null;
+  vin: string | null;
+  plate: string | null;
+  hin: string | null;
+  serial: string | null;
+  state: string | null;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  registrationExpiresOn: string | null;
+  confidence: number | null;
+};
+
+export async function scanRegistration(
+  token: string,
+  input: { imageBase64: string; mimeType: string },
+): Promise<RegistrationScanDto> {
+  const data = await apiFetch<{ scan: RegistrationScanDto }>(
+    "/api/registrations/scan",
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+  return data.scan;
+}
+
 export type VehicleMakeDto = {
   id: number;
   name: string;
