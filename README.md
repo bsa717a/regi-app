@@ -137,39 +137,33 @@ If the job already exists, use `gcloud scheduler jobs update http regi-daily-rem
 
 `next.config.ts` sets `output: "standalone"`. The multi-stage `Dockerfile` copies `.next/standalone` + static assets and listens on **8080**.
 
-### 1. Build the image (Cloud Build → Artifact Registry)
+### Automatic deploy (merge to `main`)
+
+Every push to `main` runs [.github/workflows/deploy-main.yml](.github/workflows/deploy-main.yml), which submits [cloudbuild.yaml](cloudbuild.yaml):
+
+1. Build + push the image to Artifact Registry  
+2. `prisma migrate deploy` against Cloud SQL (no seed)  
+3. Deploy Cloud Run service `regi`
+
+**GitHub secret required:** `GCP_SA_KEY` — JSON key for `regi-deploy@regi-app-v1.iam.gserviceaccount.com` (Cloud Build submit). Runtime secrets stay in Secret Manager (`regi-database-url`, `regi-cron-secret`).
+
+Manual re-run: Actions → **Deploy main** → **Run workflow**.
+
+Production URL: https://regi-90502049802.us-central1.run.app
+
+### Manual deploy (optional)
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml --project=regi-app-v1
+gcloud builds submit \
+  --project=regi-app-v1 \
+  --config=cloudbuild.yaml \
+  --substitutions="_COMMIT_SHA=$(git rev-parse --short HEAD)"
 ```
 
-Produces:
-
-`us-central1-docker.pkg.dev/regi-app-v1/regi/app:latest`
-
-(and a `$COMMIT_SHA` tag). Do **not** bake production secrets into the image.
-
-### 2. Deploy to Cloud Run (with Cloud SQL)
-
-Use the Cloud SQL Auth Proxy **unix socket** form of `DATABASE_URL` (store the full URL in Secret Manager — never commit it):
+`DATABASE_URL` for Cloud Run uses the Cloud SQL Auth Proxy **unix socket** form (Secret Manager — never commit it):
 
 ```text
 postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/regi-app-v1:us-central1:regi-db
-```
-
-Example deploy (adjust secret names / service account as needed):
-
-```bash
-gcloud run deploy regi \
-  --project=regi-app-v1 \
-  --region=us-central1 \
-  --image=us-central1-docker.pkg.dev/regi-app-v1/regi/app:latest \
-  --platform=managed \
-  --allow-unauthenticated \
-  --port=8080 \
-  --add-cloudsql-instances=regi-app-v1:us-central1:regi-db \
-  --set-secrets=DATABASE_URL=DATABASE_URL:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,CRON_SECRET=CRON_SECRET:latest,SENDGRID_API_KEY=SENDGRID_API_KEY:latest \
-  --set-env-vars=NODE_ENV=production,FIREBASE_PROJECT_ID=regi-app-v1,FIREBASE_CLIENT_EMAIL=YOUR_SA@regi-app-v1.iam.gserviceaccount.com,GCS_BUCKET=regi-app-v1-documents,GCP_PROJECT_ID=regi-app-v1,NOTIFICATION_EMAIL_PROVIDER=sendgrid,SENDGRID_FROM_EMAIL=noreply@yourdomain,SENDGRID_FROM_NAME=REGI,NEXT_PUBLIC_FIREBASE_API_KEY=...,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...,NEXT_PUBLIC_FIREBASE_PROJECT_ID=regi-app-v1,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...,NEXT_PUBLIC_FIREBASE_APP_ID=...,NEXT_PUBLIC_FIREBASE_VAPID_KEY=...,NEXT_PUBLIC_APP_URL=https://YOUR_CLOUD_RUN_URL
 ```
 
 **Required at runtime**
@@ -177,20 +171,18 @@ gcloud run deploy regi \
 | Variable | Notes |
 | -------- | ----- |
 | `DATABASE_URL` | Cloud SQL unix-socket URL (Secret Manager) |
-| `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY` | Admin SDK (or ADC via the Cloud Run service account) |
-| `NEXT_PUBLIC_FIREBASE_*` | Client Firebase config (public) |
+| `FIREBASE_PROJECT_ID` / ADC | Admin SDK via the Cloud Run service account |
+| `NEXT_PUBLIC_FIREBASE_*` | Client Firebase config (public; baked at image build) |
 | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | Web Push key; blank disables push UI gracefully |
 | `GCS_BUCKET` / `GCP_PROJECT_ID` | Document vault |
 | `CRON_SECRET` | Secures `POST /api/cron/reminders` |
 | `NOTIFICATION_EMAIL_PROVIDER` + SendGrid vars | When using real email |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin (invite links, etc.) |
 
-Grant the Cloud Run service account Cloud SQL Client + GCS object access. Run Prisma migrations against Cloud SQL (Cloud SQL Auth Proxy locally, or a one-off migrate job) before first traffic.
-
-### 3. Cloud Scheduler
+### Cloud Scheduler
 
 See [Renewal reminders (daily cron)](#renewal-reminders-daily-cron) for the `gcloud scheduler jobs create http regi-daily-reminders ...` command. Point `--uri` at your Cloud Run URL.
 
-### 4. Local Postgres (dev)
+### Local Postgres (dev)
 
 `docker compose up -d` maps host **5435** → container `5432`. See [Local development](#local-development).
