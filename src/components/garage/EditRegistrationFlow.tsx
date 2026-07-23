@@ -10,6 +10,7 @@ import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
 import { RegistrationPhotoPicker } from "@/components/garage/RegistrationPhotoPicker";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
 import {
   ApiError,
   deleteRegistration,
@@ -83,7 +84,11 @@ export function EditRegistrationFlow({
     setClearPhoto(true);
   }
 
-  const previewPhotoUrl = clearPhoto ? null : registration.photoUrl;
+  const previewPhotoUrl = usePhotoPreviewUrl({
+    pendingFile: pendingPhotoFile,
+    currentPhotoUrl: registration.photoUrl,
+    cleared: clearPhoto,
+  });
   const typeLabel = REGISTRATION_TYPE_LABELS[registration.type];
   const showVin =
     registration.type === "passenger" ||

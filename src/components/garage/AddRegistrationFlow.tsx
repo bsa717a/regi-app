@@ -25,7 +25,6 @@ import {
   ApiError,
   createRegistration,
   decodeVinApi,
-  getRegistration,
   joinWaitlist,
   listActiveStates,
   scanRegistration,
@@ -44,6 +43,7 @@ import {
 import { US_STATES, stateName } from "@/lib/registrations/states";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
 import { prepareScanImage } from "@/lib/images/compress";
+import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import { uploadRegistrationPhoto } from "@/lib/registrations/photoUpload";
 
@@ -247,6 +247,18 @@ export function AddRegistrationFlow({
   const typeRule = registrationType ? getTypeRule(registrationType, state) : null;
   const typeLabel = registrationType
     ? getTypeRule(registrationType, state).label
+    : "";
+  const detailsPhotoUrl = usePhotoPreviewUrl({
+    pendingFile: pendingPhotoFile,
+  });
+  const detailsHeadline = draft
+    ? [
+        draft.year,
+        titleCaseMakeModel(draft.make),
+        titleCaseMakeModel(draft.model),
+      ]
+        .filter(Boolean)
+        .join(" ")
     : "";
 
   function selectType(type: RegistrationType) {
@@ -618,9 +630,6 @@ export function AddRegistrationFlow({
             type: "registration",
             file: scannedFile,
           });
-          if (!pendingPhotoFile) {
-            saved = await getRegistration(token, vehicle.id);
-          }
         } catch {
           // Keep the vehicle add successful even if vault upload fails.
         }
@@ -1145,14 +1154,18 @@ export function AddRegistrationFlow({
 
       {step === "details" && draft && registrationType ? (
         <form onSubmit={onSave} className="mt-6 space-y-5">
-          <div className="rounded-2xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900">
-            {[
-              draft.year,
-              titleCaseMakeModel(draft.make),
-              titleCaseMakeModel(draft.model),
-            ]
-              .filter(Boolean)
-              .join(" ")}
+          <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+            <div className="h-28">
+              <VehicleIllustration
+                bodyClass={draft.bodyClass}
+                photoUrl={detailsPhotoUrl}
+                label={detailsHeadline || typeLabel}
+                registrationType={registrationType}
+              />
+            </div>
+            <div className="rounded-b-3xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900">
+              {detailsHeadline || typeLabel}
+            </div>
           </div>
 
           <ExpirationPicker value={expiresOn} onChange={setExpiresOn} />

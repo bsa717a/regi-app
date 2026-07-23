@@ -1,6 +1,5 @@
 import type { Registration } from "@prisma/client";
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
-import { prisma } from "@/lib/prisma";
 import { createDownloadSignedUrl } from "@/lib/storage/gcs";
 
 /** Signed read URL TTL for vehicle photos shown in the garage UI. */
@@ -116,81 +115,19 @@ type RegistrationWithPhoto = Pick<
   "id" | "photoUrl" | "photoGcsPath"
 >;
 
-export function isRegistrationDocumentImageFilename(filename: string): boolean {
-  return /\.(jpe?g|png|webp|heic|heif)$/i.test(filename.trim());
-}
-
-function hasPersistedHttpPhotoUrl(photoUrl: string | null): boolean {
-  if (!photoUrl) return false;
-  try {
-    const url = new URL(photoUrl);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-async function latestRegistrationDocumentPhotoPaths(
-  registrationIds: string[],
-): Promise<Map<string, string>> {
-  if (registrationIds.length === 0) return new Map();
-
-  const documents = await prisma.document.findMany({
-    where: {
-      registrationId: { in: registrationIds },
-      type: "registration",
-    },
-    orderBy: { createdAt: "desc" },
-    select: {
-      registrationId: true,
-      gcsPath: true,
-      originalFilename: true,
-    },
-  });
-
-  const paths = new Map<string, string>();
-  for (const document of documents) {
-    if (paths.has(document.registrationId)) continue;
-    if (!isRegistrationDocumentImageFilename(document.originalFilename)) {
-      continue;
-    }
-    paths.set(document.registrationId, document.gcsPath);
-  }
-
-  return paths;
-}
-
-/**
- * Replace photoUrl with a signed read URL when photoGcsPath is set, or fall back
- * to the latest registration-card image in the document vault.
- */
+/** Replace photoUrl with a signed read URL when photoGcsPath is set. */
 export async function resolvePhotoUrls<T extends RegistrationWithPhoto>(
   registrations: T[],
 ): Promise<T[]> {
-  const docFallbackIds = registrations
-    .filter(
-      (registration) =>
-        !registration.photoGcsPath &&
-        !hasPersistedHttpPhotoUrl(registration.photoUrl),
-    )
-    .map((registration) => registration.id);
-  const documentPhotoPaths =
-    await latestRegistrationDocumentPhotoPaths(docFallbackIds);
-
   return Promise.all(
     registrations.map(async (registration) => {
-      const gcsPath =
-        registration.photoGcsPath ??
-        documentPhotoPaths.get(registration.id) ??
-        null;
-
-      if (!gcsPath) {
+      if (!registration.photoGcsPath) {
         return registration;
       }
 
       try {
         const signed = await createDownloadSignedUrl({
-          gcsPath,
+          gcsPath: registration.photoGcsPath,
           ttlMs: PHOTO_READ_URL_TTL_MS,
         });
         return { ...registration, photoUrl: signed.downloadUrl };
