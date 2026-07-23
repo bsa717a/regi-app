@@ -1,6 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import {
+  ApiError,
+  getDocumentDownloadUrl,
+  listDocuments,
+} from "@/lib/api/client";
+import type { DocumentDto } from "@/lib/documents/types";
 import type { RegistrationDto } from "@/lib/registrations/types";
 import {
   REGISTRATION_TYPE_LABELS,
@@ -74,6 +82,76 @@ export function VehicleCard({
     vehicle.canEdit &&
     (vehicle.status === "Due Soon" || vehicle.status === "Expired");
 
+  const { getIdToken, idToken } = useAuth();
+  const [registrationDoc, setRegistrationDoc] = useState<DocumentDto | null>(
+    null,
+  );
+  const [registrationDocLoading, setRegistrationDocLoading] = useState(false);
+  const [openingDoc, setOpeningDoc] = useState(false);
+  const [registrationDocError, setRegistrationDocError] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRegistrationDoc() {
+      setRegistrationDocLoading(true);
+      setRegistrationDocError(null);
+      try {
+        const token = idToken ?? (await getIdToken());
+        if (!token || cancelled) return;
+
+        const documents = await listDocuments(token, vehicle.id);
+        if (cancelled) return;
+
+        const doc =
+          documents.find((row) => row.type === "registration") ?? null;
+        setRegistrationDoc(doc);
+      } catch (err) {
+        if (!cancelled) {
+          setRegistrationDocError(
+            err instanceof ApiError
+              ? err.message
+              : "Could not load registration document.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setRegistrationDocLoading(false);
+        }
+      }
+    }
+
+    void loadRegistrationDoc();
+    return () => {
+      cancelled = true;
+    };
+  }, [vehicle.id, idToken, getIdToken]);
+
+  async function openRegistrationDoc() {
+    if (!registrationDoc || openingDoc) return;
+    setOpeningDoc(true);
+    setRegistrationDocError(null);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+      const { downloadUrl } = await getDocumentDownloadUrl(
+        token,
+        registrationDoc.id,
+      );
+      window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setRegistrationDocError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not open registration document.",
+      );
+    } finally {
+      setOpeningDoc(false);
+    }
+  }
+
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/60 transition hover:shadow-md">
       <button
@@ -136,6 +214,19 @@ export function VehicleCard({
         </div>
       </button>
 
+      {registrationDoc ? (
+        <div className="border-t border-slate-100 px-4 py-2.5">
+          <button
+            type="button"
+            onClick={() => void openRegistrationDoc()}
+            disabled={openingDoc}
+            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline disabled:opacity-60"
+          >
+            {openingDoc ? "Opening registration card…" : "Registration card"}
+          </button>
+        </div>
+      ) : null}
+
       <div
         id={detailsId}
         className={`grid transition-[grid-template-rows] duration-300 ease-out ${
@@ -191,6 +282,25 @@ export function VehicleCard({
                 }
               />
             </dl>
+
+            {registrationDoc ? (
+              <button
+                type="button"
+                onClick={() => void openRegistrationDoc()}
+                disabled={openingDoc}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {openingDoc ? "Opening…" : "View registration card"}
+              </button>
+            ) : registrationDocLoading ? (
+              <p className="text-sm text-slate-500">Loading registration card…</p>
+            ) : null}
+
+            {registrationDocError ? (
+              <p className="text-sm text-rose-700" role="alert">
+                {registrationDocError}
+              </p>
+            ) : null}
 
             {!vehicle.canEdit ? (
               <p className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700">
