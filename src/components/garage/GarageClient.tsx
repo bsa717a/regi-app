@@ -141,13 +141,13 @@ export function GarageClient() {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white"
+              className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white dark:border-slate-700/80 dark:bg-slate-900"
             >
               <div className="h-36 animate-pulse bg-gradient-to-br from-teal-100 via-slate-100 to-slate-200" />
               <div className="space-y-3 px-4 py-4">
-                <div className="h-5 w-1/2 animate-pulse rounded bg-slate-200" />
-                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
-                <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100" />
+                <div className="h-5 w-1/2 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
               </div>
             </div>
           ))}

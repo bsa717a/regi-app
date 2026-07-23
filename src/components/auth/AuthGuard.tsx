@@ -41,7 +41,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
       >
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-pulse rounded-full bg-teal-600/20" />
-          <p className="mt-4 text-sm text-slate-600">Checking your session…</p>
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">Checking your session…</p>
         </div>
       </div>
     );
@@ -55,7 +55,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
         aria-live="polite"
       >
         <div className="max-w-sm text-center">
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-slate-700 dark:text-slate-300">
             We couldn&apos;t restore your sign-in. This can happen after an app
             update or if the browser blocked storage.
           </p>
@@ -83,7 +83,7 @@ export function AuthGuard({ children }: { children: ReactNode }) {
         role="status"
         aria-live="polite"
       >
-        <p className="text-sm text-slate-600">Redirecting to sign in…</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">Redirecting to sign in…</p>
       </div>
     );
   }

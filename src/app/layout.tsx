@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { GarageDoorRevealProvider } from "@/components/auth/GarageDoorReveal";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { themeInitScript } from "@/lib/theme/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,16 +57,24 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-slate-50 text-slate-900">
-        <AuthProvider>
-          <GarageDoorRevealProvider>
-            {children}
-            <PwaRegister />
-            <PwaInstallPrompt />
-          </GarageDoorRevealProvider>
-        </AuthProvider>
+      <head>
+        <Script id="regi-theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
+      </head>
+      <body className="flex min-h-full flex-col bg-background text-foreground">
+        <ThemeProvider>
+          <AuthProvider>
+            <GarageDoorRevealProvider>
+              {children}
+              <PwaRegister />
+              <PwaInstallPrompt />
+            </GarageDoorRevealProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
