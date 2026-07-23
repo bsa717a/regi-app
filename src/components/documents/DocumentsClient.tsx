@@ -481,7 +481,7 @@ function DocumentList({
         </h2>
         <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-slate-600">
           {hasEditableVehicle
-            ? "Upload a registration card, insurance, title, emissions certificate, or temporary permit. Files stay private — downloads use short-lived links."
+            ? "Upload a registration card, insurance, title, emissions certificate, temporary permit, or other document. Files stay private — downloads use short-lived links."
             : filterActive
               ? "No documents yet for this shared registration. The household owner can upload files here."
               : "No documents in your vault yet."}

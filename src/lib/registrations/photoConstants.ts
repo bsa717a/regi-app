@@ -1,0 +1,1 @@
+export const MAX_REGISTRATION_PHOTOS = 5;

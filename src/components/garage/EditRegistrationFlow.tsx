@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   fieldClassName,
   labelClassName,
@@ -8,10 +8,9 @@ import {
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
-import { RegistrationPhotoPicker } from "@/components/garage/RegistrationPhotoPicker";
+import { RegistrationPhotoGallery } from "@/components/garage/RegistrationPhotoGallery";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
 import {
   ApiError,
   deleteRegistration,
@@ -21,10 +20,7 @@ import type {
   RegistrationDetails,
   RegistrationDto,
 } from "@/lib/registrations/types";
-import {
-  removeRegistrationPhoto,
-  uploadRegistrationPhoto,
-} from "@/lib/registrations/photoUpload";
+import { applyRegistrationPhotoChanges } from "@/lib/registrations/photoUpload";
 import { REGISTRATION_TYPE_LABELS } from "@/lib/registrations/illustrations";
 import {
   MOTORHOME_CLASSES,
@@ -54,8 +50,11 @@ export function EditRegistrationFlow({
   const [make, setMake] = useState(registration.make ?? "");
   const [model, setModel] = useState(registration.model ?? "");
   const [nickname, setNickname] = useState(registration.nickname ?? "");
-  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
-  const [clearPhoto, setClearPhoto] = useState(false);
+  const [pendingPhotoAdds, setPendingPhotoAdds] = useState<File[]>([]);
+  const [pendingPhotoDeletes, setPendingPhotoDeletes] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [coverPhotoKey, setCoverPhotoKey] = useState<string | null>(null);
   const [expiresOn, setExpiresOn] = useState(registration.registrationExpiresOn);
   const [hin, setHin] = useState(registration.details.hin ?? "");
   const [serial, setSerial] = useState(registration.details.serial ?? "");
@@ -83,21 +82,48 @@ export function EditRegistrationFlow({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handlePhotoChange(file: File | null) {
-    if (file) {
-      setPendingPhotoFile(file);
-      setClearPhoto(false);
-      return;
-    }
-    setPendingPhotoFile(null);
-    setClearPhoto(true);
-  }
+  const initialCoverPhotoId =
+    (registration.photos ?? []).find((photo) => photo.isCover)?.id ??
+    registration.photos?.[0]?.id ??
+    null;
 
-  const previewPhotoUrl = usePhotoPreviewUrl({
-    pendingFile: pendingPhotoFile,
-    currentPhotoUrl: registration.photoUrl,
-    cleared: clearPhoto,
-  });
+  const pendingCoverBlobUrl = useMemo(() => {
+    const activeKey = coverPhotoKey ?? initialCoverPhotoId;
+    if (!activeKey?.startsWith("pending:")) return null;
+    const index = Number.parseInt(activeKey.split(":")[1] ?? "", 10);
+    const file = pendingPhotoAdds[index];
+    return file ? URL.createObjectURL(file) : null;
+  }, [coverPhotoKey, initialCoverPhotoId, pendingPhotoAdds]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingCoverBlobUrl) URL.revokeObjectURL(pendingCoverBlobUrl);
+    };
+  }, [pendingCoverBlobUrl]);
+
+  const coverPreviewUrl = useMemo(() => {
+    if (pendingCoverBlobUrl) return pendingCoverBlobUrl;
+
+    const activeKey = coverPhotoKey ?? initialCoverPhotoId;
+    const saved = (registration.photos ?? []).find(
+      (photo) =>
+        photo.id === activeKey && !pendingPhotoDeletes.has(photo.id),
+    );
+    if (saved?.url) return saved.url;
+
+    const firstVisible = (registration.photos ?? []).find(
+      (photo) => !pendingPhotoDeletes.has(photo.id),
+    );
+    return firstVisible?.url ?? registration.photoUrl;
+  }, [
+    coverPhotoKey,
+    initialCoverPhotoId,
+    pendingCoverBlobUrl,
+    pendingPhotoDeletes,
+    registration.photos,
+    registration.photoUrl,
+  ]);
+
   const typeLabel = REGISTRATION_TYPE_LABELS[registration.type];
   const showVin =
     registration.type === "passenger" ||
@@ -174,29 +200,24 @@ export function EditRegistrationFlow({
         details,
       });
 
-      if (clearPhoto && registration.photoUrl && !pendingPhotoFile) {
-        try {
-          updated = await removeRegistrationPhoto({
-            token,
-            registrationId: registration.id,
-          });
-        } catch (err) {
-          if (err instanceof ApiError && err.status === 400) {
-            updated = await updateRegistration(token, registration.id, {
-              photoUrl: null,
-            });
-          } else {
-            throw err;
-          }
-        }
-      }
+      const photoUpdated = await applyRegistrationPhotoChanges({
+        token,
+        registrationId: registration.id,
+        deletePhotoIds: [...pendingPhotoDeletes],
+        addFiles: pendingPhotoAdds,
+        coverPhotoId:
+          coverPhotoKey && !coverPhotoKey.startsWith("pending:")
+            ? coverPhotoKey
+            : null,
+        pendingCoverIndex:
+          coverPhotoKey?.startsWith("pending:") === true
+            ? Number.parseInt(coverPhotoKey.split(":")[1] ?? "", 10)
+            : null,
+        initialCoverPhotoId,
+      });
 
-      if (pendingPhotoFile) {
-        updated = await uploadRegistrationPhoto({
-          token,
-          registrationId: registration.id,
-          file: pendingPhotoFile,
-        });
+      if (photoUpdated) {
+        updated = photoUpdated;
       }
 
       onSaved(updated);
@@ -263,7 +284,7 @@ export function EditRegistrationFlow({
         <div className="h-24">
           <VehicleIllustration
             bodyClass={registration.bodyClass}
-            photoUrl={previewPhotoUrl}
+            photoUrl={coverPreviewUrl}
             label={registration.nickname || typeLabel}
             registrationType={registration.type}
           />
@@ -493,17 +514,21 @@ export function EditRegistrationFlow({
           />
         </div>
 
-        <RegistrationPhotoPicker
-          currentPhotoUrl={previewPhotoUrl}
-          pendingFile={pendingPhotoFile}
-          onPendingFileChange={handlePhotoChange}
-          disabled={busy}
-        />
-
         <button type="submit" className={primaryButtonClassName} disabled={busy}>
           {busy && !confirmDelete ? "Saving…" : "Save changes"}
         </button>
       </form>
+
+      <RegistrationPhotoGallery
+        savedPhotos={registration.photos ?? []}
+        pendingAdds={pendingPhotoAdds}
+        pendingDeletes={pendingPhotoDeletes}
+        coverKey={coverPhotoKey}
+        onPendingAddsChange={setPendingPhotoAdds}
+        onPendingDeletesChange={setPendingPhotoDeletes}
+        onCoverKeyChange={setCoverPhotoKey}
+        disabled={busy}
+      />
 
       {onDeleted ? (
         <div className="rounded-3xl border border-rose-200/80 bg-rose-50/60 px-4 py-4">

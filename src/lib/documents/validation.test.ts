@@ -148,6 +148,19 @@ describe("parseCreateDocumentBody", () => {
     }
   });
 
+  it("accepts other as a document type", () => {
+    const parsed = parseCreateDocumentBody({
+      registrationId: "reg_1",
+      type: "other",
+      gcsPath: "households/hh/registrations/reg_1/uuid-file.pdf",
+      originalFilename: "receipt.pdf",
+    });
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.type).toBe("other");
+    }
+  });
+
   it("rejects invalid document type and path traversal", () => {
     expect(
       parseCreateDocumentBody({

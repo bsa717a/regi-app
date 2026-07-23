@@ -22,6 +22,7 @@ function registration(
     year: 2020,
     nickname: null,
     photoUrl: null,
+    photos: [],
     bodyClass: null,
     details: {},
     createdBy: "u1",
