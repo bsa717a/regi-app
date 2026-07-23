@@ -43,8 +43,7 @@ export function GarageDoorPanels({ className = "" }: { className?: string }) {
   return (
     <div className={`flex h-full w-full flex-col ${className}`} aria-hidden>
       {Array.from({ length: PANEL_COUNT }, (_, i) => {
-        const positionY =
-          PANEL_COUNT === 1 ? "0%" : `${(i / (PANEL_COUNT - 1)) * 100}%`;
+        const positionY = `${(i / (PANEL_COUNT - 1)) * 100}%`;
         return (
           <div
             key={i}
