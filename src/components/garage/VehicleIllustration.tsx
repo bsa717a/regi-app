@@ -1,96 +1,121 @@
+import Image from "next/image";
 import type { RegistrationType } from "@prisma/client";
 import {
   illustrationKindFromBodyClass,
-  illustrationKindFromType,
+  registrationTypeArtUrl,
   type RegistrationIllustrationKind,
 } from "@/lib/registrations/illustrations";
 
 const gradients: Record<RegistrationIllustrationKind, string> = {
-  suv: "from-teal-600 to-slate-700",
-  pickup: "from-slate-600 to-teal-800",
-  sedan: "from-cyan-700 to-slate-700",
-  van: "from-teal-700 to-slate-600",
-  coupe: "from-emerald-700 to-slate-700",
-  motorcycle: "from-slate-700 to-teal-900",
-  trailer: "from-amber-700 to-slate-700",
-  ohv: "from-orange-700 to-slate-800",
-  snowmobile: "from-sky-700 to-slate-800",
-  boat: "from-blue-700 to-slate-800",
-  default: "from-teal-700 to-slate-800",
+  suv: "from-teal-600 via-teal-700 to-slate-800",
+  pickup: "from-slate-600 via-teal-800 to-slate-900",
+  sedan: "from-cyan-600 via-teal-700 to-slate-800",
+  van: "from-teal-700 via-slate-700 to-slate-900",
+  coupe: "from-emerald-600 via-teal-800 to-slate-900",
+  motorcycle: "from-slate-700 via-teal-800 to-slate-950",
+  trailer: "from-amber-600 via-amber-800 to-slate-900",
+  ohv: "from-orange-600 via-orange-800 to-slate-900",
+  snowmobile: "from-sky-500 via-sky-700 to-slate-900",
+  boat: "from-blue-500 via-blue-700 to-slate-900",
+  default: "from-teal-600 via-teal-800 to-slate-900",
 };
 
+/** Fallback silhouettes when no photo / type art (body-class only cards). */
 function Silhouette({ kind }: { kind: RegistrationIllustrationKind }) {
   switch (kind) {
     case "pickup":
       return (
-        <path
-          d="M3 14h2l1-4h7l2 4h4v3H3v-3Zm10-4V8h3l2 2h-5Z"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 34h52v6H8z" opacity="0.2" />
+          <path d="M10 28h18l3-10h16l6 10h9v8H10v-8z" />
+          <path d="M32 18h14l4 8H29l3-8z" opacity="0.35" />
+          <circle cx="20" cy="38" r="5.5" />
+          <circle cx="52" cy="38" r="5.5" />
+        </g>
       );
     case "suv":
       return (
-        <path
-          d="M3 15h18v2H3v-2Zm1-2 1.5-5h9L17 13H4Zm3-5.5V6h5v1.5"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 34h56v6H8z" opacity="0.2" />
+          <path d="M10 30c0-2 2-4 4-4h8l4-8h22l6 8h8c2 0 4 2 4 4v6H10v-6z" />
+          <path d="M24 18h20l4 8H21l3-8z" opacity="0.35" />
+          <circle cx="22" cy="38" r="5.5" />
+          <circle cx="54" cy="38" r="5.5" />
+        </g>
       );
     case "van":
       return (
-        <path
-          d="M3 14h18v3H3v-3Zm1-1 1-6h11l3 6H4Zm3-4h4v2H7v-2Z"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 34h56v6H8z" opacity="0.2" />
+          <path d="M10 18h40l12 10v10H10V18z" />
+          <path d="M18 20h28v8H18z" opacity="0.35" />
+          <circle cx="22" cy="38" r="5.5" />
+          <circle cx="52" cy="38" r="5.5" />
+        </g>
       );
     case "motorcycle":
       return (
-        <path
-          d="M5 16a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm14 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM8 13l3-4h3l2 2 3 1"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <circle cx="18" cy="36" r="8" fill="none" stroke="currentColor" strokeWidth="3" />
+          <circle cx="54" cy="36" r="8" fill="none" stroke="currentColor" strokeWidth="3" />
+          <path d="M24 34c4-10 10-14 18-14l6 6-4 8H28z" />
+          <path d="M30 22l6-8 4 2-4 8z" />
+        </g>
       );
     case "coupe":
       return (
-        <path
-          d="M3 14.5h18V17H3v-2.5ZM5 14l2.5-5h6L17 14H5Zm4-3.5h3"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 34h56v6H8z" opacity="0.2" />
+          <path d="M8 30h8l6-10h24l10 10h8v6H8v-6z" />
+          <path d="M24 20h20l6 8H20l4-8z" opacity="0.35" />
+          <circle cx="22" cy="38" r="5.5" />
+          <circle cx="52" cy="38" r="5.5" />
+        </g>
       );
     case "trailer":
       return (
-        <path
-          d="M4 15a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm12 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM3 13V9h13l3 3v1"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 18h44v16H8z" />
+          <path d="M52 22h8l6 8v4H52V22z" />
+          <circle cx="20" cy="38" r="5" />
+          <circle cx="40" cy="38" r="5" />
+        </g>
       );
     case "ohv":
       return (
-        <path
-          d="M5 16a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM7 14h4l2-4h4"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <circle cx="16" cy="36" r="7.5" fill="none" stroke="currentColor" strokeWidth="3" />
+          <circle cx="56" cy="36" r="7.5" fill="none" stroke="currentColor" strokeWidth="3" />
+          <path d="M22 34h16l6-10h8l4 8-6 6H24z" />
+          <path d="M44 16l8-4 2 3-7 5z" />
+        </g>
       );
     case "snowmobile":
       return (
-        <path
-          d="M3 15h4l2-3h8l2 3h2M9 12l2-4h4l1 4"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M10 36c2-2 8-4 18-4h22c6 0 12 2 14 4l-4 4H14z" />
+          <path d="M22 22h20l8 10H28z" />
+          <path d="M8 38h56c0 2-4 4-10 4H18c-6 0-10-2-10-4z" opacity="0.55" />
+        </g>
       );
     case "boat":
       return (
-        <path
-          d="M4 15h16l-2 3H6l-2-3Zm7-9v6M8 12l3-6 3 6"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 30c4 8 16 12 32 12s28-4 32-12H8z" />
+          <path d="M28 14h6v16h-6z" />
+          <path d="M34 14l22 12H34V14z" opacity="0.85" />
+        </g>
       );
     case "sedan":
     default:
       return (
-        <path
-          d="M3 14h18v3H3v-3Zm1.5-1 2-5h7l3 5h-12Zm3.5-3h4"
-          fill="currentColor"
-        />
+        <g fill="currentColor">
+          <path d="M8 34h56v6H8z" opacity="0.2" />
+          <path d="M6 30h10l5-10h26l9 10h10v6H6v-6z" />
+          <path d="M23 20h22l5 8H20l3-8z" opacity="0.35" />
+          <circle cx="22" cy="38" r="5.5" />
+          <circle cx="52" cy="38" r="5.5" />
+        </g>
       );
   }
 }
@@ -118,16 +143,35 @@ export function VehicleIllustration({
     );
   }
 
-  const kind = registrationType
-    ? illustrationKindFromType(registrationType, bodyClass)
-    : illustrationKindFromBodyClass(bodyClass);
+  if (registrationType) {
+    return (
+      <div className="relative h-full w-full overflow-hidden bg-slate-900">
+        <Image
+          src={registrationTypeArtUrl(registrationType)}
+          alt={label}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 50vw, 280px"
+          priority={false}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
+      </div>
+    );
+  }
+
+  const kind = illustrationKindFromBodyClass(bodyClass);
 
   return (
     <div
-      className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradients[kind]} text-white/90`}
+      className={`relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br ${gradients[kind]} text-white`}
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="h-16 w-16 opacity-90" role="img">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(255,255,255,0.18),transparent_55%)]" />
+      <svg
+        viewBox="0 0 72 48"
+        className="relative h-[72%] w-[88%] max-h-24 drop-shadow-sm"
+        role="img"
+      >
         <title>{label}</title>
         <Silhouette kind={kind} />
       </svg>
