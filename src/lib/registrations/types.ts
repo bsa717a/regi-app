@@ -47,6 +47,8 @@ export type RegistrationDto = {
   status: RegistrationStatus;
   daysUntilExpiration: number;
   countdown: string;
+  /** Active maintenance tasks that are due soon or overdue. */
+  maintenanceDueCount?: number;
 };
 
 export type CreateRegistrationInput = {

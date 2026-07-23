@@ -140,6 +140,34 @@ const TEMPLATES: Record<string, NotificationTemplate> = {
     text: "{{inviterEmail}} invited you to view registrations in {{householdName}} on REGI. Accept here (sign in with this email): {{inviteUrl}}",
     html: "<p><strong>{{inviterEmail}}</strong> invited you to view registrations in <strong>{{householdName}}</strong> on REGI.</p><p><a href=\"{{inviteUrl}}\">Accept the invite</a> — sign in with this email address.</p><p>As a viewer you can see registrations, statuses, and documents, and you'll get reminders. You won't be able to edit or renew.</p>",
   },
+  maintenance_due: {
+    key: "maintenance_due",
+    tone: "nudge",
+    subject: "{{vehicleName}}: {{taskName}} is due soon",
+    text: "{{taskName}} on {{vehicleName}} is coming up — {{statusDetail}}. Open REGI to mark it done or update your hours/odometer: {{maintenanceUrl}}",
+    html: "<p><strong>{{taskName}}</strong> on <strong>{{vehicleName}}</strong> is coming up — {{statusDetail}}.</p><p><a href=\"{{maintenanceUrl}}\">Open maintenance</a> to mark it done or update your hours/odometer.</p>",
+  },
+  maintenance_overdue: {
+    key: "maintenance_overdue",
+    tone: "urgent",
+    subject: "{{vehicleName}}: {{taskName}} is overdue",
+    text: "{{taskName}} on {{vehicleName}} is overdue — {{statusDetail}}. Catch up in REGI: {{maintenanceUrl}}",
+    html: "<p><strong>{{taskName}}</strong> on <strong>{{vehicleName}}</strong> is overdue — {{statusDetail}}.</p><p><a href=\"{{maintenanceUrl}}\">Open maintenance</a> to log the service.</p>",
+  },
+  maintenance_usage_nudge: {
+    key: "maintenance_usage_nudge",
+    tone: "friendly",
+    subject: "Update hours/miles for {{vehicleName}}",
+    text: "It's been a while since you logged hours or miles for {{vehicleName}}. Update your reading so REGI can tell you when maintenance is due: {{maintenanceUrl}}",
+    html: "<p>It's been a while since you logged hours or miles for <strong>{{vehicleName}}</strong>.</p><p><a href=\"{{maintenanceUrl}}\">Update your reading</a> so REGI can tell you when maintenance is due.</p>",
+  },
+  maintenance_scheduled: {
+    key: "maintenance_scheduled",
+    tone: "nudge",
+    subject: "Reminder: {{taskName}} on {{vehicleName}}",
+    text: "You asked REGI to remind you about {{taskName}} on {{vehicleName}}. Open maintenance to check it off or reschedule: {{maintenanceUrl}}",
+    html: "<p>You asked REGI to remind you about <strong>{{taskName}}</strong> on <strong>{{vehicleName}}</strong>.</p><p><a href=\"{{maintenanceUrl}}\">Open maintenance</a> to check it off or set another reminder.</p>",
+  },
 };
 
 /** Look up a template by key; falls back to a generic reminder template. */

@@ -28,6 +28,7 @@ import {
 } from "@/lib/registrations/registrationPhotos";
 import type { RegistrationDto, RegistrationPhotoDto } from "@/lib/registrations/types";
 import { parseCreateRegistrationBody } from "@/lib/registrations/validation";
+import { countDueMaintenanceByRegistration } from "@/lib/maintenance/dueCounts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,6 +132,9 @@ export async function GET(request: Request) {
   }
 
   const withPhotos = await resolvePhotoUrls(registrations);
+  const dueCounts = await countDueMaintenanceByRegistration(
+    registrations.map((registration) => registration.id),
+  );
 
   const dto = await Promise.all(
     withPhotos.map(async (registration) => {
@@ -138,9 +142,13 @@ export async function GET(request: Request) {
       const config = rulesMap.get(registration.state.toUpperCase());
       const photoRows = photoMap.get(registration.id) ?? [];
       const photos = await serializeRegistrationPhotos(photoRows);
-      return config
+      const base = config
         ? serializeRegistration(registration, config, new Date(), role, photos)
         : serializeWithoutRules(registration, role, photos);
+      return {
+        ...base,
+        maintenanceDueCount: dueCounts.get(registration.id) ?? 0,
+      };
     }),
   );
 
