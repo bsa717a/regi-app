@@ -7,7 +7,9 @@ import {
   buildGcsPath,
   contentLengthRangeValue,
   parseCreateDocumentBody,
+  parsePatchDocumentBody,
   parseUploadUrlBody,
+  preserveFilenameExtension,
   sanitizeFilename,
   validateClientFile,
 } from "@/lib/documents/validation";
@@ -95,6 +97,38 @@ describe("content-type and size validation", () => {
         name: "a.txt",
       }).ok,
     ).toBe(false);
+  });
+});
+
+describe("parsePatchDocumentBody", () => {
+  it("sanitizes and accepts originalFilename", () => {
+    const parsed = parsePatchDocumentBody({
+      originalFilename: "  My Registration Card.jpg  ",
+    });
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.data.originalFilename).toBe("My Registration Card.jpg");
+    }
+  });
+
+  it("rejects missing originalFilename", () => {
+    expect(parsePatchDocumentBody({}).ok).toBe(false);
+    expect(parsePatchDocumentBody({ originalFilename: "  " }).ok).toBe(false);
+  });
+
+  it("preserves the file extension when omitted on rename", () => {
+    expect(
+      preserveFilenameExtension("Registration card", "scan.pdf"),
+    ).toBe("Registration card.pdf");
+    expect(
+      parsePatchDocumentBody(
+        { originalFilename: "Registration card" },
+        "scan.pdf",
+      ),
+    ).toMatchObject({
+      ok: true,
+      data: { originalFilename: "Registration card.pdf" },
+    });
   });
 });
 

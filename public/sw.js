@@ -1,7 +1,14 @@
 /* REGI PWA service worker — app-shell cache + offline fallback. */
-const CACHE_NAME = "regi-shell-v4";
+const CACHE_NAME = "regi-shell-v5";
 const OFFLINE_URL = "/offline.html";
-const PRECACHE = ["/", "/offline.html", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
+const PRECACHE = [
+  "/",
+  "/garage",
+  OFFLINE_URL,
+  "/manifest.json",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

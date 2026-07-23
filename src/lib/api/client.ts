@@ -491,6 +491,22 @@ export async function deleteDocument(
   });
 }
 
+export async function updateDocument(
+  token: string,
+  documentId: string,
+  input: { originalFilename: string },
+): Promise<DocumentDto> {
+  const data = await apiFetch<{ document: DocumentDto }>(
+    `/api/documents/${documentId}`,
+    {
+      method: "PATCH",
+      token,
+      body: input,
+    },
+  );
+  return data.document;
+}
+
 // ─── Household sharing ──────────────────────────────────────────────────────
 
 export async function listHouseholds(

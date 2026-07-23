@@ -196,6 +196,50 @@ export function parseCreateDocumentBody(
   };
 }
 
+export type PatchDocumentRequest = {
+  originalFilename: string;
+};
+
+function filenameExtension(filename: string): string {
+  const base = filename.trim();
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0 || dot === base.length - 1) return "";
+  return base.slice(dot).toLowerCase();
+}
+
+/** Keep the stored file extension when the user omits it on rename. */
+export function preserveFilenameExtension(
+  nextFilename: string,
+  currentFilename: string,
+): string {
+  const sanitized = sanitizeFilename(nextFilename);
+  if (filenameExtension(sanitized)) return sanitized;
+  const extension = filenameExtension(currentFilename);
+  return extension ? `${sanitized}${extension}` : sanitized;
+}
+
+export function parsePatchDocumentBody(
+  body: Record<string, unknown>,
+  currentFilename?: string,
+): { ok: true; data: PatchDocumentRequest } | { ok: false; error: string } {
+  if (
+    typeof body.originalFilename !== "string" ||
+    !body.originalFilename.trim()
+  ) {
+    return { ok: false, error: "originalFilename is required" };
+  }
+
+  const sanitized = sanitizeFilename(body.originalFilename.trim());
+  const originalFilename = currentFilename
+    ? preserveFilenameExtension(sanitized, currentFilename)
+    : sanitized;
+
+  return {
+    ok: true,
+    data: { originalFilename },
+  };
+}
+
 export function validateClientFile(file: {
   type: string;
   size: number;
