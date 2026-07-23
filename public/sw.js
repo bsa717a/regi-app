@@ -1,5 +1,5 @@
 /* REGI PWA service worker — app-shell cache + offline fallback. */
-const CACHE_NAME = "regi-shell-v3";
+const CACHE_NAME = "regi-shell-v4";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = ["/", "/offline.html", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
@@ -56,6 +56,22 @@ self.addEventListener("fetch", (event) => {
           const cached = await caches.match(request);
           return cached || caches.match(OFFLINE_URL);
         }),
+    );
+    return;
+  }
+
+  // Registration type art should update without a stale cached SUV placeholder.
+  if (url.pathname.startsWith("/images/registration-types/")) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request)),
     );
     return;
   }
