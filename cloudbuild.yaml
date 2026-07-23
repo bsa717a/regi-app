@@ -1,25 +1,35 @@
-# REGI — Cloud Build → Artifact Registry (Cloud Run deploy separate)
-# Image: us-central1-docker.pkg.dev/regi-app-v1/regi/app:latest
+# REGI — Cloud Build: image → migrate → Cloud Run
+# Image: us-central1-docker.pkg.dev/regi-app-v1/regi/app:<sha>
 #
-# Pass NEXT_PUBLIC_* at build time (inlined into the client bundle).
-# Set substitutions in the Cloud Build trigger or via `gcloud builds submit --substitutions=...`
+# Triggered by GitHub Actions on push to main (see .github/workflows/deploy-main.yml).
+# NEXT_PUBLIC_* are public client values inlined at build time.
 
 substitutions:
   _REGION: us-central1
   _AR_REPO: regi
   _IMAGE: app
   _PROJECT_ID: regi-app-v1
-  _NEXT_PUBLIC_FIREBASE_API_KEY: ""
-  _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ""
+  _SERVICE: regi
+  _CLOUD_SQL_INSTANCE: regi-app-v1:us-central1:regi-db
+  _RUNTIME_SA: regi-admin@regi-app-v1.iam.gserviceaccount.com
+  _COMMIT_SHA: latest
+  _NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyA8U4Pj1c1Hj-b3CK_VrLpeYi9Ldl3Ntlg
+  _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: regi-app-v1.firebaseapp.com
   _NEXT_PUBLIC_FIREBASE_PROJECT_ID: regi-app-v1
-  _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ""
-  _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ""
-  _NEXT_PUBLIC_FIREBASE_APP_ID: ""
+  _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: regi-app-v1.firebasestorage.app
+  _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "90502049802"
+  _NEXT_PUBLIC_FIREBASE_APP_ID: 1:90502049802:web:aab2f43102d0658a516ff3
   _NEXT_PUBLIC_FIREBASE_VAPID_KEY: ""
-  _NEXT_PUBLIC_APP_URL: ""
+  _NEXT_PUBLIC_APP_URL: https://regi-90502049802.us-central1.run.app
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/${_PROJECT_ID}/secrets/regi-database-url/versions/latest
+      env: DATABASE_URL_SECRET
 
 steps:
   - name: gcr.io/cloud-builders/docker
@@ -43,7 +53,7 @@ steps:
       - --build-arg
       - NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL}
       - -t
-      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:$COMMIT_SHA
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}
       - -t
       - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
       - .
@@ -52,7 +62,7 @@ steps:
     id: Push SHA
     args:
       - push
-      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:$COMMIT_SHA
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}
 
   - name: gcr.io/cloud-builders/docker
     id: Push latest
@@ -60,6 +70,51 @@ steps:
       - push
       - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
 
+  # Prisma migrate against Cloud SQL (no seed).
+  - name: node:22
+    id: Migrate
+    entrypoint: bash
+    secretEnv: ["DATABASE_URL_SECRET"]
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        curl -fsSL -o /tmp/cloud-sql-proxy \
+          https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.2/cloud-sql-proxy.linux.amd64
+        chmod +x /tmp/cloud-sql-proxy
+        /tmp/cloud-sql-proxy "${_CLOUD_SQL_INSTANCE}" --port=5432 &
+        PROXY_PID=$$!
+        trap 'kill $$PROXY_PID' EXIT
+        sleep 5
+        # Secret is Cloud Run unix-socket form; rewrite to TCP for the proxy.
+        RAW="$$DATABASE_URL_SECRET"
+        export DATABASE_URL="$$(printf '%s' "$$RAW" | sed -E 's#@localhost/#@127.0.0.1:5432/#; s#\?host=/cloudsql/[^&]+##; s#&host=/cloudsql/[^&]+##')"
+        npm ci --ignore-scripts
+        npx prisma generate
+        npx prisma migrate deploy
+
+  - name: gcr.io/cloud-builders/gcloud
+    id: Deploy
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --project=${_PROJECT_ID}
+      - --region=${_REGION}
+      - --platform=managed
+      - --image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}
+      - --allow-unauthenticated
+      - --service-account=${_RUNTIME_SA}
+      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
+      - --port=8080
+      - --memory=1Gi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=5
+      - --timeout=300
+      - --set-secrets=DATABASE_URL=regi-database-url:latest,CRON_SECRET=regi-cron-secret:latest
+      - --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=${_PROJECT_ID},GCS_BUCKET=regi-app-v1-documents,FIREBASE_PROJECT_ID=${_PROJECT_ID},GOOGLE_CLOUD_PROJECT=${_PROJECT_ID},NOTIFICATION_EMAIL_PROVIDER=mock,NOTIFICATION_PUSH_PROVIDER=fcm,NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL},NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY},NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN},NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID},NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET},NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID},NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID},NEXT_PUBLIC_FIREBASE_VAPID_KEY=${_NEXT_PUBLIC_FIREBASE_VAPID_KEY}
+
 images:
-  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}
   - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
