@@ -145,7 +145,7 @@ Every push to `main` runs [.github/workflows/deploy-main.yml](.github/workflows/
 2. `prisma migrate deploy` against Cloud SQL (no seed)  
 3. Deploy Cloud Run service `regi`
 
-**GitHub secret required:** `GCP_SA_KEY` — JSON key for `regi-deploy@regi-app-v1.iam.gserviceaccount.com` (Cloud Build submit). Runtime secrets stay in Secret Manager (`regi-database-url`, `regi-cron-secret`).
+**GitHub secret required:** `GCP_SA_KEY` — JSON key for `regi-deploy@regi-app-v1.iam.gserviceaccount.com` (Cloud Build submit). Runtime secrets stay in Secret Manager (`regi-database-url`, `regi-cron-secret`, `regi-gemini-api-key`).
 
 Manual re-run: Actions → **Deploy main** → **Run workflow**.
 
@@ -176,6 +176,8 @@ postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/regi-app-v1:us-centr
 | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | Web Push key; blank disables push UI gracefully |
 | `GCS_BUCKET` / `GCP_PROJECT_ID` | Document vault |
 | `CRON_SECRET` | Secures `POST /api/cron/reminders` |
+| `GEMINI_API_KEY` | Registration card scan (Secret Manager) |
+| `GEMINI_MODEL` | Gemini model id (default `gemini-2.5-flash`) |
 | `NOTIFICATION_EMAIL_PROVIDER` + SendGrid vars | When using real email |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin (invite links, etc.) |
 
