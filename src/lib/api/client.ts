@@ -29,6 +29,7 @@ import type {
   PatchRegistrationInput,
   RegistrationDto,
 } from "@/lib/registrations/types";
+import type { RegiChatResponse } from "@/lib/regi/types";
 
 export class ApiError extends Error {
   status: number;
@@ -505,6 +506,35 @@ export async function updateDocument(
     },
   );
   return data.document;
+}
+
+// ─── Regi assistant ─────────────────────────────────────────────────────────
+
+export async function getRegiChat(
+  token: string,
+): Promise<RegiChatResponse> {
+  return apiFetch<RegiChatResponse>("/api/regi/chat", { token });
+}
+
+export async function bootstrapRegiChat(
+  token: string,
+): Promise<RegiChatResponse> {
+  return apiFetch<RegiChatResponse>("/api/regi/chat", {
+    method: "POST",
+    token,
+    body: { bootstrap: true },
+  });
+}
+
+export async function sendRegiChatMessage(
+  token: string,
+  message: string,
+): Promise<RegiChatResponse> {
+  return apiFetch<RegiChatResponse>("/api/regi/chat", {
+    method: "POST",
+    token,
+    body: { message },
+  });
 }
 
 // ─── Household sharing ──────────────────────────────────────────────────────

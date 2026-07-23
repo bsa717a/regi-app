@@ -78,6 +78,13 @@ enum NotificationStatus {
   @@map("notification_status")
 }
 
+enum RegiChatRole {
+  user
+  assistant
+
+  @@map("regi_chat_role")
+}
+
 enum PaymentStatus {
   pending
   requires_action
@@ -116,6 +123,7 @@ model User {
   notifications         Notification[]
   payments              Payment[]
   pushTokens            PushToken[]
+  regiChatMessages      RegiChatMessage[]
 
   @@map("users")
 }
@@ -353,4 +361,17 @@ model Waitlist {
   @@unique([email, state])
   @@index([state])
   @@map("waitlist")
+}
+
+model RegiChatMessage {
+  id        String       @id @default(cuid())
+  userId    String       @map("user_id")
+  role      RegiChatRole
+  content   String       @db.Text
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("regi_chat_messages")
 }

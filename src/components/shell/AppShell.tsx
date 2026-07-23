@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { EmailVerificationBanner } from "@/components/auth/EmailVerificationBanner";
+import { RegiAssistant } from "@/components/regi/RegiAssistant";
 import { BottomNav } from "@/components/shell/BottomNav";
 
 export function AppShell({
@@ -35,6 +36,7 @@ export function AppShell({
           {children}
         </main>
         <BottomNav />
+        <RegiAssistant />
       </div>
     </AuthGuard>
   );
