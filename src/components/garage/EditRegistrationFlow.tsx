@@ -9,7 +9,11 @@ import {
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { ApiError, updateRegistration } from "@/lib/api/client";
+import {
+  ApiError,
+  deleteRegistration,
+  updateRegistration,
+} from "@/lib/api/client";
 import type {
   RegistrationDetails,
   RegistrationDto,
@@ -21,10 +25,12 @@ export function EditRegistrationFlow({
   registration,
   onCancel,
   onSaved,
+  onDeleted,
 }: {
   registration: RegistrationDto;
   onCancel: () => void;
   onSaved: (vehicle: RegistrationDto) => void;
+  onDeleted?: (registrationId: string) => void;
 }) {
   const { getIdToken } = useAuth();
 
@@ -58,6 +64,7 @@ export function EditRegistrationFlow({
   );
 
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const typeLabel = REGISTRATION_TYPE_LABELS[registration.type];
@@ -138,8 +145,37 @@ export function EditRegistrationFlow({
     }
   }
 
+  async function onDelete() {
+    if (!onDeleted) return;
+    setError(null);
+    setBusy(true);
+    try {
+      const token = await getIdToken();
+      if (!token) {
+        setError("Sign in again to remove this registration.");
+        setBusy(false);
+        return;
+      }
+      await deleteRegistration(token, registration.id);
+      onDeleted(registration.id);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not remove this registration. Please try again.",
+      );
+      setBusy(false);
+      setConfirmDelete(false);
+    }
+  }
+
+  const deleteLabel =
+    nickname.trim() ||
+    [year, make, model].filter(Boolean).join(" ") ||
+    typeLabel;
+
   return (
-    <section className="mx-auto max-w-lg">
+    <section className="mx-auto max-w-lg space-y-5">
       <button
         type="button"
         onClick={onCancel}
@@ -148,12 +184,14 @@ export function EditRegistrationFlow({
         ← Back to garage
       </button>
 
-      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-        Edit registration
-      </h2>
-      <p className="mt-1 text-base text-slate-600">
-        Update the details below. The registration type can&apos;t be changed.
-      </p>
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+          Edit registration
+        </h2>
+        <p className="mt-1 text-base text-slate-600">
+          Update the details below. The registration type can&apos;t be changed.
+        </p>
+      </div>
 
       <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
         <div className="h-24">
@@ -383,9 +421,48 @@ export function EditRegistrationFlow({
         </div>
 
         <button type="submit" className={primaryButtonClassName} disabled={busy}>
-          {busy ? "Saving…" : "Save changes"}
+          {busy && !confirmDelete ? "Saving…" : "Save changes"}
         </button>
       </form>
+
+      {onDeleted ? (
+        <div className="rounded-3xl border border-rose-200/80 bg-rose-50/60 px-4 py-4">
+          {!confirmDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={busy}
+              className="text-sm font-semibold text-rose-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:opacity-60"
+            >
+              Remove registration from garage
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-rose-900">
+                Remove <strong>{deleteLabel}</strong>? This can&apos;t be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void onDelete()}
+                  disabled={busy}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl bg-rose-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-800 disabled:opacity-60"
+                >
+                  {busy ? "Removing…" : "Yes, remove"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={busy}
+                  className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

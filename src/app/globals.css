@@ -22,6 +22,16 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Login garage door — rises into the header like a sectional door */
+.garage-door {
+  transform: translate3d(0, 0, 0);
+  transition: transform 1.7s cubic-bezier(0.55, 0.02, 0.18, 1);
+}
+
+.garage-door-open {
+  transform: translate3d(0, -108%, 0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -30,5 +40,10 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .garage-door,
+  .garage-door-open {
+    transition: none !important;
   }
 }

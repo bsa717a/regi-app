@@ -56,7 +56,7 @@ export function VehicleCard({
       </div>
       <div className="space-y-2 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             {vehicle.nickname ? (
               <>
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">
@@ -74,7 +74,7 @@ export function VehicleCard({
             <button
               type="button"
               onClick={() => onEdit(vehicle)}
-              className="shrink-0 rounded-lg px-2 py-1 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+              className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
             >
               Edit
             </button>

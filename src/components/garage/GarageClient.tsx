@@ -108,6 +108,11 @@ export function GarageClient() {
             setEditingRegistration(null);
             setView("list");
           }}
+          onDeleted={(registrationId) => {
+            setVehicles((prev) => prev.filter((v) => v.id !== registrationId));
+            setEditingRegistration(null);
+            setView("list");
+          }}
         />
       </AppShell>
     );
@@ -129,7 +134,7 @@ export function GarageClient() {
       }
     >
       {loading ? (
-        <div className="space-y-4" aria-busy aria-label="Loading vehicles">
+        <div className="space-y-4" aria-busy aria-label="Loading registrations">
           {[0, 1].map((i) => (
             <div
               key={i}
