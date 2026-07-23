@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import type { RegistrationType } from "@prisma/client";
 import {
   fieldClassName,
@@ -18,8 +26,10 @@ import {
   decodeVinApi,
   joinWaitlist,
   listActiveStates,
+  scanRegistration,
   type ActiveStateDto,
   type ActiveStateRegistrationTypeDto,
+  type RegistrationScanDto,
 } from "@/lib/api/client";
 import type {
   RegistrationDetails,
@@ -31,6 +41,8 @@ import {
 } from "@/lib/registrations/illustrations";
 import { US_STATES, stateName } from "@/lib/registrations/states";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
+import { prepareScanImage } from "@/lib/images/compress";
+import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 
 type Mode = "vin" | "plate";
 type Step = "pickType" | "identity" | "confirm" | "manual" | "details" | "waitlist";
@@ -154,8 +166,15 @@ export function AddRegistrationFlow({
   const [ohvClass, setOhvClass] = useState("");
 
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [scannedFile, setScannedFile] = useState<File | null>(null);
+  const [scanPrefill, setScanPrefill] = useState<RegistrationScanDto | null>(
+    null,
+  );
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanGenerationRef = useRef(0);
 
   async function tokenOrThrow(): Promise<string> {
     const token = await getIdToken();
@@ -228,12 +247,145 @@ export function AddRegistrationFlow({
     : "";
 
   function selectType(type: RegistrationType) {
+    if (scanning) return;
+
+    scanGenerationRef.current += 1;
+
+    if (scanPrefill && scannedFile) {
+      void applyScanResult(scanPrefill, scannedFile, type);
+      setScanPrefill(null);
+      return;
+    }
+
     setRegistrationType(type);
     const rule = getTypeRule(type, state);
     setMode(rule.decode === "nhtsa_vin" ? "vin" : "plate");
     setError(null);
     setInfo(null);
     setStep("identity");
+  }
+
+  async function applyScanResult(
+    scan: RegistrationScanDto,
+    file: File,
+    type: RegistrationType,
+  ) {
+    setScannedFile(file);
+    setRegistrationType(type);
+    const nextState = (scan.state ?? state).toUpperCase();
+    const rule = getTypeRule(type, nextState);
+    setMode(rule.decode === "nhtsa_vin" ? "vin" : "plate");
+    setState(nextState);
+    setVin(scan.vin ?? "");
+    setPlate(scan.plate ?? "");
+    setHin(scan.hin ?? "");
+    setSerial(scan.serial ?? "");
+    if (scan.registrationExpiresOn) {
+      setExpiresOn(scan.registrationExpiresOn);
+    }
+
+    if (!stateIsAvailable(nextState)) {
+      setStep("waitlist");
+      setError(null);
+      setInfo("We read your registration, but that state isn't live yet.");
+      return;
+    }
+
+    setError(null);
+    setInfo(null);
+
+    if (rule.decode === "nhtsa_vin" && scan.vin) {
+      setBusy(true);
+      try {
+        const token = await tokenOrThrow();
+        const decoded = await decodeVinApi(token, scan.vin);
+        if (decoded.ok) {
+          setDraft({
+            vin: decoded.vin,
+            plate: scan.plate,
+            hin: scan.hin,
+            serial: scan.serial,
+            state: nextState,
+            year: decoded.year ?? scan.year,
+            make: decoded.make ?? scan.make,
+            model: decoded.model ?? scan.model,
+            bodyClass: decoded.bodyClass,
+          });
+          setStep("confirm");
+          return;
+        }
+        setInfo(decoded.error);
+      } catch (err) {
+        setInfo(
+          err instanceof ApiError
+            ? err.message
+            : "VIN lookup failed. Review the details below.",
+        );
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    setYear(scan.year ? String(scan.year) : "");
+    setMake(scan.make ?? "");
+    setModel(scan.model ?? "");
+    setDraft({
+      vin: scan.vin,
+      plate: scan.plate,
+      hin: scan.hin,
+      serial: scan.serial,
+      state: nextState,
+      year: scan.year,
+      make: scan.make,
+      model: scan.model,
+      bodyClass: null,
+    });
+    setStep("manual");
+  }
+
+  async function onScanFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const generation = ++scanGenerationRef.current;
+    setError(null);
+    setInfo(null);
+    setScanPrefill(null);
+    setScanning(true);
+    try {
+      const prepared = await prepareScanImage(file);
+      if (generation !== scanGenerationRef.current) return;
+
+      const token = await tokenOrThrow();
+      const scan = await scanRegistration(token, {
+        imageBase64: prepared.base64,
+        mimeType: prepared.mimeType,
+      });
+      if (generation !== scanGenerationRef.current) return;
+
+      if (!scan.registrationType) {
+        setScanPrefill(scan);
+        setScannedFile(prepared.file);
+        setInfo(
+          "We read some details — pick the registration type to continue.",
+        );
+        return;
+      }
+
+      await applyScanResult(scan, prepared.file, scan.registrationType);
+    } catch (err) {
+      if (generation !== scanGenerationRef.current) return;
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not read the registration. Try again or enter details manually.",
+      );
+    } finally {
+      if (generation === scanGenerationRef.current) {
+        setScanning(false);
+      }
+    }
   }
 
   async function onIdentitySubmit(event: FormEvent) {
@@ -440,6 +592,20 @@ export function AddRegistrationFlow({
         details: Object.keys(details).length > 0 ? details : undefined,
         registrationExpiresOn: expiresOn,
       });
+
+      if (scannedFile) {
+        try {
+          await uploadDocumentToVault({
+            token,
+            registrationId: vehicle.id,
+            type: "registration",
+            file: scannedFile,
+          });
+        } catch {
+          // Keep the vehicle add successful even if vault upload fails.
+        }
+      }
+
       onCreated(vehicle);
     } catch (err) {
       setError(
@@ -550,11 +716,44 @@ export function AddRegistrationFlow({
       ) : null}
 
       {step === "pickType" ? (
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-6 space-y-4">
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={onScanFileChange}
+          />
+          <button
+            type="button"
+            disabled={scanning || busy}
+            onClick={() => scanInputRef.current?.click()}
+            className="flex w-full flex-col overflow-hidden rounded-3xl border-2 border-dashed border-teal-300 bg-teal-50/80 px-5 py-6 text-left shadow-sm transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="text-base font-semibold text-teal-950">
+              {scanning ? "Reading your registration…" : "Scan your registration"}
+            </span>
+            <span className="mt-1 text-sm leading-relaxed text-teal-800">
+              Take a photo of your registration card and we&apos;ll fill in the
+              details.
+            </span>
+          </button>
+
+          <div className="relative flex items-center gap-3 py-1">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              or choose type
+            </span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
           {typeCards.map((card) => (
             <button
               key={card.type}
               type="button"
+              disabled={scanning || busy}
               onClick={() => selectType(card.type)}
               className="flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-left shadow-sm transition hover:border-teal-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
             >
@@ -573,6 +772,7 @@ export function AddRegistrationFlow({
               </div>
             </button>
           ))}
+          </div>
         </div>
       ) : null}
 
