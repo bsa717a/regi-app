@@ -198,6 +198,20 @@ export async function scanRegistration(
   return data.scan;
 }
 
+export async function enhanceDocumentImage(
+  token: string,
+  input: { imageBase64: string; mimeType: string },
+): Promise<{ imageBase64: string; mimeType: string }> {
+  return apiFetch<{ imageBase64: string; mimeType: string }>(
+    "/api/images/enhance-document",
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+}
+
 export type VehicleMakeDto = {
   id: number;
   name: string;

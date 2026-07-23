@@ -44,7 +44,9 @@ import {
 } from "@/lib/registrations/illustrations";
 import { US_STATES, stateName } from "@/lib/registrations/states";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
-import { prepareScanImage } from "@/lib/images/compress";
+import { DocumentEnhancePreview } from "@/components/images/DocumentEnhancePreview";
+import type { PreparedScanImage } from "@/lib/images/compress";
+import { prepareAndEnhanceDocument } from "@/lib/images/enhancePipeline";
 import { usePhotoPreviewUrl } from "@/lib/images/usePhotoPreviewUrl";
 import {
   attachGaragePhoto,
@@ -182,6 +184,7 @@ export function AddRegistrationFlow({
 
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [scannedFile, setScannedFile] = useState<File | null>(null);
@@ -191,6 +194,12 @@ export function AddRegistrationFlow({
   const [vinDecodePrefill, setVinDecodePrefill] =
     useState<VinDecodeApiSuccess | null>(null);
   const [showManualTypePicker, setShowManualTypePicker] = useState(false);
+  const [enhanceOriginal, setEnhanceOriginal] =
+    useState<PreparedScanImage | null>(null);
+  const [enhanceEnhanced, setEnhanceEnhanced] =
+    useState<PreparedScanImage | null>(null);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
+  const [showEnhancePreview, setShowEnhancePreview] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const scanGenerationRef = useRef(0);
 
@@ -296,7 +305,7 @@ export function AddRegistrationFlow({
     : "";
 
   function selectType(type: RegistrationType) {
-    if (scanning) return;
+    if (scanning || enhancing) return;
 
     scanGenerationRef.current += 1;
 
@@ -487,22 +496,11 @@ export function AddRegistrationFlow({
     }
   }
 
-  async function onScanFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    const generation = ++scanGenerationRef.current;
-    setError(null);
-    setInfo(null);
-    setScanPrefill(null);
-    setVinDecodePrefill(null);
-    setShowManualTypePicker(false);
+  async function runRegistrationOcr(prepared: PreparedScanImage) {
+    const generation = scanGenerationRef.current;
     setScanning(true);
+    setError(null);
     try {
-      const prepared = await prepareScanImage(file);
-      if (generation !== scanGenerationRef.current) return;
-
       const token = await tokenOrThrow();
       const scan = await scanRegistration(token, {
         imageBase64: prepared.base64,
@@ -543,6 +541,59 @@ export function AddRegistrationFlow({
         setScanning(false);
       }
     }
+  }
+
+  async function onScanFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const generation = ++scanGenerationRef.current;
+    setError(null);
+    setInfo(null);
+    setScanPrefill(null);
+    setVinDecodePrefill(null);
+    setShowManualTypePicker(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
+    setShowEnhancePreview(false);
+    setEnhancing(true);
+    try {
+      const token = await tokenOrThrow();
+      const choice = await prepareAndEnhanceDocument({ token, file });
+      if (generation !== scanGenerationRef.current) return;
+      setEnhanceOriginal(choice.original);
+      setEnhanceEnhanced(choice.enhanced);
+      setEnhanceError(choice.enhanceError);
+      setShowEnhancePreview(true);
+    } catch (err) {
+      if (generation !== scanGenerationRef.current) return;
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not process that photo. Try again or enter details manually.",
+      );
+    } finally {
+      if (generation === scanGenerationRef.current) {
+        setEnhancing(false);
+      }
+    }
+  }
+
+  function onEnhanceConfirm(chosen: PreparedScanImage) {
+    setShowEnhancePreview(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
+    void runRegistrationOcr(chosen);
+  }
+
+  function onEnhanceCancel() {
+    setShowEnhancePreview(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
   }
 
   async function onIdentitySubmit(event: FormEvent) {
@@ -840,6 +891,19 @@ export function AddRegistrationFlow({
 
   return (
     <section className="mx-auto max-w-lg">
+      {enhanceOriginal ? (
+        <DocumentEnhancePreview
+          open={showEnhancePreview}
+          title="Review registration scan"
+          original={enhanceOriginal}
+          enhanced={enhanceEnhanced}
+          enhanceError={enhanceError}
+          enhancing={enhancing}
+          busy={scanning || busy}
+          onConfirm={onEnhanceConfirm}
+          onCancel={onEnhanceCancel}
+        />
+      ) : null}
       {onCancel ? (
         <button
           type="button"
@@ -913,12 +977,16 @@ export function AddRegistrationFlow({
             <>
               <button
                 type="button"
-                disabled={scanning || busy}
+                disabled={scanning || enhancing || busy}
                 onClick={() => scanInputRef.current?.click()}
                 className="flex w-full flex-col overflow-hidden rounded-3xl border-2 border-dashed border-teal-300 bg-teal-50/80 px-5 py-6 text-left shadow-sm transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-teal-600 dark:bg-teal-950/40 dark:hover:border-teal-500 dark:hover:bg-teal-950/60"
               >
                 <span className="text-base font-semibold text-teal-950 dark:text-teal-100">
-                  {scanning ? "Reading your registration…" : "Scan your registration"}
+                  {enhancing
+                    ? "Enhancing scan…"
+                    : scanning
+                      ? "Reading your registration…"
+                      : "Scan your registration"}
                 </span>
                 <span className="mt-1 text-sm leading-relaxed text-teal-800 dark:text-teal-200">
                   Take a photo of your registration card and we&apos;ll fill in
@@ -955,12 +1023,12 @@ export function AddRegistrationFlow({
                         setVin(event.target.value.toUpperCase())
                       }
                       placeholder="17-character VIN"
-                      disabled={scanning || busy}
+                      disabled={scanning || enhancing || busy}
                       className={`${fieldClassName} !mt-0 pr-12`}
                     />
                     <button
                       type="submit"
-                      disabled={scanning || busy || !vin.trim()}
+                      disabled={scanning || enhancing || busy || !vin.trim()}
                       aria-label={busy ? "Looking up VIN" : "Look up VIN"}
                       className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-teal-700 text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-teal-600 dark:hover:bg-teal-500 dark:focus-visible:outline-teal-400"
                     >
@@ -997,7 +1065,7 @@ export function AddRegistrationFlow({
               <p className="text-center">
                 <button
                   type="button"
-                  disabled={scanning || busy}
+                  disabled={scanning || enhancing || busy}
                   onClick={() => setShowManualTypePicker(true)}
                   className={`${linkClassName} text-sm`}
                 >
@@ -1011,7 +1079,7 @@ export function AddRegistrationFlow({
                 <p className="text-center">
                   <button
                     type="button"
-                    disabled={scanning || busy}
+                    disabled={scanning || enhancing || busy}
                     onClick={() => {
                       setShowManualTypePicker(false);
                       setVinDecodePrefill(null);
@@ -1027,19 +1095,23 @@ export function AddRegistrationFlow({
               ) : scanPrefill ? (
                 <button
                   type="button"
-                  disabled={scanning || busy}
+                  disabled={scanning || enhancing || busy}
                   onClick={() => scanInputRef.current?.click()}
                   className="flex w-full flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white px-4 py-3 text-left shadow-sm transition hover:border-teal-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900"
                 >
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {scanning ? "Reading your registration…" : "Scan again"}
+                    {enhancing
+                      ? "Enhancing scan…"
+                      : scanning
+                        ? "Reading your registration…"
+                        : "Scan again"}
                   </span>
                 </button>
               ) : (
                 <p className="text-center">
                   <button
                     type="button"
-                    disabled={scanning || busy}
+                    disabled={scanning || enhancing || busy}
                     onClick={() => {
                       setShowManualTypePicker(false);
                       setVinDecodePrefill(null);
@@ -1077,7 +1149,7 @@ export function AddRegistrationFlow({
                   <button
                     key={card.type}
                     type="button"
-                    disabled={scanning || busy}
+                    disabled={scanning || enhancing || busy}
                     onClick={() => selectType(card.type)}
                     className="flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-left shadow-sm transition hover:border-teal-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal-600"
                   >

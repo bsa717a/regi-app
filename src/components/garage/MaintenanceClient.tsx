@@ -27,7 +27,9 @@ import {
   scanMaintenanceReceipt,
   updateMaintenanceTask,
 } from "@/lib/api/client";
-import { prepareScanImage } from "@/lib/images/compress";
+import { DocumentEnhancePreview } from "@/components/images/DocumentEnhancePreview";
+import type { PreparedScanImage } from "@/lib/images/compress";
+import { prepareAndEnhanceDocument } from "@/lib/images/enhancePipeline";
 import { uploadMaintenanceReceipt } from "@/lib/maintenance/receiptUpload";
 import type {
   MaintenanceDueStatus,
@@ -122,6 +124,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
   const [remindDays, setRemindDays] = useState("30");
 
   const receiptInputRef = useRef<HTMLInputElement>(null);
+  const receiptEnhanceGenerationRef = useRef(0);
   const [receiptTargetTask, setReceiptTargetTask] =
     useState<MaintenanceTaskDto | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -129,6 +132,15 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
     null,
   );
   const [scanningReceipt, setScanningReceipt] = useState(false);
+  const [enhancingReceipt, setEnhancingReceipt] = useState(false);
+  const [showEnhancePreview, setShowEnhancePreview] = useState(false);
+  const [enhanceOriginal, setEnhanceOriginal] =
+    useState<PreparedScanImage | null>(null);
+  const [enhanceEnhanced, setEnhanceEnhanced] =
+    useState<PreparedScanImage | null>(null);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
+  const [pendingEnhanceTask, setPendingEnhanceTask] =
+    useState<MaintenanceTaskDto | null>(null);
 
   const reload = useCallback(async () => {
     const token = idToken ?? (await getIdToken());
@@ -296,6 +308,72 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
     setReceiptTargetTask(null);
     if (!file || !task) return;
 
+    const generation = ++receiptEnhanceGenerationRef.current;
+    setEnhancingReceipt(true);
+    setError(null);
+    setNotice(null);
+    setShowEnhancePreview(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
+    setPendingEnhanceTask(task);
+    try {
+      const token = await getIdToken();
+      if (!token) {
+        if (generation === receiptEnhanceGenerationRef.current) {
+          setError("Sign in again to scan a receipt.");
+          setPendingEnhanceTask(null);
+        }
+        return;
+      }
+
+      const choice = await prepareAndEnhanceDocument({ token, file });
+      if (generation !== receiptEnhanceGenerationRef.current) return;
+      setEnhanceOriginal(choice.original);
+      setEnhanceEnhanced(choice.enhanced);
+      setEnhanceError(choice.enhanceError);
+      setShowEnhancePreview(true);
+    } catch (err) {
+      if (generation !== receiptEnhanceGenerationRef.current) return;
+      setPendingEnhanceTask(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not process that receipt photo.",
+      );
+    } finally {
+      if (generation === receiptEnhanceGenerationRef.current) {
+        setEnhancingReceipt(false);
+      }
+      if (receiptInputRef.current) receiptInputRef.current.value = "";
+    }
+  }
+
+  function onReceiptEnhanceCancel() {
+    receiptEnhanceGenerationRef.current += 1;
+    setShowEnhancePreview(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
+    setPendingEnhanceTask(null);
+    setEnhancingReceipt(false);
+  }
+
+  function onReceiptEnhanceConfirm(chosen: PreparedScanImage) {
+    const task = pendingEnhanceTask;
+    setShowEnhancePreview(false);
+    setEnhanceOriginal(null);
+    setEnhanceEnhanced(null);
+    setEnhanceError(null);
+    setPendingEnhanceTask(null);
+    if (!task) return;
+    void runReceiptOcr(task, chosen);
+  }
+
+  async function runReceiptOcr(
+    task: MaintenanceTaskDto,
+    prepared: PreparedScanImage,
+  ) {
     setScanningReceipt(true);
     setError(null);
     setNotice(null);
@@ -306,7 +384,6 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
         return;
       }
 
-      const prepared = await prepareScanImage(file);
       const previewUrl = URL.createObjectURL(prepared.file);
       if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
 
@@ -364,7 +441,6 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
       );
     } finally {
       setScanningReceipt(false);
-      if (receiptInputRef.current) receiptInputRef.current.value = "";
     }
   }
 
@@ -487,6 +563,19 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
 
   return (
     <AppShell title="Maintenance">
+      {enhanceOriginal ? (
+        <DocumentEnhancePreview
+          open={showEnhancePreview}
+          title="Review receipt scan"
+          original={enhanceOriginal}
+          enhanced={enhanceEnhanced}
+          enhanceError={enhanceError}
+          enhancing={enhancingReceipt}
+          busy={scanningReceipt}
+          onConfirm={onReceiptEnhanceConfirm}
+          onCancel={onReceiptEnhanceCancel}
+        />
+      ) : null}
       <input
         ref={receiptInputRef}
         type="file"
@@ -518,6 +607,12 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
 
         {loading ? (
           <p className="text-sm text-slate-500">Loading maintenance…</p>
+        ) : null}
+
+        {enhancingReceipt ? (
+          <p className="rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
+            Enhancing receipt…
+          </p>
         ) : null}
 
         {scanningReceipt ? (
@@ -1001,7 +1096,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
               ) : (
                 <button
                   type="button"
-                  disabled={busy || scanningReceipt}
+                  disabled={busy || scanningReceipt || enhancingReceipt}
                   onClick={() => {
                     if (markDoneTask) openReceiptCapture(markDoneTask);
                   }}
