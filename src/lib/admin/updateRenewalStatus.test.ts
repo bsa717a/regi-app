@@ -20,7 +20,7 @@ function staffFixture(): StaffUser {
 function renewalFixture(status: Renewal["status"] = "Reviewing"): Renewal {
   return {
     id: "ren_1",
-    vehicleId: "veh_1",
+    registrationId: "reg_1",
     status,
     requestedBy: "user_1",
     feeBreakdown: {},

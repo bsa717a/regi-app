@@ -1,22 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import type { VehicleDto } from "@/lib/vehicles/types";
-import { titleCaseMakeModel } from "@/lib/vehicles/illustrations";
+import type { RegistrationDto } from "@/lib/registrations/types";
+import { identityLine, titleCaseMakeModel } from "@/lib/registrations/illustrations";
 import { StatusBadge } from "@/components/garage/StatusBadge";
 
-function vehicleHeadline(vehicle: VehicleDto): string {
+function vehicleHeadline(vehicle: RegistrationDto): string {
   const make = titleCaseMakeModel(vehicle.make);
   const model = titleCaseMakeModel(vehicle.model);
-  return [vehicle.year, make, model].filter(Boolean).join(" ") || "Vehicle";
+  return [vehicle.year, make, model].filter(Boolean).join(" ") || "Registration";
 }
 
 export function RenewalCard({
   vehicle,
   prominent = false,
 }: {
-  vehicle: VehicleDto;
-  /** Stronger red treatment for expired vehicles. */
+  vehicle: RegistrationDto;
+  /** Stronger red treatment for expired registrations. */
   prominent?: boolean;
 }) {
   const headline = vehicleHeadline(vehicle);
@@ -42,9 +42,7 @@ export function RenewalCard({
             <p className="mt-0.5 truncate text-sm text-slate-600">{headline}</p>
           ) : null}
           <p className="mt-1 text-sm text-slate-600">
-            {vehicle.plate
-              ? `${vehicle.plate} · ${vehicle.state}`
-              : vehicle.state}
+            {identityLine(vehicle)} · {vehicle.state}
           </p>
         </div>
         <StatusBadge status={vehicle.status} />
@@ -64,7 +62,7 @@ export function RenewalCard({
         {vehicle.canEdit &&
         (vehicle.status === "Due Soon" || vehicle.status === "Expired") ? (
           <Link
-            href={`/renewals/new?vehicleId=${encodeURIComponent(vehicle.id)}`}
+            href={`/renewals/new?registrationId=${encodeURIComponent(vehicle.id)}`}
             className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
           >
             Renew Registration

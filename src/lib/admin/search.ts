@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 export type AdminSearchQuery = {
   q: string;
-  /** Max rows per entity type (users / vehicles). */
+  /** Max rows per entity type (users / registrations). */
   limit?: number;
 };
 
@@ -10,12 +10,12 @@ const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 50;
 
 /**
- * Build Prisma where clauses for admin user + vehicle search.
+ * Build Prisma where clauses for admin user + registration search.
  * Matches email, name, plate, VIN, nickname (case-insensitive contains).
  */
 export function buildAdminSearchWhere(q: string): {
   userWhere: Prisma.UserWhereInput;
-  vehicleWhere: Prisma.VehicleWhereInput;
+  registrationWhere: Prisma.RegistrationWhereInput;
 } | null {
   const trimmed = q.trim();
   if (!trimmed) return null;
@@ -29,7 +29,7 @@ export function buildAdminSearchWhere(q: string): {
     userWhere: {
       OR: [{ email: contains }, { name: contains }],
     },
-    vehicleWhere: {
+    registrationWhere: {
       OR: [
         { plate: contains },
         { vin: contains },
@@ -55,7 +55,7 @@ export type AdminSearchUserHit = {
   createdAt: string;
 };
 
-export type AdminSearchVehicleHit = {
+export type AdminSearchRegistrationHit = {
   id: string;
   vin: string | null;
   plate: string | null;
@@ -76,5 +76,5 @@ export type AdminSearchVehicleHit = {
 export type AdminSearchResult = {
   query: string;
   users: AdminSearchUserHit[];
-  vehicles: AdminSearchVehicleHit[];
+  registrations: AdminSearchRegistrationHit[];
 };

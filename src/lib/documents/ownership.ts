@@ -1,52 +1,52 @@
-import type { Document, Renewal, Vehicle } from "@prisma/client";
+import type { Document, Registration, Renewal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   requireOwner,
   userCanAccessHousehold,
-} from "@/lib/vehicles/household";
+} from "@/lib/registrations/household";
 
-export type AuthorizedVehicle =
-  | { ok: true; vehicle: Vehicle }
+export type AuthorizedRegistration =
+  | { ok: true; registration: Registration }
   | { ok: false; status: 404 | 403; error: string };
 
 /**
- * Load a vehicle and ensure the user can access its household.
+ * Load a registration and ensure the user can access its household.
  * Returns 404 (not 403) when inaccessible to avoid leaking existence.
  */
-export async function loadAccessibleVehicle(
+export async function loadAccessibleRegistration(
   userId: string,
-  vehicleId: string,
-): Promise<AuthorizedVehicle> {
-  const vehicle = await prisma.vehicle.findUnique({
-    where: { id: vehicleId },
+  registrationId: string,
+): Promise<AuthorizedRegistration> {
+  const registration = await prisma.registration.findUnique({
+    where: { id: registrationId },
   });
 
-  if (!vehicle) {
+  if (!registration) {
     return { ok: false, status: 404, error: "Not found" };
   }
 
-  const allowed = await userCanAccessHousehold(userId, vehicle.householdId);
+  const allowed = await userCanAccessHousehold(userId, registration.householdId);
   if (!allowed) {
     return { ok: false, status: 404, error: "Not found" };
   }
 
-  return { ok: true, vehicle };
+  return { ok: true, registration };
 }
 
 /**
- * Same as loadAccessibleVehicle, plus owner-only edit permission for uploads/deletes.
+ * Same as loadAccessibleRegistration, plus owner-only edit permission for uploads/deletes.
  */
-export async function loadEditableVehicle(
+export async function loadEditableRegistration(
   userId: string,
-  vehicleId: string,
-): Promise<AuthorizedVehicle> {
-  const access = await loadAccessibleVehicle(userId, vehicleId);
+  registrationId: string,
+): Promise<AuthorizedRegistration> {
+  const access = await loadAccessibleRegistration(userId, registrationId);
   if (!access.ok) return access;
 
   const owner = await requireOwner(
     userId,
-    access.vehicle.householdId,
-    "change documents for this vehicle",
+    access.registration.householdId,
+    "change documents for this registration",
   );
   if (!owner.ok) {
     return {
@@ -60,7 +60,7 @@ export async function loadEditableVehicle(
 }
 
 export type AuthorizedDocument =
-  | { ok: true; document: Document; vehicle: Vehicle }
+  | { ok: true; document: Document; registration: Registration }
   | { ok: false; status: 404 | 403; error: string };
 
 export async function loadAccessibleDocument(
@@ -69,7 +69,7 @@ export async function loadAccessibleDocument(
 ): Promise<AuthorizedDocument> {
   const document = await prisma.document.findUnique({
     where: { id: documentId },
-    include: { vehicle: true },
+    include: { registration: true },
   });
 
   if (!document) {
@@ -78,13 +78,13 @@ export async function loadAccessibleDocument(
 
   const allowed = await userCanAccessHousehold(
     userId,
-    document.vehicle.householdId,
+    document.registration.householdId,
   );
   if (!allowed) {
     return { ok: false, status: 404, error: "Not found" };
   }
 
-  return { ok: true, document, vehicle: document.vehicle };
+  return { ok: true, document, registration: document.registration };
 }
 
 export async function loadEditableDocument(
@@ -96,8 +96,8 @@ export async function loadEditableDocument(
 
   const owner = await requireOwner(
     userId,
-    access.vehicle.householdId,
-    "delete documents for this vehicle",
+    access.registration.householdId,
+    "delete documents for this registration",
   );
   if (!owner.ok) {
     return {
@@ -111,11 +111,11 @@ export async function loadEditableDocument(
 }
 
 /**
- * Ensure a renewal belongs to the same vehicle (and thus household) before linking.
+ * Ensure a renewal belongs to the same registration (and thus household) before linking.
  */
-export async function assertRenewalBelongsToVehicle(
+export async function assertRenewalBelongsToRegistration(
   renewalId: string,
-  vehicleId: string,
+  registrationId: string,
 ): Promise<
   { ok: true; renewal: Renewal } | { ok: false; status: 400; error: string }
 > {
@@ -123,11 +123,11 @@ export async function assertRenewalBelongsToVehicle(
     where: { id: renewalId },
   });
 
-  if (!renewal || renewal.vehicleId !== vehicleId) {
+  if (!renewal || renewal.registrationId !== registrationId) {
     return {
       ok: false,
       status: 400,
-      error: "renewalId does not belong to this vehicle",
+      error: "renewalId does not belong to this registration",
     };
   }
 
@@ -135,13 +135,13 @@ export async function assertRenewalBelongsToVehicle(
 }
 
 /**
- * Confirm the signed gcsPath was issued for this household/vehicle.
+ * Confirm the signed gcsPath was issued for this household/registration.
  */
-export function gcsPathMatchesVehicle(
+export function gcsPathMatchesRegistration(
   gcsPath: string,
   householdId: string,
-  vehicleId: string,
+  registrationId: string,
 ): boolean {
-  const prefix = `households/${householdId}/vehicles/${vehicleId}/`;
+  const prefix = `households/${householdId}/registrations/${registrationId}/`;
   return gcsPath.startsWith(prefix) && !gcsPath.includes("..");
 }

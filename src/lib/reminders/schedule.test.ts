@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { ReminderSchedule } from "@/lib/stateEngine/types";
 import {
   matchReminderForToday,
-  planRemindersForVehicles,
+  planRemindersForRegistrations,
   plannedDedupeKeys,
   postExpirationTemplateKey,
   preExpirationTemplateKey,
 } from "./schedule";
-import type { ReminderVehicleInput } from "./types";
+import type { ReminderRegistrationInput } from "./types";
 
 const DEFAULT_SCHEDULE: ReminderSchedule = {
   daysBeforeExpiration: [90, 60, 30, 14, 7, 3, 0],
@@ -19,8 +19,8 @@ function utcDate(year: number, month: number, day: number): Date {
 }
 
 function vehicle(
-  overrides: Partial<ReminderVehicleInput> & { id: string },
-): ReminderVehicleInput {
+  overrides: Partial<ReminderRegistrationInput> & { id: string },
+): ReminderRegistrationInput {
   return {
     registrationExpiresOn: utcDate(2026, 10, 20),
     recipientUserIds: ["user-1"],
@@ -124,10 +124,10 @@ describe("matchReminderForToday", () => {
   });
 });
 
-describe("planRemindersForVehicles", () => {
+describe("planRemindersForRegistrations", () => {
   it("generates email + push rows for a matching pre-expiration day", () => {
     const asOf = utcDate(2026, 7, 22); // 90 days before Oct 20
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [vehicle({ id: "veh-1", registrationExpiresOn: utcDate(2026, 10, 20) })],
       { schedule: DEFAULT_SCHEDULE, asOf },
     );
@@ -147,7 +147,7 @@ describe("planRemindersForVehicles", () => {
     };
     const asOf = utcDate(2026, 7, 22);
     const expires = utcDate(2026, 9, 3); // 43 days later
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [vehicle({ id: "veh-43", registrationExpiresOn: expires })],
       { schedule: custom, asOf },
     );
@@ -161,11 +161,11 @@ describe("planRemindersForVehicles", () => {
     const vehicles = [
       vehicle({ id: "veh-1", registrationExpiresOn: utcDate(2026, 10, 20) }),
     ];
-    const first = planRemindersForVehicles(vehicles, {
+    const first = planRemindersForRegistrations(vehicles, {
       schedule: DEFAULT_SCHEDULE,
       asOf,
     });
-    const second = planRemindersForVehicles(vehicles, {
+    const second = planRemindersForRegistrations(vehicles, {
       schedule: DEFAULT_SCHEDULE,
       asOf,
     });
@@ -178,7 +178,7 @@ describe("planRemindersForVehicles", () => {
 
   it("creates one row set per recipient user", () => {
     const asOf = utcDate(2026, 7, 22);
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [
         vehicle({
           id: "veh-1",
@@ -195,7 +195,7 @@ describe("planRemindersForVehicles", () => {
   });
 
   it("skips vehicles with no recipients", () => {
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [
         vehicle({
           id: "veh-1",
@@ -211,7 +211,7 @@ describe("planRemindersForVehicles", () => {
   it("plans escalated post-expiration reminders", () => {
     const asOf = utcDate(2026, 7, 25);
     const expires = utcDate(2026, 7, 22); // expired 3 days ago
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [vehicle({ id: "veh-exp", registrationExpiresOn: expires })],
       { schedule: DEFAULT_SCHEDULE, asOf },
     );
@@ -223,7 +223,7 @@ describe("planRemindersForVehicles", () => {
   });
 
   it("does not plan SMS channels", () => {
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [vehicle({ id: "veh-1", registrationExpiresOn: utcDate(2026, 10, 20) })],
       { schedule: DEFAULT_SCHEDULE, asOf: utcDate(2026, 7, 22) },
     );
@@ -232,7 +232,7 @@ describe("planRemindersForVehicles", () => {
 
   it("dedupe key includes vehicle, user, channel, template, and date", () => {
     const asOf = utcDate(2026, 7, 22);
-    const planned = planRemindersForVehicles(
+    const planned = planRemindersForRegistrations(
       [vehicle({ id: "veh-1", registrationExpiresOn: utcDate(2026, 10, 20) })],
       { schedule: DEFAULT_SCHEDULE, asOf, channels: ["email"] },
     );

@@ -24,6 +24,7 @@ function baseConfig(overrides?: Partial<StateRulesConfig>): StateRulesConfig {
       postExpiration: { intervalDays: 3 },
     },
     conciergeWorkflow: [],
+    registrationTypes: [],
     ...overrides,
   };
 }

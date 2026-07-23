@@ -9,7 +9,7 @@ import {
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { formatNotificationTitle } from "@/lib/notifications/formatTemplate";
 import type { NotificationDto } from "@/lib/notifications/types";
-import { titleCaseMakeModel } from "@/lib/vehicles/illustrations";
+import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,18 +27,18 @@ function parseLimit(url: URL): number {
   return Math.min(n, MAX_LIMIT);
 }
 
-function vehicleLabel(vehicle: {
+function registrationLabel(registration: {
   nickname: string | null;
   year: number | null;
   make: string | null;
   model: string | null;
 } | null): string | null {
-  if (!vehicle) return null;
-  if (vehicle.nickname?.trim()) return vehicle.nickname.trim();
+  if (!registration) return null;
+  if (registration.nickname?.trim()) return registration.nickname.trim();
   const headline = [
-    vehicle.year,
-    titleCaseMakeModel(vehicle.make),
-    titleCaseMakeModel(vehicle.model),
+    registration.year,
+    titleCaseMakeModel(registration.make),
+    titleCaseMakeModel(registration.model),
   ]
     .filter(Boolean)
     .join(" ");
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     orderBy: [{ createdAt: "desc" }, { scheduledFor: "desc" }],
     take: limit,
     include: {
-      vehicle: {
+      registration: {
         select: {
           nickname: true,
           year: true,
@@ -84,11 +84,11 @@ export async function GET(request: Request) {
   const notifications: NotificationDto[] = rows.map((row) => ({
     id: row.id,
     userId: row.userId,
-    vehicleId: row.vehicleId,
+    registrationId: row.registrationId,
     channel: row.channel,
     templateKey: row.templateKey,
     title: formatNotificationTitle(row.templateKey),
-    vehicleLabel: vehicleLabel(row.vehicle),
+    registrationLabel: registrationLabel(row.registration),
     scheduledFor: row.scheduledFor.toISOString(),
     sentAt: row.sentAt ? row.sentAt.toISOString() : null,
     status: row.status,

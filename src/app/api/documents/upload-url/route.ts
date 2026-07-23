@@ -6,7 +6,7 @@ import {
   rateLimitHeaders,
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
-import { loadEditableVehicle } from "@/lib/documents/ownership";
+import { loadEditableRegistration } from "@/lib/documents/ownership";
 import { buildGcsPath, parseUploadUrlBody } from "@/lib/documents/validation";
 import { createUploadSignedUrl } from "@/lib/storage/gcs";
 
@@ -65,7 +65,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const access = await loadEditableVehicle(profile.id, parsed.data.vehicleId);
+  const access = await loadEditableRegistration(
+    profile.id,
+    parsed.data.registrationId,
+  );
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },
@@ -74,8 +77,8 @@ export async function POST(request: Request) {
   }
 
   const gcsPath = buildGcsPath({
-    householdId: access.vehicle.householdId,
-    vehicleId: access.vehicle.id,
+    householdId: access.registration.householdId,
+    registrationId: access.registration.id,
     originalFilename: parsed.data.filename,
   });
 

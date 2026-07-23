@@ -8,7 +8,7 @@ import { getOrCreateUser } from "@/lib/auth/getOrCreateUser";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { loadAccessibleRenewal, serializeRenewal } from "@/lib/renewals";
 import { loadStateRules } from "@/lib/stateEngine/loadRules";
-import { getMembershipRole } from "@/lib/vehicles/household";
+import { getMembershipRole } from "@/lib/registrations/household";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,10 +50,10 @@ export async function GET(request: Request, context: RouteContext) {
     );
   }
 
-  const config = await loadStateRules(access.renewal.vehicle.state);
+  const config = await loadStateRules(access.renewal.registration.state);
   if (!config) {
     return NextResponse.json(
-      { error: "State rules are not available for this vehicle" },
+      { error: "State rules are not available for this registration" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
@@ -61,7 +61,7 @@ export async function GET(request: Request, context: RouteContext) {
   const role =
     (await getMembershipRole(
       profile.id,
-      access.renewal.vehicle.householdId,
+      access.renewal.registration.householdId,
     )) ?? "viewer";
 
   return NextResponse.json(

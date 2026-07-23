@@ -81,17 +81,17 @@ export function AdminSearchClient() {
 
           <section>
             <h2 className="mb-2 text-sm font-semibold text-slate-800">
-              Vehicles ({result.vehicles.length})
+              Registrations ({result.registrations.length})
             </h2>
-            {result.vehicles.length === 0 ? (
-              <p className="text-sm text-slate-500">No vehicles matched.</p>
+            {result.registrations.length === 0 ? (
+              <p className="text-sm text-slate-500">No registrations matched.</p>
             ) : (
               <ul className="divide-y divide-slate-200 rounded border border-slate-300 bg-white">
-                {result.vehicles.map((v) => (
+                {result.registrations.map((v) => (
                   <li key={v.id} className="px-3 py-2 text-sm">
                     <p className="font-medium text-slate-900">
                       {[v.year, v.make, v.model].filter(Boolean).join(" ") ||
-                        "Vehicle"}
+                        "Registration"}
                       {v.nickname ? ` (${v.nickname})` : ""}
                     </p>
                     <p className="text-slate-500">
@@ -111,7 +111,7 @@ export function AdminSearchClient() {
         </div>
       ) : (
         <p className="text-sm text-slate-500">
-          Search users by email/name and vehicles by plate, VIN, or nickname.
+          Search users by email/name and registrations by plate, VIN, or nickname.
         </p>
       )}
     </AdminShell>

@@ -7,7 +7,7 @@ describe("buildAdminSearchWhere", () => {
     expect(buildAdminSearchWhere("   ")).toBeNull();
   });
 
-  it("builds case-insensitive contains filters for users and vehicles", () => {
+  it("builds case-insensitive contains filters for users and registrations", () => {
     const where = buildAdminSearchWhere("  REGI01  ");
     expect(where).not.toBeNull();
     expect(where!.userWhere).toEqual({
@@ -16,7 +16,7 @@ describe("buildAdminSearchWhere", () => {
         { name: { contains: "REGI01", mode: "insensitive" } },
       ],
     });
-    expect(where!.vehicleWhere).toEqual({
+    expect(where!.registrationWhere).toEqual({
       OR: [
         { plate: { contains: "REGI01", mode: "insensitive" } },
         { vin: { contains: "REGI01", mode: "insensitive" } },

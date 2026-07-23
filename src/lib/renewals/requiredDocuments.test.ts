@@ -55,6 +55,7 @@ const utahLikeConfig: StateRulesConfig = {
     postExpiration: { intervalDays: 3 },
   },
   conciergeWorkflow: [],
+  registrationTypes: [],
 };
 
 describe("documentApplies", () => {

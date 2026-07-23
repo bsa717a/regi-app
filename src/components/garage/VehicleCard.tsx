@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import type { VehicleDto } from "@/lib/vehicles/types";
-import { titleCaseMakeModel } from "@/lib/vehicles/illustrations";
+import type { RegistrationDto } from "@/lib/registrations/types";
+import {
+  REGISTRATION_TYPE_LABELS,
+  identityLine,
+  titleCaseMakeModel,
+} from "@/lib/registrations/illustrations";
 import { StatusBadge } from "@/components/garage/StatusBadge";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 
@@ -22,14 +26,15 @@ export function VehicleCard({
   vehicle,
   onEdit,
 }: {
-  vehicle: VehicleDto;
-  onEdit?: (vehicle: VehicleDto) => void;
+  vehicle: RegistrationDto;
+  onEdit?: (vehicle: RegistrationDto) => void;
 }) {
   const make = titleCaseMakeModel(vehicle.make);
   const model = titleCaseMakeModel(vehicle.model);
   const headline = [vehicle.year, make, model].filter(Boolean).join(" ") ||
-    "Vehicle";
+    "Registration";
   const label = vehicle.nickname || headline;
+  const typeLabel = REGISTRATION_TYPE_LABELS[vehicle.type];
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/60 transition hover:shadow-md">
@@ -38,7 +43,13 @@ export function VehicleCard({
           bodyClass={vehicle.bodyClass}
           photoUrl={vehicle.photoUrl}
           label={label}
+          registrationType={vehicle.type}
         />
+        <div className="absolute left-3 top-3">
+          <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200/80 backdrop-blur">
+            {typeLabel}
+          </span>
+        </div>
         <div className="absolute right-3 top-3">
           <StatusBadge status={vehicle.status} />
         </div>
@@ -71,11 +82,9 @@ export function VehicleCard({
         </div>
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
           <div>
-            <dt className="text-slate-500">Plate</dt>
+            <dt className="text-slate-500">ID</dt>
             <dd className="font-medium text-slate-900">
-              {vehicle.plate
-                ? `${vehicle.plate} · ${vehicle.state}`
-                : vehicle.state}
+              {identityLine(vehicle)} · {vehicle.state}
             </dd>
           </div>
           <div>
@@ -104,7 +113,7 @@ export function VehicleCard({
         {vehicle.canEdit &&
         (vehicle.status === "Due Soon" || vehicle.status === "Expired") ? (
           <Link
-            href={`/renewals/new?vehicleId=${encodeURIComponent(vehicle.id)}`}
+            href={`/renewals/new?registrationId=${encodeURIComponent(vehicle.id)}`}
             className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-teal-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
           >
             Renew Registration

@@ -5,7 +5,7 @@ import type {
   StateDocumentType,
 } from "@/lib/stateEngine/types";
 import type { DocumentDto } from "@/lib/documents/types";
-import type { VehicleDto } from "@/lib/vehicles/types";
+import type { RegistrationDto } from "@/lib/registrations/types";
 
 /** Fee amounts stored on renewals.fee_breakdown (cents). No Stripe charge. */
 export type FeeBreakdown = {
@@ -42,7 +42,7 @@ export type RenewalTimestamps = {
 
 export type RenewalDto = {
   id: string;
-  vehicleId: string;
+  registrationId: string;
   status: RenewalStatus;
   requestedBy: string;
   feeBreakdown: FeeBreakdown;
@@ -50,7 +50,7 @@ export type RenewalDto = {
   timestamps: RenewalTimestamps;
   createdAt: string;
   updatedAt: string;
-  vehicle: VehicleDto;
+  registration: RegistrationDto;
   /** Docs currently applicable for this renewal (from state_rules.config). */
   requiredDocuments: RequiredDocumentStatus[];
   /** All documents linked to this renewal. */
@@ -70,7 +70,7 @@ export type RenewalDto = {
 };
 
 export type CreateRenewalInput = {
-  vehicleId: string;
+  registrationId: string;
   /** County for county-scoped required documents (e.g. Utah emissions). */
   county?: string | null;
 };

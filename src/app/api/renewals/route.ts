@@ -7,8 +7,9 @@ import {
   rateLimitHeaders,
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
-import { loadEditableVehicle } from "@/lib/documents/ownership";
+import { loadEditableRegistration } from "@/lib/documents/ownership";
 import { loadStateRules } from "@/lib/stateEngine/loadRules";
+import { getFeesForType } from "@/lib/stateEngine/registrationTypes";
 import {
   canStartRenewal,
   computeFeeBreakdown,
@@ -19,7 +20,7 @@ import {
 import {
   getMembershipRole,
   userCanAccessHousehold,
-} from "@/lib/vehicles/household";
+} from "@/lib/registrations/household";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,8 +46,8 @@ async function enforceRateLimit(request: Request, suffix: string) {
 }
 
 /**
- * GET /api/renewals?vehicleId=
- * List renewals for a household-accessible vehicle (newest first).
+ * GET /api/renewals?registrationId=
+ * List renewals for a household-accessible registration (newest first).
  */
 export async function GET(request: Request) {
   const limited = await enforceRateLimit(request, "list");
@@ -56,24 +57,31 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const profile = await getOrCreateUser(auth.decoded);
-  const vehicleId = new URL(request.url).searchParams.get("vehicleId")?.trim();
+  const registrationId = new URL(request.url).searchParams
+    .get("registrationId")
+    ?.trim();
 
-  if (!vehicleId) {
+  if (!registrationId) {
     return NextResponse.json(
-      { error: "vehicleId query parameter is required" },
+      { error: "registrationId query parameter is required" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
-  const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
-  if (!vehicle) {
+  const registration = await prisma.registration.findUnique({
+    where: { id: registrationId },
+  });
+  if (!registration) {
     return NextResponse.json(
       { error: "Not found" },
       { status: 404, headers: rateLimitHeaders(limited) },
     );
   }
 
-  const allowed = await userCanAccessHousehold(profile.id, vehicle.householdId);
+  const allowed = await userCanAccessHousehold(
+    profile.id,
+    registration.householdId,
+  );
   if (!allowed) {
     return NextResponse.json(
       { error: "Not found" },
@@ -81,21 +89,22 @@ export async function GET(request: Request) {
     );
   }
 
-  const config = await loadStateRules(vehicle.state);
+  const config = await loadStateRules(registration.state);
   if (!config) {
     return NextResponse.json(
-      { error: "State rules are not available for this vehicle" },
+      { error: "State rules are not available for this registration" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
   const role =
-    (await getMembershipRole(profile.id, vehicle.householdId)) ?? "viewer";
+    (await getMembershipRole(profile.id, registration.householdId)) ??
+    "viewer";
 
   const renewals = await prisma.renewal.findMany({
-    where: { vehicleId },
+    where: { registrationId },
     include: {
-      vehicle: true,
+      registration: true,
       documents: { orderBy: [{ type: "asc" }, { createdAt: "desc" }] },
     },
     orderBy: { createdAt: "desc" },
@@ -109,7 +118,7 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/renewals
- * Start (or resume) a renewal for a vehicle due for renewal.
+ * Start (or resume) a renewal for a registration due for renewal.
  * Creates status Requested with fee_breakdown from state_rules.config (estimate only).
  */
 export async function POST(request: Request) {
@@ -139,7 +148,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const access = await loadEditableVehicle(profile.id, parsed.data.vehicleId);
+  const access = await loadEditableRegistration(
+    profile.id,
+    parsed.data.registrationId,
+  );
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },
@@ -147,19 +159,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const config = await loadStateRules(access.vehicle.state);
+  const config = await loadStateRules(access.registration.state);
   if (!config) {
     return NextResponse.json(
       {
         error:
-          "Registration concierge is not available for this state yet. Join the waitlist from Add Vehicle.",
+          "Registration concierge is not available for this state yet. Join the waitlist from Add Registration.",
       },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
   const eligibility = canStartRenewal(
-    access.vehicle.registrationExpiresOn,
+    access.registration.registrationExpiresOn,
     config,
   );
   if (!eligibility.ok) {
@@ -170,17 +182,19 @@ export async function POST(request: Request) {
   }
 
   const renewalInclude = {
-    vehicle: true,
+    registration: true,
     documents: { orderBy: [{ type: "asc" as const }, { createdAt: "desc" as const }] },
   };
 
+  const fees = getFeesForType(config, access.registration.type);
+
   // Atomic find-or-create so concurrent POSTs cannot open duplicate renewals.
-  // Backed by partial unique index renewals_one_open_per_vehicle.
+  // Backed by partial unique index renewals_one_open_per_registration.
   try {
     const result = await prisma.$transaction(async (tx) => {
       const open = await tx.renewal.findFirst({
         where: {
-          vehicleId: access.vehicle.id,
+          registrationId: access.registration.id,
           status: { in: [...OPEN_RENEWAL_STATUSES] },
         },
         include: renewalInclude,
@@ -190,8 +204,8 @@ export async function POST(request: Request) {
       if (open) {
         if (open.status === "Requested" && parsed.data.county !== undefined) {
           const feeBreakdown = computeFeeBreakdown(
-            config,
-            access.vehicle.registrationExpiresOn,
+            { ...config, fees },
+            access.registration.registrationExpiresOn,
             { county: parsed.data.county },
           );
           const updated = await tx.renewal.update({
@@ -205,14 +219,14 @@ export async function POST(request: Request) {
       }
 
       const feeBreakdown = computeFeeBreakdown(
-        config,
-        access.vehicle.registrationExpiresOn,
+        { ...config, fees },
+        access.registration.registrationExpiresOn,
         { county: parsed.data.county ?? null },
       );
 
       const created = await tx.renewal.create({
         data: {
-          vehicleId: access.vehicle.id,
+          registrationId: access.registration.id,
           status: "Requested",
           requestedBy: profile.id,
           feeBreakdown,
@@ -242,7 +256,7 @@ export async function POST(request: Request) {
     if (code === "P2002") {
       const open = await prisma.renewal.findFirst({
         where: {
-          vehicleId: access.vehicle.id,
+          registrationId: access.registration.id,
           status: { in: [...OPEN_RENEWAL_STATUSES] },
         },
         include: renewalInclude,

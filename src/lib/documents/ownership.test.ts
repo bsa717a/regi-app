@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
-  findUniqueVehicle,
+  findUniqueRegistration,
   findUniqueDocument,
   findUniqueRenewal,
   canAccessMock,
   requireOwnerMock,
 } = vi.hoisted(() => ({
-  findUniqueVehicle: vi.fn(),
+  findUniqueRegistration: vi.fn(),
   findUniqueDocument: vi.fn(),
   findUniqueRenewal: vi.fn(),
   canAccessMock: vi.fn(),
@@ -16,38 +16,38 @@ const {
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    vehicle: { findUnique: findUniqueVehicle },
+    registration: { findUnique: findUniqueRegistration },
     document: { findUnique: findUniqueDocument },
     renewal: { findUnique: findUniqueRenewal },
   },
 }));
 
-vi.mock("@/lib/vehicles/household", () => ({
+vi.mock("@/lib/registrations/household", () => ({
   userCanAccessHousehold: canAccessMock,
   requireOwner: requireOwnerMock,
 }));
 
 describe("document ownership checks", () => {
   beforeEach(() => {
-    findUniqueVehicle.mockReset();
+    findUniqueRegistration.mockReset();
     findUniqueDocument.mockReset();
     findUniqueRenewal.mockReset();
     canAccessMock.mockReset();
     requireOwnerMock.mockReset();
   });
 
-  it("hides vehicles outside the household as 404", async () => {
-    const { loadAccessibleVehicle } = await import(
+  it("hides registrations outside the household as 404", async () => {
+    const { loadAccessibleRegistration } = await import(
       "@/lib/documents/ownership"
     );
 
-    findUniqueVehicle.mockResolvedValue({
-      id: "veh_1",
+    findUniqueRegistration.mockResolvedValue({
+      id: "reg_1",
       householdId: "hh_other",
     });
     canAccessMock.mockResolvedValue(false);
 
-    const result = await loadAccessibleVehicle("user_1", "veh_1");
+    const result = await loadAccessibleRegistration("user_1", "reg_1");
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.status).toBe(404);
@@ -55,52 +55,55 @@ describe("document ownership checks", () => {
     expect(canAccessMock).toHaveBeenCalledWith("user_1", "hh_other");
   });
 
-  it("allows household members to access vehicles", async () => {
-    const { loadAccessibleVehicle } = await import(
+  it("allows household members to access registrations", async () => {
+    const { loadAccessibleRegistration } = await import(
       "@/lib/documents/ownership"
     );
 
-    findUniqueVehicle.mockResolvedValue({
-      id: "veh_1",
+    findUniqueRegistration.mockResolvedValue({
+      id: "reg_1",
       householdId: "hh_1",
     });
     canAccessMock.mockResolvedValue(true);
 
-    const result = await loadAccessibleVehicle("user_1", "veh_1");
+    const result = await loadAccessibleRegistration("user_1", "reg_1");
     expect(result.ok).toBe(true);
   });
 
   it("requires owner role for uploads/edits", async () => {
-    const { loadEditableVehicle } = await import("@/lib/documents/ownership");
+    const { loadEditableRegistration } = await import(
+      "@/lib/documents/ownership"
+    );
 
-    findUniqueVehicle.mockResolvedValue({
-      id: "veh_1",
+    findUniqueRegistration.mockResolvedValue({
+      id: "reg_1",
       householdId: "hh_1",
     });
     canAccessMock.mockResolvedValue(true);
     requireOwnerMock.mockResolvedValue({
       ok: false,
       status: 403,
-      error: "You do not have permission to change documents for this vehicle",
+      error:
+        "You do not have permission to change documents for this registration",
     });
 
-    const result = await loadEditableVehicle("viewer_1", "veh_1");
+    const result = await loadEditableRegistration("viewer_1", "reg_1");
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.status).toBe(403);
     }
   });
 
-  it("scopes document access through the vehicle household", async () => {
+  it("scopes document access through the registration household", async () => {
     const { loadAccessibleDocument } = await import(
       "@/lib/documents/ownership"
     );
 
     findUniqueDocument.mockResolvedValue({
       id: "doc_1",
-      vehicleId: "veh_1",
-      gcsPath: "households/hh_1/vehicles/veh_1/x.pdf",
-      vehicle: { id: "veh_1", householdId: "hh_1" },
+      registrationId: "reg_1",
+      gcsPath: "households/hh_1/registrations/reg_1/x.pdf",
+      registration: { id: "reg_1", householdId: "hh_1" },
     });
     canAccessMock.mockResolvedValue(true);
 
@@ -109,36 +112,36 @@ describe("document ownership checks", () => {
     expect(canAccessMock).toHaveBeenCalledWith("user_1", "hh_1");
   });
 
-  it("validates renewalId belongs to the same vehicle", async () => {
-    const { assertRenewalBelongsToVehicle, gcsPathMatchesVehicle } =
+  it("validates renewalId belongs to the same registration", async () => {
+    const { assertRenewalBelongsToRegistration, gcsPathMatchesRegistration } =
       await import("@/lib/documents/ownership");
 
     findUniqueRenewal.mockResolvedValue({
       id: "ren_1",
-      vehicleId: "veh_other",
+      registrationId: "reg_other",
     });
-    const bad = await assertRenewalBelongsToVehicle("ren_1", "veh_1");
+    const bad = await assertRenewalBelongsToRegistration("ren_1", "reg_1");
     expect(bad.ok).toBe(false);
 
     findUniqueRenewal.mockResolvedValue({
       id: "ren_1",
-      vehicleId: "veh_1",
+      registrationId: "reg_1",
     });
-    const good = await assertRenewalBelongsToVehicle("ren_1", "veh_1");
+    const good = await assertRenewalBelongsToRegistration("ren_1", "reg_1");
     expect(good.ok).toBe(true);
 
     expect(
-      gcsPathMatchesVehicle(
-        "households/hh_1/vehicles/veh_1/uuid-file.pdf",
+      gcsPathMatchesRegistration(
+        "households/hh_1/registrations/reg_1/uuid-file.pdf",
         "hh_1",
-        "veh_1",
+        "reg_1",
       ),
     ).toBe(true);
     expect(
-      gcsPathMatchesVehicle(
-        "households/hh_1/vehicles/veh_2/uuid-file.pdf",
+      gcsPathMatchesRegistration(
+        "households/hh_1/registrations/reg_2/uuid-file.pdf",
         "hh_1",
-        "veh_1",
+        "reg_1",
       ),
     ).toBe(false);
   });

@@ -7,44 +7,63 @@ import type { StateRulesConfig } from "../src/lib/stateEngine/types";
 
 const prisma = new PrismaClient();
 
+const UTAH_ROAD_DOCUMENTS: StateRulesConfig["requiredDocuments"] = [
+  {
+    type: "registration",
+    label: "Current registration card",
+    required: true,
+    notes: "Front and back of your Utah registration card.",
+    applicability: { kind: "always" },
+  },
+  {
+    type: "insurance",
+    label: "Proof of insurance",
+    required: true,
+    notes: "Insurance card or declarations page showing active coverage.",
+    applicability: { kind: "always" },
+  },
+  {
+    type: "emissions",
+    label: "Emissions certificate",
+    required: true,
+    notes:
+      "Required in participating Utah counties (Salt Lake, Davis, Utah, Weber, Cache, and parts of Box Elder). Exempt vehicles (newer models, certain body classes) may skip — staff will confirm.",
+    applicability: {
+      kind: "county_list",
+      counties: [
+        "Salt Lake",
+        "Davis",
+        "Utah",
+        "Weber",
+        "Cache",
+        "Box Elder",
+      ],
+      note: "County-level applicability; verify against registration county.",
+    },
+  },
+];
+
+const UTAH_NON_EMISSIONS_DOCUMENTS: StateRulesConfig["requiredDocuments"] = [
+  {
+    type: "registration",
+    label: "Current registration / decal",
+    required: true,
+    notes: "Current Utah registration card or decal paperwork.",
+    applicability: { kind: "always" },
+  },
+  {
+    type: "insurance",
+    label: "Proof of insurance",
+    required: true,
+    notes: "Insurance card or declarations page showing active coverage when required.",
+    applicability: { kind: "always" },
+  },
+];
+
 /** Utah State Engine config — single source of truth for UT rules. */
 export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
   displayName: "Utah",
-  requiredDocuments: [
-    {
-      type: "registration",
-      label: "Current registration card",
-      required: true,
-      notes: "Front and back of your Utah registration card.",
-      applicability: { kind: "always" },
-    },
-    {
-      type: "insurance",
-      label: "Proof of insurance",
-      required: true,
-      notes: "Insurance card or declarations page showing active coverage.",
-      applicability: { kind: "always" },
-    },
-    {
-      type: "emissions",
-      label: "Emissions certificate",
-      required: true,
-      notes:
-        "Required in participating Utah counties (Salt Lake, Davis, Utah, Weber, Cache, and parts of Box Elder). Exempt vehicles (newer models, certain body classes) may skip — staff will confirm.",
-      applicability: {
-        kind: "county_list",
-        counties: [
-          "Salt Lake",
-          "Davis",
-          "Utah",
-          "Weber",
-          "Cache",
-          "Box Elder",
-        ],
-        note: "County-level applicability; verify against vehicle registration county.",
-      },
-    },
-  ],
+  requiredDocuments: UTAH_ROAD_DOCUMENTS,
   renewalWindow: {
     daysBeforeExpirationOpen: 90,
     lateFeeStartsAfterDays: 0,
@@ -58,7 +77,7 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
     lateFeeCents: 1000,
     regiServiceFeeCents: 2500,
     notes:
-      "Registration fee is an estimate; actual DMV fee may vary by vehicle weight/type. Late fee applies after expiration.",
+      "Registration fee is an estimate; actual DMV fee may vary by weight/type. Late fee applies after expiration.",
   },
   reminderSchedule: {
     daysBeforeExpiration: [90, 60, 30, 14, 7, 3, 0],
@@ -109,6 +128,57 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
       label: "Sticker Mailed",
       order: 6,
       description: "Registration sticker is on its way.",
+    },
+  ],
+  registrationTypes: [
+    {
+      type: "passenger",
+      label: "Passenger vehicle",
+      pluralLabel: "Passenger vehicles",
+      identityFields: ["vin", "plate", "yearMakeModel"],
+      decode: "nhtsa_vin",
+    },
+    {
+      type: "motorcycle",
+      label: "Motorcycle",
+      pluralLabel: "Motorcycles",
+      identityFields: ["vin", "plate", "yearMakeModel"],
+      decode: "nhtsa_vin",
+    },
+    {
+      type: "trailer",
+      label: "Trailer",
+      pluralLabel: "Trailers",
+      identityFields: ["vin", "plate", "yearMakeModel"],
+      decode: "none",
+      notes: "Utah trailer fees may vary by unladen weight.",
+      requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
+    },
+    {
+      type: "ohv",
+      label: "OHV",
+      pluralLabel: "OHVs",
+      identityFields: ["vin", "plate", "serial", "yearMakeModel"],
+      decode: "none",
+      notes: "Off-highway vehicles use OHV stickers / plates per Utah rules.",
+      requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
+    },
+    {
+      type: "snowmobile",
+      label: "Snowmobile",
+      pluralLabel: "Snowmobiles",
+      identityFields: ["vin", "plate", "serial", "yearMakeModel"],
+      decode: "none",
+      requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
+    },
+    {
+      type: "boat",
+      label: "Boat",
+      pluralLabel: "Boats",
+      identityFields: ["hin", "plate", "yearMakeModel"],
+      decode: "none",
+      notes: "Use Hull Identification Number (HIN) when available.",
+      requiredDocuments: UTAH_NON_EMISSIONS_DOCUMENTS,
     },
   ],
 };
@@ -217,8 +287,8 @@ async function main() {
     },
   });
 
-  // 4) Three demo vehicles (Current / Due Soon / Expired)
-  const vehicleSpecs = [
+  // 4) Three demo passenger registrations (Current / Due Soon / Expired)
+  const registrationSpecs = [
     {
       vin: "1GNSKCKC8MR312456",
       plate: "REGI01",
@@ -254,10 +324,10 @@ async function main() {
     },
   ] as const;
 
-  const vehiclesByKey: Record<string, { id: string }> = {};
+  const registrationsByKey: Record<string, { id: string }> = {};
 
-  for (const spec of vehicleSpecs) {
-    const existing = await prisma.vehicle.findFirst({
+  for (const spec of registrationSpecs) {
+    const existing = await prisma.registration.findFirst({
       where: {
         householdId: household.id,
         plate: spec.plate,
@@ -267,6 +337,7 @@ async function main() {
 
     const data = {
       householdId: household.id,
+      type: "passenger" as const,
       vin: spec.vin,
       plate: spec.plate,
       state: "UT",
@@ -275,25 +346,26 @@ async function main() {
       year: spec.year,
       nickname: spec.nickname,
       bodyClass: spec.bodyClass,
+      details: {},
       registrationExpiresOn: spec.registrationExpiresOn,
       createdBy: user.id,
     };
 
-    const vehicle = existing
-      ? await prisma.vehicle.update({
+    const registration = existing
+      ? await prisma.registration.update({
           where: { id: existing.id },
           data,
         })
-      : await prisma.vehicle.create({ data });
+      : await prisma.registration.create({ data });
 
-    vehiclesByKey[spec.seedKey] = vehicle;
+    registrationsByKey[spec.seedKey] = registration;
   }
 
-  // 5) Demo renewal in progress (Reviewing) on Due Soon vehicle
-  const dueSoonVehicle = vehiclesByKey.due_soon;
+  // 5) Demo renewal in progress (Reviewing) on Due Soon registration
+  const dueSoonRegistration = registrationsByKey.due_soon;
   const existingRenewal = await prisma.renewal.findFirst({
     where: {
-      vehicleId: dueSoonVehicle.id,
+      registrationId: dueSoonRegistration.id,
       requestedBy: user.id,
       status: RenewalStatus.Reviewing,
     },
@@ -323,7 +395,7 @@ async function main() {
   } else {
     await prisma.renewal.create({
       data: {
-        vehicleId: dueSoonVehicle.id,
+        registrationId: dueSoonRegistration.id,
         status: RenewalStatus.Reviewing,
         requestedBy: user.id,
         feeBreakdown,
@@ -361,7 +433,7 @@ async function main() {
     },
   });
 
-  // Viewer's own household-of-one (so they can also add personal vehicles).
+  // Viewer's own household-of-one (so they can also add personal registrations).
   let viewerHousehold = await prisma.household.findFirst({
     where: { ownerUserId: viewer.id },
   });
@@ -460,7 +532,7 @@ async function main() {
   console.log(`  viewer: ${viewer.email} (${viewer.id}) — viewer on demo household`);
   console.log(`  household: ${household.id}`);
   console.log(
-    `  vehicles: Current=${vehiclesByKey.current.id}, DueSoon=${vehiclesByKey.due_soon.id}, Expired=${vehiclesByKey.expired.id}`,
+    `  registrations: Current=${registrationsByKey.current.id}, DueSoon=${registrationsByKey.due_soon.id}, Expired=${registrationsByKey.expired.id}`,
   );
   console.log(`  waitlist: ${waitlistRows.length} rows`);
   console.log(

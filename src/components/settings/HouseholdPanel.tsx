@@ -98,7 +98,7 @@ export function HouseholdPanel() {
       });
       setInviteEmail("");
       setMessage(
-        `Invite sent to ${result.member.email ?? inviteEmail}. They’ll see shared vehicles after accepting.`,
+        `Invite sent to ${result.member.email ?? inviteEmail}. They’ll see shared registrations after accepting.`,
       );
       setReloadKey((k) => k + 1);
     } catch (err) {
@@ -151,8 +151,8 @@ export function HouseholdPanel() {
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            Invite a spouse or partner to view vehicles, statuses, documents,
-            and reminders. Viewers cannot edit or renew.
+            Invite a spouse or partner to view registrations, statuses,
+            documents, and reminders. Viewers cannot edit or renew.
           </p>
 
           <ul className="mt-4 space-y-2" aria-label="Household members">

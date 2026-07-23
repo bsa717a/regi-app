@@ -2,7 +2,7 @@ import type { DocumentType } from "@prisma/client";
 
 export type DocumentDto = {
   id: string;
-  vehicleId: string;
+  registrationId: string;
   renewalId: string | null;
   type: DocumentType;
   originalFilename: string;

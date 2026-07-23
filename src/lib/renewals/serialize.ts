@@ -1,7 +1,8 @@
-import type { Document, MemberRole, Renewal, Vehicle } from "@prisma/client";
+import type { Document, MemberRole, Registration, Renewal } from "@prisma/client";
 import { serializeDocument } from "@/lib/documents/serialize";
+import { serializeRegistration } from "@/lib/registrations/serialize";
+import { getRequiredDocumentsForType } from "@/lib/stateEngine/registrationTypes";
 import type { StateRulesConfig } from "@/lib/stateEngine/types";
-import { serializeVehicle } from "@/lib/vehicles/serialize";
 import { parseFeeBreakdown } from "./fees";
 import {
   buildRequiredDocumentStatus,
@@ -11,7 +12,7 @@ import {
 import type { RenewalDto } from "./types";
 
 type RenewalWithRelations = Renewal & {
-  vehicle: Vehicle;
+  registration: Registration;
   documents: Document[];
 };
 
@@ -21,15 +22,19 @@ export function serializeRenewal(
   householdRole: MemberRole = "owner",
 ): RenewalDto {
   const feeBreakdown = parseFeeBreakdown(renewal.feeBreakdown);
-  const completeness = buildRequiredDocumentStatus(
+  const requiredDocuments = getRequiredDocumentsForType(
     config,
+    renewal.registration.type,
+  );
+  const completeness = buildRequiredDocumentStatus(
+    { ...config, requiredDocuments },
     renewal.documents,
     feeBreakdown.county,
   );
 
   return {
     id: renewal.id,
-    vehicleId: renewal.vehicleId,
+    registrationId: renewal.registrationId,
     status: renewal.status,
     requestedBy: renewal.requestedBy,
     feeBreakdown,
@@ -45,7 +50,12 @@ export function serializeRenewal(
     },
     createdAt: renewal.createdAt.toISOString(),
     updatedAt: renewal.updatedAt.toISOString(),
-    vehicle: serializeVehicle(renewal.vehicle, config, new Date(), householdRole),
+    registration: serializeRegistration(
+      renewal.registration,
+      config,
+      new Date(),
+      householdRole,
+    ),
     requiredDocuments: completeness.required,
     documents: renewal.documents.map(serializeDocument),
     workflow: [...config.conciergeWorkflow].sort((a, b) => a.order - b.order),

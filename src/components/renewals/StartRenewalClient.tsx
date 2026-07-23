@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
 import { AppShell } from "@/components/shell/AppShell";
-import { ApiError, createRenewal, getVehicle } from "@/lib/api/client";
-import type { VehicleDto } from "@/lib/vehicles/types";
-import { titleCaseMakeModel } from "@/lib/vehicles/illustrations";
+import { ApiError, createRenewal, getRegistration } from "@/lib/api/client";
+import type { RegistrationDto } from "@/lib/registrations/types";
+import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
-function vehicleLabel(vehicle: VehicleDto): string {
+function vehicleLabel(vehicle: RegistrationDto): string {
   if (vehicle.nickname?.trim()) return vehicle.nickname.trim();
   const parts = [
     vehicle.year,
@@ -19,13 +19,17 @@ function vehicleLabel(vehicle: VehicleDto): string {
   ]
     .filter(Boolean)
     .join(" ");
-  return parts || "Vehicle";
+  return parts || "Registration";
 }
 
-export function StartRenewalClient({ vehicleId }: { vehicleId: string }) {
+export function StartRenewalClient({
+  registrationId,
+}: {
+  registrationId: string;
+}) {
   const router = useRouter();
   const { idToken, getIdToken, loading: authLoading } = useAuth();
-  const [vehicle, setVehicle] = useState<VehicleDto | null>(null);
+  const [vehicle, setVehicle] = useState<RegistrationDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [attempt, setAttempt] = useState(0);
@@ -43,18 +47,18 @@ export function StartRenewalClient({ vehicleId }: { vehicleId: string }) {
         if (!token) {
           throw new ApiError("Sign in to start a renewal.", 401);
         }
-        const row = await getVehicle(token, vehicleId);
+        const row = await getRegistration(token, registrationId);
         if (cancelled) return;
         setVehicle(row);
 
         if (!row.canEdit) {
           throw new ApiError(
-            "Viewers can see shared vehicles but cannot start renewals. Ask the household owner.",
+            "Viewers can see shared registrations but cannot start renewals. Ask the household owner.",
             403,
           );
         }
 
-        const { renewal } = await createRenewal(token, { vehicleId });
+        const { renewal } = await createRenewal(token, { registrationId });
         if (cancelled) return;
         router.replace(`/renewals/${renewal.id}`);
       } catch (err) {
@@ -73,7 +77,7 @@ export function StartRenewalClient({ vehicleId }: { vehicleId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, idToken, getIdToken, vehicleId, router, attempt]);
+  }, [authLoading, idToken, getIdToken, registrationId, router, attempt]);
 
   return (
     <AppShell title="Renew Registration">
@@ -83,7 +87,7 @@ export function StartRenewalClient({ vehicleId }: { vehicleId: string }) {
           <p className="text-sm text-slate-600">
             {vehicle
               ? `Starting concierge for ${vehicleLabel(vehicle)}…`
-              : "Loading vehicle…"}
+              : "Loading registration…"}
           </p>
         </div>
       ) : null}

@@ -4,14 +4,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AddVehicleFlow } from "@/components/garage/AddVehicleFlow";
+import { AddRegistrationFlow } from "@/components/garage/AddRegistrationFlow";
 import { RenewalCard } from "@/components/dashboard/RenewalCard";
 import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
-import { ApiError, listNotifications, listVehicles } from "@/lib/api/client";
-import { groupDashboardVehicles } from "@/lib/dashboard/groupVehicles";
+import {
+  ApiError,
+  listNotifications,
+  listRegistrations,
+} from "@/lib/api/client";
+import { groupDashboardRegistrations } from "@/lib/dashboard/groupRegistrations";
 import type { NotificationDto } from "@/lib/notifications/types";
-import type { VehicleDto } from "@/lib/vehicles/types";
-import { titleCaseMakeModel } from "@/lib/vehicles/illustrations";
+import type { RegistrationDto } from "@/lib/registrations/types";
+import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
 function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
@@ -26,7 +30,7 @@ function formatRelativeTime(iso: string): string {
   return rtf.format(diffMinutes, "minute");
 }
 
-function renewTargetLabel(vehicle: VehicleDto): string {
+function renewTargetLabel(vehicle: RegistrationDto): string {
   if (vehicle.nickname) return vehicle.nickname;
   const make = titleCaseMakeModel(vehicle.make);
   const model = titleCaseMakeModel(vehicle.model);
@@ -36,7 +40,7 @@ function renewTargetLabel(vehicle: VehicleDto): string {
 export function DashboardClient() {
   const router = useRouter();
   const { idToken, getIdToken, loading: authLoading } = useAuth();
-  const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
+  const [vehicles, setVehicles] = useState<RegistrationDto[]>([]);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +66,7 @@ export function DashboardClient() {
         }
 
         const [vehicleRows, notificationRows] = await Promise.all([
-          listVehicles(token),
+          listRegistrations(token),
           listNotifications(token, 8),
         ]);
 
@@ -90,7 +94,7 @@ export function DashboardClient() {
     };
   }, [authLoading, idToken, getIdToken, reloadKey]);
 
-  const groups = groupDashboardVehicles(vehicles);
+  const groups = groupDashboardRegistrations(vehicles);
   const emptyGarage = !loading && !error && vehicles.length === 0;
 
   if (emptyGarage || adding) {
@@ -100,12 +104,12 @@ export function DashboardClient() {
           <div className="mb-6">
             <p className="text-sm font-medium text-teal-800">Welcome home</p>
             <p className="mt-2 max-w-md text-base leading-relaxed text-slate-600">
-              Your garage is empty — start with a VIN and we&apos;ll track the
-              sticker from here.
+              Your garage is empty — pick a registration type and we&apos;ll
+              track the sticker from here.
             </p>
           </div>
         ) : null}
-        <AddVehicleFlow
+        <AddRegistrationFlow
           onCancel={emptyGarage ? undefined : () => setAdding(false)}
           cancelLabel="← Back to dashboard"
           onCreated={(vehicle) => {
@@ -170,8 +174,8 @@ export function DashboardClient() {
               id="dashboard-summary-heading"
               className="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
             >
-              {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"} in your
-              garage
+              {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} in
+              your garage
             </h2>
             <p className="mt-2 text-base text-slate-600">
               {groups.expired.length > 0
@@ -195,7 +199,7 @@ export function DashboardClient() {
                 className={primaryButtonClassName}
                 onClick={() => setAdding(true)}
               >
-                Add Vehicle
+                Add Registration
               </button>
               <div className="space-y-2">
                 <button
@@ -205,7 +209,7 @@ export function DashboardClient() {
                   onClick={() => {
                     if (!groups.renewTarget) return;
                     router.push(
-                      `/renewals/new?vehicleId=${encodeURIComponent(groups.renewTarget.id)}`,
+                      `/renewals/new?registrationId=${encodeURIComponent(groups.renewTarget.id)}`,
                     );
                   }}
                   aria-describedby={
@@ -254,7 +258,7 @@ export function DashboardClient() {
             </h2>
             {groups.upcoming.length === 0 ? (
               <p className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600">
-                No upcoming renewals — expired vehicles are listed above.
+                No upcoming renewals — expired registrations are listed above.
               </p>
             ) : (
               <ul className="mt-3 space-y-3">
@@ -289,9 +293,9 @@ export function DashboardClient() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-medium text-slate-900">{n.title}</p>
-                        {n.vehicleLabel ? (
+                        {n.registrationLabel ? (
                           <p className="mt-0.5 text-sm text-slate-600">
-                            {n.vehicleLabel}
+                            {n.registrationLabel}
                           </p>
                         ) : null}
                         <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">

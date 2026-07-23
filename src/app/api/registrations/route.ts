@@ -12,16 +12,16 @@ import {
   formatExpirationCountdown,
 } from "@/lib/stateEngine/status";
 import { loadStateRules, loadStateRulesMap } from "@/lib/stateEngine/loadRules";
-import type { MemberRole } from "@prisma/client";
+import type { MemberRole, Prisma } from "@prisma/client";
 import { roleCanEdit } from "@/lib/household/roles";
 import {
   getHouseholdRoleMap,
   getPrimaryHouseholdId,
   requireOwner,
-} from "@/lib/vehicles/household";
-import { serializeVehicle } from "@/lib/vehicles/serialize";
-import type { VehicleDto } from "@/lib/vehicles/types";
-import { parseCreateVehicleBody } from "@/lib/vehicles/validation";
+} from "@/lib/registrations/household";
+import { serializeRegistration } from "@/lib/registrations/serialize";
+import type { RegistrationDto } from "@/lib/registrations/types";
+import { parseCreateRegistrationBody } from "@/lib/registrations/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ const LIMIT = 60;
 
 async function enforceRateLimit(request: Request) {
   const result = await rateLimit({
-    key: clientKeyFromRequest(request, "api:vehicles"),
+    key: clientKeyFromRequest(request, "api:registrations"),
     limit: LIMIT,
     windowMs: WINDOW_MS,
   });
@@ -47,33 +47,40 @@ async function enforceRateLimit(request: Request) {
 }
 
 function serializeWithoutRules(
-  vehicle: Parameters<typeof serializeVehicle>[0],
+  registration: Parameters<typeof serializeRegistration>[0],
   householdRole: MemberRole,
-): VehicleDto {
-  const days = daysUntilExpiration(vehicle.registrationExpiresOn);
+): RegistrationDto {
+  const days = daysUntilExpiration(registration.registrationExpiresOn);
   return {
-    id: vehicle.id,
-    householdId: vehicle.householdId,
+    id: registration.id,
+    householdId: registration.householdId,
     householdRole,
     canEdit: roleCanEdit(householdRole),
-    vin: vehicle.vin,
-    plate: vehicle.plate,
-    state: vehicle.state,
-    make: vehicle.make,
-    model: vehicle.model,
-    year: vehicle.year,
-    nickname: vehicle.nickname,
-    photoUrl: vehicle.photoUrl,
-    bodyClass: vehicle.bodyClass,
-    registrationExpiresOn: vehicle.registrationExpiresOn
+    type: registration.type,
+    vin: registration.vin,
+    plate: registration.plate,
+    state: registration.state,
+    make: registration.make,
+    model: registration.model,
+    year: registration.year,
+    nickname: registration.nickname,
+    photoUrl: registration.photoUrl,
+    bodyClass: registration.bodyClass,
+    details:
+      registration.details &&
+      typeof registration.details === "object" &&
+      !Array.isArray(registration.details)
+        ? (registration.details as RegistrationDto["details"])
+        : {},
+    registrationExpiresOn: registration.registrationExpiresOn
       .toISOString()
       .slice(0, 10),
-    createdBy: vehicle.createdBy,
-    createdAt: vehicle.createdAt.toISOString(),
-    updatedAt: vehicle.updatedAt.toISOString(),
+    createdBy: registration.createdBy,
+    createdAt: registration.createdAt.toISOString(),
+    updatedAt: registration.updatedAt.toISOString(),
     status: days < 0 ? "Expired" : "Current",
     daysUntilExpiration: days,
-    countdown: formatExpirationCountdown(vehicle.registrationExpiresOn),
+    countdown: formatExpirationCountdown(registration.registrationExpiresOn),
   };
 }
 
@@ -90,28 +97,28 @@ export async function GET(request: Request) {
 
   if (householdIds.length === 0) {
     return NextResponse.json(
-      { vehicles: [] },
+      { registrations: [] },
       { headers: rateLimitHeaders(limited) },
     );
   }
 
-  const vehicles = await prisma.vehicle.findMany({
+  const registrations = await prisma.registration.findMany({
     where: { householdId: { in: householdIds } },
     orderBy: [{ registrationExpiresOn: "asc" }, { createdAt: "desc" }],
   });
 
-  const rulesMap = await loadStateRulesMap(vehicles.map((v) => v.state));
+  const rulesMap = await loadStateRulesMap(registrations.map((r) => r.state));
 
-  const dto = vehicles.map((vehicle) => {
-    const role = roleMap.get(vehicle.householdId) ?? "viewer";
-    const config = rulesMap.get(vehicle.state.toUpperCase());
+  const dto = registrations.map((registration) => {
+    const role = roleMap.get(registration.householdId) ?? "viewer";
+    const config = rulesMap.get(registration.state.toUpperCase());
     return config
-      ? serializeVehicle(vehicle, config, new Date(), role)
-      : serializeWithoutRules(vehicle, role);
+      ? serializeRegistration(registration, config, new Date(), role)
+      : serializeWithoutRules(registration, role);
   });
 
   return NextResponse.json(
-    { vehicles: dto },
+    { registrations: dto },
     { headers: rateLimitHeaders(limited) },
   );
 }
@@ -139,7 +146,7 @@ export async function POST(request: Request) {
   const ownerCheck = await requireOwner(
     profile.id,
     householdId,
-    "add vehicles",
+    "add registrations",
   );
   if (!ownerCheck.ok) {
     return NextResponse.json(
@@ -158,15 +165,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = parseCreateVehicleBody(body);
-  if (!parsed.ok) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400, headers: rateLimitHeaders(limited) },
-    );
-  }
-
-  const stateRules = await loadStateRules(parsed.data.state);
+  const stateHint =
+    typeof body.state === "string" ? body.state.trim().toUpperCase() : "";
+  const stateRules = stateHint ? await loadStateRules(stateHint) : null;
   if (!stateRules) {
     return NextResponse.json(
       {
@@ -178,9 +179,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const vehicle = await prisma.vehicle.create({
+  const parsed = parseCreateRegistrationBody(body, stateRules);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error },
+      { status: 400, headers: rateLimitHeaders(limited) },
+    );
+  }
+
+  const registration = await prisma.registration.create({
     data: {
       householdId,
+      type: parsed.data.type,
       vin: parsed.data.vin,
       plate: parsed.data.plate,
       state: parsed.data.state,
@@ -190,13 +200,21 @@ export async function POST(request: Request) {
       nickname: parsed.data.nickname,
       photoUrl: parsed.data.photoUrl,
       bodyClass: parsed.data.bodyClass,
+      details: parsed.data.details as Prisma.InputJsonValue,
       registrationExpiresOn: parsed.data.registrationExpiresOn,
       createdBy: profile.id,
     },
   });
 
   return NextResponse.json(
-    { vehicle: serializeVehicle(vehicle, stateRules, new Date(), "owner") },
+    {
+      registration: serializeRegistration(
+        registration,
+        stateRules,
+        new Date(),
+        "owner",
+      ),
+    },
     { status: 201, headers: rateLimitHeaders(limited) },
   );
 }

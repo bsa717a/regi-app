@@ -10,14 +10,14 @@ export type ResendRenewalEmailDeps = {
   audit?: typeof writeAudit;
 };
 
-function vehicleDisplayName(vehicle: {
+function registrationDisplayName(registration: {
   nickname: string | null;
   year: number | null;
   make: string | null;
   model: string | null;
 }): string {
-  if (vehicle.nickname?.trim()) return vehicle.nickname.trim();
-  const parts = [vehicle.year, vehicle.make, vehicle.model]
+  if (registration.nickname?.trim()) return registration.nickname.trim();
+  const parts = [registration.year, registration.make, registration.model]
     .filter(Boolean)
     .join(" ");
   return parts || "your vehicle";
@@ -60,7 +60,7 @@ export async function resendRenewalStatusEmail(
   const renewal = await deps.db.renewal.findUnique({
     where: { id: renewalId },
     include: {
-      vehicle: {
+      registration: {
         select: {
           id: true,
           nickname: true,
@@ -84,7 +84,7 @@ export async function resendRenewalStatusEmail(
   }
 
   const templateKey = `renewal_status_${renewal.status}`;
-  const vehicleName = vehicleDisplayName(renewal.vehicle);
+  const vehicleName = registrationDisplayName(renewal.registration);
   const statusLabel = friendlyStatusLabel(renewal.status);
   const prefs = parseNotificationPrefs(renewal.requester.notificationPrefs);
 

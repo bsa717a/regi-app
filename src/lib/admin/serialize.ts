@@ -1,9 +1,9 @@
 import type {
   Document,
+  Registration,
   Renewal,
   RenewalStatus,
   User,
-  Vehicle,
 } from "@prisma/client";
 import { serializeDocument } from "@/lib/documents/serialize";
 import { parseFeeBreakdown } from "@/lib/renewals/fees";
@@ -22,7 +22,7 @@ export type AdminRenewalListItem = {
   updatedAt: string;
   feeBreakdown: FeeBreakdown;
   paymentStatus: "n/a (MVP)";
-  vehicle: {
+  registration: {
     id: string;
     plate: string | null;
     vin: string | null;
@@ -92,7 +92,7 @@ export function nextStatusAfter(current: RenewalStatus): RenewalStatus | null {
 
 export function serializeAdminRenewalListItem(
   renewal: Renewal & {
-    vehicle: Vehicle;
+    registration: Registration;
     requester: Pick<User, "id" | "email" | "name">;
   },
 ): AdminRenewalListItem {
@@ -103,16 +103,18 @@ export function serializeAdminRenewalListItem(
     updatedAt: renewal.updatedAt.toISOString(),
     feeBreakdown: parseFeeBreakdown(renewal.feeBreakdown),
     paymentStatus: "n/a (MVP)",
-    vehicle: {
-      id: renewal.vehicle.id,
-      plate: renewal.vehicle.plate,
-      vin: renewal.vehicle.vin,
-      year: renewal.vehicle.year,
-      make: renewal.vehicle.make,
-      model: renewal.vehicle.model,
-      nickname: renewal.vehicle.nickname,
-      state: renewal.vehicle.state,
-      registrationExpiresOn: toDateOnly(renewal.vehicle.registrationExpiresOn),
+    registration: {
+      id: renewal.registration.id,
+      plate: renewal.registration.plate,
+      vin: renewal.registration.vin,
+      year: renewal.registration.year,
+      make: renewal.registration.make,
+      model: renewal.registration.model,
+      nickname: renewal.registration.nickname,
+      state: renewal.registration.state,
+      registrationExpiresOn: toDateOnly(
+        renewal.registration.registrationExpiresOn,
+      ),
     },
     owner: {
       id: renewal.requester.id,
@@ -124,7 +126,7 @@ export function serializeAdminRenewalListItem(
 
 export function serializeAdminRenewalDetail(
   renewal: Renewal & {
-    vehicle: Vehicle;
+    registration: Registration;
     requester: Pick<User, "id" | "email" | "name">;
     documents: Document[];
   },

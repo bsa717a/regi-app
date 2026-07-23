@@ -5,7 +5,7 @@ import type { DocumentDto } from "@/lib/documents/types";
 export function serializeDocument(doc: Document): DocumentDto {
   return {
     id: doc.id,
-    vehicleId: doc.vehicleId,
+    registrationId: doc.registrationId,
     renewalId: doc.renewalId,
     type: doc.type,
     originalFilename: doc.originalFilename,

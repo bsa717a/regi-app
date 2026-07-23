@@ -3,7 +3,7 @@ import type { NotificationService } from "@/lib/notifications/NotificationServic
 import { runReminderTick } from "./tick";
 
 type MockDb = {
-  vehicle: { findMany: ReturnType<typeof vi.fn> };
+  registration: { findMany: ReturnType<typeof vi.fn> };
   stateRule: { findMany: ReturnType<typeof vi.fn> };
   notification: {
     findUnique: ReturnType<typeof vi.fn>;
@@ -50,7 +50,7 @@ describe("runReminderTick", () => {
       }),
     };
     db = {
-      vehicle: { findMany: vi.fn() },
+      registration: { findMany: vi.fn() },
       stateRule: { findMany: vi.fn() },
       notification: {
         findUnique: vi.fn(),
@@ -65,9 +65,9 @@ describe("runReminderTick", () => {
     const asOf = new Date(Date.UTC(2026, 6, 22)); // Jul 22
     const expires = new Date(Date.UTC(2026, 9, 20)); // Oct 20 = +90 days
 
-    db.vehicle.findMany.mockResolvedValue([
+    db.registration.findMany.mockResolvedValue([
       {
-        id: "veh-1",
+        id: "reg-1",
         state: "UT",
         registrationExpiresOn: expires,
         nickname: "Mom's Tahoe",
@@ -87,10 +87,10 @@ describe("runReminderTick", () => {
       {
         id: "n-email",
         userId: "user-1",
-        vehicleId: "veh-1",
+        registrationId: "reg-1",
         channel: "email",
         templateKey: "reminder_90",
-        dedupeKey: "veh-1:user-1:email:reminder_90:2026-07-22",
+        dedupeKey: "reg-1:user-1:email:reminder_90:2026-07-22",
         scheduledFor: asOf,
         status: "pending",
         user: {
@@ -98,7 +98,7 @@ describe("runReminderTick", () => {
           email: "alex@example.com",
           notificationPrefs: { push: true, email: true, sms: false },
         },
-        vehicle: {
+        registration: {
           nickname: "Mom's Tahoe",
           year: 2021,
           make: "Chevrolet",
@@ -115,7 +115,7 @@ describe("runReminderTick", () => {
       asOf,
     });
 
-    expect(result.vehiclesEvaluated).toBe(1);
+    expect(result.registrationsEvaluated).toBe(1);
     expect(result.planned).toBe(2); // email + push
     expect(result.upserted).toBe(2);
     expect(result.skippedDuplicate).toBe(0);
@@ -130,9 +130,9 @@ describe("runReminderTick", () => {
     const asOf = new Date(Date.UTC(2026, 6, 22));
     const expires = new Date(Date.UTC(2026, 9, 20));
 
-    db.vehicle.findMany.mockResolvedValue([
+    db.registration.findMany.mockResolvedValue([
       {
-        id: "veh-1",
+        id: "reg-1",
         state: "UT",
         registrationExpiresOn: expires,
         nickname: "Mom's Tahoe",
@@ -162,16 +162,16 @@ describe("runReminderTick", () => {
 
   it("skips dispatch when email prefs are disabled", async () => {
     const asOf = new Date(Date.UTC(2026, 6, 22));
-    db.vehicle.findMany.mockResolvedValue([]);
+    db.registration.findMany.mockResolvedValue([]);
     db.stateRule.findMany.mockResolvedValue([]);
     db.notification.findMany.mockResolvedValue([
       {
         id: "n-email",
         userId: "user-1",
-        vehicleId: "veh-1",
+        registrationId: "reg-1",
         channel: "email",
         templateKey: "reminder_30",
-        dedupeKey: "veh-1:user-1:email:reminder_30:2026-07-22",
+        dedupeKey: "reg-1:user-1:email:reminder_30:2026-07-22",
         scheduledFor: asOf,
         status: "pending",
         user: {
@@ -179,7 +179,7 @@ describe("runReminderTick", () => {
           email: "alex@example.com",
           notificationPrefs: { push: true, email: false, sms: false },
         },
-        vehicle: {
+        registration: {
           nickname: "X",
           year: 2020,
           make: "Ford",
@@ -212,16 +212,16 @@ describe("runReminderTick", () => {
         throw new Error("smtp down");
       }),
     };
-    db.vehicle.findMany.mockResolvedValue([]);
+    db.registration.findMany.mockResolvedValue([]);
     db.stateRule.findMany.mockResolvedValue([]);
     db.notification.findMany.mockResolvedValue([
       {
         id: "n-fail",
         userId: "user-1",
-        vehicleId: "veh-1",
+        registrationId: "reg-1",
         channel: "email",
         templateKey: "reminder_7",
-        dedupeKey: "veh-1:user-1:email:reminder_7:2026-07-22",
+        dedupeKey: "reg-1:user-1:email:reminder_7:2026-07-22",
         scheduledFor: asOf,
         status: "pending",
         user: {
@@ -229,7 +229,7 @@ describe("runReminderTick", () => {
           email: "alex@example.com",
           notificationPrefs: { push: true, email: true, sms: false },
         },
-        vehicle: {
+        registration: {
           nickname: "X",
           year: null,
           make: null,
@@ -259,9 +259,9 @@ describe("runReminderTick", () => {
     // Jul 22 + 45 days = Sep 5
     const expires45 = new Date(Date.UTC(2026, 8, 5));
 
-    db.vehicle.findMany.mockResolvedValue([
+    db.registration.findMany.mockResolvedValue([
       {
-        id: "veh-custom",
+        id: "reg-custom",
         state: "NV",
         registrationExpiresOn: expires45,
         nickname: "Desert Runner",

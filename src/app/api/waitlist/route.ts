@@ -7,7 +7,7 @@ import {
   rateLimitHeaders,
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
-import { readRequiredState } from "@/lib/vehicles/validation";
+import { readRequiredState } from "@/lib/registrations/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

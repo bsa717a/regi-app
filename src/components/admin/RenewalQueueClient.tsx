@@ -103,11 +103,15 @@ export function RenewalQueueClient() {
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="font-medium text-slate-900">
-                      {[r.vehicle.year, r.vehicle.make, r.vehicle.model]
+                      {[
+                        r.registration.year,
+                        r.registration.make,
+                        r.registration.model,
+                      ]
                         .filter(Boolean)
-                        .join(" ") || "Vehicle"}
-                      {r.vehicle.nickname
-                        ? ` — ${r.vehicle.nickname}`
+                        .join(" ") || "Registration"}
+                      {r.registration.nickname
+                        ? ` — ${r.registration.nickname}`
                         : ""}
                     </p>
                     <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-800">
@@ -116,8 +120,8 @@ export function RenewalQueueClient() {
                   </div>
                   <p className="mt-1 text-slate-600">
                     {r.owner.name || r.owner.email} · plate{" "}
-                    {r.vehicle.plate || "—"} · expires{" "}
-                    {r.vehicle.registrationExpiresOn}
+                    {r.registration.plate || "—"} · expires{" "}
+                    {r.registration.registrationExpiresOn}
                   </p>
                   <p className="text-xs text-slate-500">
                     Payment: {r.paymentStatus} · updated{" "}

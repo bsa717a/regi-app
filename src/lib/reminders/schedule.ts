@@ -5,8 +5,8 @@ import { startOfUtcDay } from "./dates";
 import type {
   PlannedNotification,
   PlanRemindersOptions,
+  ReminderRegistrationInput,
   ReminderTemplateVariables,
-  ReminderVehicleInput,
 } from "./types";
 
 const DEFAULT_CHANNELS: Array<"email" | "push"> = ["email", "push"];
@@ -21,30 +21,30 @@ export function postExpirationTemplateKey(): string {
   return "post_expiration";
 }
 
-function vehicleDisplayName(vehicle: ReminderVehicleInput): string {
-  if (vehicle.nickname?.trim()) return vehicle.nickname.trim();
-  const parts = [vehicle.year, vehicle.make, vehicle.model]
+function registrationDisplayName(registration: ReminderRegistrationInput): string {
+  if (registration.nickname?.trim()) return registration.nickname.trim();
+  const parts = [registration.year, registration.make, registration.model]
     .filter((p) => p !== null && p !== undefined && String(p).trim() !== "")
     .join(" ");
   return parts || "your vehicle";
 }
 
 function buildVariables(
-  vehicle: ReminderVehicleInput,
+  registration: ReminderRegistrationInput,
   daysUntil: number,
 ): ReminderTemplateVariables {
   return {
-    vehicleName: vehicleDisplayName(vehicle),
+    vehicleName: registrationDisplayName(registration),
     daysLeft: Math.max(daysUntil, 0),
     daysAfter: daysUntil < 0 ? Math.abs(daysUntil) : 0,
-    year: vehicle.year != null ? String(vehicle.year) : "",
-    make: vehicle.make?.trim() ?? "",
-    model: vehicle.model?.trim() ?? "",
+    year: registration.year != null ? String(registration.year) : "",
+    make: registration.make?.trim() ?? "",
+    model: registration.model?.trim() ?? "",
   };
 }
 
 /**
- * Decide whether today's tick should fire a reminder for this vehicle,
+ * Decide whether today's tick should fire a reminder for this registration,
  * using ONLY the offsets / cadence from `schedule` (state_rules.config).
  *
  * Returns the template key when a reminder is due today, else null.
@@ -86,39 +86,42 @@ export function matchReminderForToday(
 }
 
 /**
- * Pure planner: given vehicles + state reminderSchedule + today,
+ * Pure planner: given registrations + state reminderSchedule + today,
  * return the notification rows that should exist (idempotent via dedupeKey).
  *
  * Calling twice with the same inputs returns identical planned rows.
  */
-export function planRemindersForVehicles(
-  vehicles: ReminderVehicleInput[],
+export function planRemindersForRegistrations(
+  registrations: ReminderRegistrationInput[],
   options: PlanRemindersOptions,
 ): PlannedNotification[] {
   const asOf = startOfUtcDay(options.asOf);
   const channels = options.channels ?? DEFAULT_CHANNELS;
   const planned: PlannedNotification[] = [];
 
-  for (const vehicle of vehicles) {
-    if (!vehicle.recipientUserIds.length) continue;
+  for (const registration of registrations) {
+    if (!registration.recipientUserIds.length) continue;
 
-    const daysUntil = daysUntilExpiration(vehicle.registrationExpiresOn, asOf);
+    const daysUntil = daysUntilExpiration(
+      registration.registrationExpiresOn,
+      asOf,
+    );
     const match = matchReminderForToday(daysUntil, options.schedule);
     if (!match) continue;
 
-    const variables = buildVariables(vehicle, daysUntil);
+    const variables = buildVariables(registration, daysUntil);
     const scheduledFor = asOf;
 
-    for (const userId of vehicle.recipientUserIds) {
+    for (const userId of registration.recipientUserIds) {
       for (const channel of channels) {
         planned.push({
           userId,
-          vehicleId: vehicle.id,
+          registrationId: registration.id,
           channel,
           templateKey: match.templateKey,
           scheduledFor,
           dedupeKey: buildReminderDedupeKey({
-            vehicleId: vehicle.id,
+            registrationId: registration.id,
             userId,
             channel,
             templateKey: match.templateKey,

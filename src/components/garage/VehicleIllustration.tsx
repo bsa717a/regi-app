@@ -1,19 +1,25 @@
+import type { RegistrationType } from "@prisma/client";
 import {
   illustrationKindFromBodyClass,
-  type VehicleIllustrationKind,
-} from "@/lib/vehicles/illustrations";
+  illustrationKindFromType,
+  type RegistrationIllustrationKind,
+} from "@/lib/registrations/illustrations";
 
-const gradients: Record<VehicleIllustrationKind, string> = {
+const gradients: Record<RegistrationIllustrationKind, string> = {
   suv: "from-teal-600 to-slate-700",
   pickup: "from-slate-600 to-teal-800",
   sedan: "from-cyan-700 to-slate-700",
   van: "from-teal-700 to-slate-600",
   coupe: "from-emerald-700 to-slate-700",
   motorcycle: "from-slate-700 to-teal-900",
+  trailer: "from-amber-700 to-slate-700",
+  ohv: "from-orange-700 to-slate-800",
+  snowmobile: "from-sky-700 to-slate-800",
+  boat: "from-blue-700 to-slate-800",
   default: "from-teal-700 to-slate-800",
 };
 
-function Silhouette({ kind }: { kind: VehicleIllustrationKind }) {
+function Silhouette({ kind }: { kind: RegistrationIllustrationKind }) {
   switch (kind) {
     case "pickup":
       return (
@@ -50,6 +56,34 @@ function Silhouette({ kind }: { kind: VehicleIllustrationKind }) {
           fill="currentColor"
         />
       );
+    case "trailer":
+      return (
+        <path
+          d="M4 15a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm12 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM3 13V9h13l3 3v1"
+          fill="currentColor"
+        />
+      );
+    case "ohv":
+      return (
+        <path
+          d="M5 16a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm14 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM7 14h4l2-4h4"
+          fill="currentColor"
+        />
+      );
+    case "snowmobile":
+      return (
+        <path
+          d="M3 15h4l2-3h8l2 3h2M9 12l2-4h4l1 4"
+          fill="currentColor"
+        />
+      );
+    case "boat":
+      return (
+        <path
+          d="M4 15h16l-2 3H6l-2-3Zm7-9v6M8 12l3-6 3 6"
+          fill="currentColor"
+        />
+      );
     case "sedan":
     default:
       return (
@@ -65,10 +99,12 @@ export function VehicleIllustration({
   bodyClass,
   photoUrl,
   label,
+  registrationType,
 }: {
   bodyClass?: string | null;
   photoUrl?: string | null;
   label: string;
+  registrationType?: RegistrationType;
 }) {
   if (photoUrl) {
     return (
@@ -82,7 +118,9 @@ export function VehicleIllustration({
     );
   }
 
-  const kind = illustrationKindFromBodyClass(bodyClass);
+  const kind = registrationType
+    ? illustrationKindFromType(registrationType, bodyClass)
+    : illustrationKindFromBodyClass(bodyClass);
 
   return (
     <div
