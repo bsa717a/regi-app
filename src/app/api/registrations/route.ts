@@ -20,6 +20,7 @@ import {
   requireOwner,
 } from "@/lib/registrations/household";
 import { serializeRegistration } from "@/lib/registrations/serialize";
+import { resolvePhotoUrl, resolvePhotoUrls } from "@/lib/registrations/photo";
 import type { RegistrationDto } from "@/lib/registrations/types";
 import { parseCreateRegistrationBody } from "@/lib/registrations/validation";
 
@@ -109,7 +110,9 @@ export async function GET(request: Request) {
 
   const rulesMap = await loadStateRulesMap(registrations.map((r) => r.state));
 
-  const dto = registrations.map((registration) => {
+  const withPhotos = await resolvePhotoUrls(registrations);
+
+  const dto = withPhotos.map((registration) => {
     const role = roleMap.get(registration.householdId) ?? "viewer";
     const config = rulesMap.get(registration.state.toUpperCase());
     return config
@@ -206,10 +209,12 @@ export async function POST(request: Request) {
     },
   });
 
+  const resolved = await resolvePhotoUrl(registration);
+
   return NextResponse.json(
     {
       registration: serializeRegistration(
-        registration,
+        resolved,
         stateRules,
         new Date(),
         "owner",

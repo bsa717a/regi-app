@@ -1,3 +1,5 @@
+import { MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
+
 const MAX_DIMENSION = 1600;
 const JPEG_QUALITY = 0.85;
 /** Raw bytes before base64 encoding (~4/3 expansion must stay under server cap). */
@@ -77,7 +79,7 @@ function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
-async function compressWithCanvas(file: File): Promise<PreparedScanImage> {
+async function compressWithCanvas(file: File): Promise<File> {
   const dataUrl = await readFileAsDataUrl(file);
   const image = await loadImageFromDataUrl(dataUrl);
 
@@ -98,12 +100,43 @@ async function compressWithCanvas(file: File): Promise<PreparedScanImage> {
   ctx.drawImage(image, 0, 0, width, height);
 
   const blob = await canvasToJpegBlob(canvas);
-  const compressed = new File(
+  return new File(
     [blob],
     file.name.replace(/\.[^.]+$/, "") + ".jpg",
     { type: "image/jpeg", lastModified: Date.now() },
   );
+}
 
+/** Downscale and JPEG-compress for registration photo uploads. */
+export async function compressImageFile(file: File): Promise<File> {
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `Image is too large. Maximum size is ${Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024))} MB.`,
+    );
+  }
+
+  try {
+    const compressed = await compressWithCanvas(file);
+    if (compressed.size > MAX_UPLOAD_BYTES) {
+      throw new Error(
+        `Image is too large. Maximum size is ${Math.floor(MAX_UPLOAD_BYTES / (1024 * 1024))} MB.`,
+      );
+    }
+    return compressed;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("too large")) {
+      throw err;
+    }
+    const mimeType = inferImageContentType(file);
+    if (!mimeType) {
+      throw new Error("Unsupported image type.");
+    }
+    return file;
+  }
+}
+
+async function compressWithCanvasForScan(file: File): Promise<PreparedScanImage> {
+  const compressed = await compressWithCanvas(file);
   const compressedDataUrl = await readFileAsDataUrl(compressed);
   const base64 = dataUrlToBase64(compressedDataUrl);
   assertBase64WithinLimit(base64);
@@ -132,7 +165,7 @@ export async function prepareScanImage(file: File): Promise<PreparedScanImage> {
   }
 
   try {
-    return await compressWithCanvas(file);
+    return await compressWithCanvasForScan(file);
   } catch {
     const mimeType = inferImageContentType(file);
     if (!mimeType) {

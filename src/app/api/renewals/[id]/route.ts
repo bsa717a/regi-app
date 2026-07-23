@@ -9,6 +9,7 @@ import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { loadAccessibleRenewal, serializeRenewal } from "@/lib/renewals";
 import { loadStateRules } from "@/lib/stateEngine/loadRules";
 import { getMembershipRole } from "@/lib/registrations/household";
+import { resolvePhotoUrl } from "@/lib/registrations/photo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +66,16 @@ export async function GET(request: Request, context: RouteContext) {
     )) ?? "viewer";
 
   return NextResponse.json(
-    { renewal: serializeRenewal(access.renewal, config, role) },
+    {
+      renewal: serializeRenewal(
+        {
+          ...access.renewal,
+          registration: await resolvePhotoUrl(access.renewal.registration),
+        },
+        config,
+        role,
+      ),
+    },
     { headers: rateLimitHeaders(limited) },
   );
 }

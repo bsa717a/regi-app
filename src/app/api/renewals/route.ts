@@ -21,6 +21,7 @@ import {
   getMembershipRole,
   userCanAccessHousehold,
 } from "@/lib/registrations/household";
+import { resolvePhotoUrl, resolvePhotoUrls } from "@/lib/registrations/photo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -110,8 +111,23 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
   });
 
+  const resolvedById = new Map(
+    (await resolvePhotoUrls(renewals.map((r) => r.registration))).map((r) => [
+      r.id,
+      r,
+    ]),
+  );
+
   return NextResponse.json(
-    { renewals: renewals.map((r) => serializeRenewal(r, config, role)) },
+    {
+      renewals: renewals.map((r) =>
+        serializeRenewal(
+          { ...r, registration: resolvedById.get(r.registration.id)! },
+          config,
+          role,
+        ),
+      ),
+    },
     { headers: rateLimitHeaders(limited) },
   );
 }
@@ -239,7 +255,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        renewal: serializeRenewal(result.renewal, config),
+        renewal: serializeRenewal(
+          {
+            ...result.renewal,
+            registration: await resolvePhotoUrl(result.renewal.registration),
+          },
+          config,
+        ),
         resumed: result.resumed,
       },
       {
@@ -264,7 +286,16 @@ export async function POST(request: Request) {
       });
       if (open) {
         return NextResponse.json(
-          { renewal: serializeRenewal(open, config), resumed: true },
+          {
+            renewal: serializeRenewal(
+              {
+                ...open,
+                registration: await resolvePhotoUrl(open.registration),
+              },
+              config,
+            ),
+            resumed: true,
+          },
           { headers: rateLimitHeaders(limited) },
         );
       }

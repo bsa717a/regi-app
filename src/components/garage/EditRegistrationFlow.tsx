@@ -7,6 +7,7 @@ import {
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
+import { RegistrationPhotoPicker } from "@/components/garage/RegistrationPhotoPicker";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -18,6 +19,10 @@ import type {
   RegistrationDetails,
   RegistrationDto,
 } from "@/lib/registrations/types";
+import {
+  removeRegistrationPhoto,
+  uploadRegistrationPhoto,
+} from "@/lib/registrations/photoUpload";
 import { REGISTRATION_TYPE_LABELS } from "@/lib/registrations/illustrations";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
 
@@ -42,7 +47,8 @@ export function EditRegistrationFlow({
   const [make, setMake] = useState(registration.make ?? "");
   const [model, setModel] = useState(registration.model ?? "");
   const [nickname, setNickname] = useState(registration.nickname ?? "");
-  const [photoUrl, setPhotoUrl] = useState(registration.photoUrl ?? "");
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
+  const [clearPhoto, setClearPhoto] = useState(false);
   const [expiresOn, setExpiresOn] = useState(registration.registrationExpiresOn);
   const [hin, setHin] = useState(registration.details.hin ?? "");
   const [serial, setSerial] = useState(registration.details.serial ?? "");
@@ -67,6 +73,17 @@ export function EditRegistrationFlow({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function handlePhotoChange(file: File | null) {
+    if (file) {
+      setPendingPhotoFile(file);
+      setClearPhoto(false);
+      return;
+    }
+    setPendingPhotoFile(null);
+    setClearPhoto(true);
+  }
+
+  const previewPhotoUrl = clearPhoto ? null : registration.photoUrl;
   const typeLabel = REGISTRATION_TYPE_LABELS[registration.type];
   const showVin =
     registration.type === "passenger" ||
@@ -122,17 +139,42 @@ export function EditRegistrationFlow({
           : null;
       }
 
-      const updated = await updateRegistration(token, registration.id, {
+      let updated = await updateRegistration(token, registration.id, {
         vin: normalizedVin,
         plate: plate.trim() ? plate.trim().toUpperCase() : null,
         year: y,
         make: make.trim() || null,
         model: model.trim() || null,
         nickname: nickname.trim() || null,
-        photoUrl: photoUrl.trim() || null,
         registrationExpiresOn: expiresOn,
         details,
       });
+
+      if (clearPhoto && registration.photoUrl && !pendingPhotoFile) {
+        try {
+          updated = await removeRegistrationPhoto({
+            token,
+            registrationId: registration.id,
+          });
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 400) {
+            updated = await updateRegistration(token, registration.id, {
+              photoUrl: null,
+            });
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      if (pendingPhotoFile) {
+        updated = await uploadRegistrationPhoto({
+          token,
+          registrationId: registration.id,
+          file: pendingPhotoFile,
+        });
+      }
+
       onSaved(updated);
     } catch (err) {
       setError(
@@ -197,7 +239,7 @@ export function EditRegistrationFlow({
         <div className="h-24">
           <VehicleIllustration
             bodyClass={registration.bodyClass}
-            photoUrl={registration.photoUrl}
+            photoUrl={previewPhotoUrl}
             label={registration.nickname || typeLabel}
             registrationType={registration.type}
           />
@@ -405,20 +447,12 @@ export function EditRegistrationFlow({
           />
         </div>
 
-        <div>
-          <label htmlFor="edit-photoUrl" className={labelClassName}>
-            Photo URL{" "}
-            <span className="font-normal text-slate-500">(optional)</span>
-          </label>
-          <input
-            id="edit-photoUrl"
-            type="url"
-            className={fieldClassName}
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="https://… or leave blank for an illustration"
-          />
-        </div>
+        <RegistrationPhotoPicker
+          currentPhotoUrl={previewPhotoUrl}
+          pendingFile={pendingPhotoFile}
+          onPendingFileChange={handlePhotoChange}
+          disabled={busy}
+        />
 
         <button type="submit" className={primaryButtonClassName} disabled={busy}>
           {busy && !confirmDelete ? "Saving…" : "Save changes"}
