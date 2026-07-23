@@ -57,6 +57,7 @@ enum DocumentType {
   title
   emissions
   temp_permit
+  other
 
   @@map("document_type")
 }
@@ -204,6 +205,7 @@ model Registration {
   renewals      Renewal[]
   documents     Document[]
   notifications Notification[]
+  photos        RegistrationPhoto[]
 
   @@index([householdId])
   @@index([createdBy])
@@ -211,6 +213,20 @@ model Registration {
   @@index([state])
   @@index([type])
   @@map("registrations")
+}
+
+model RegistrationPhoto {
+  id             String   @id @default(cuid())
+  registrationId String   @map("registration_id")
+  gcsPath        String   @map("gcs_path")
+  isCover        Boolean  @default(false) @map("is_cover")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([registrationId])
+  @@map("registration_photos")
 }
 
 /// State Engine config lives in `config` jsonb. See src/lib/stateEngine/types.ts.

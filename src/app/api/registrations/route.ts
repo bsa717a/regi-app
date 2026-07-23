@@ -19,9 +19,14 @@ import {
   getPrimaryHouseholdId,
   requireOwner,
 } from "@/lib/registrations/household";
+import { buildRegistrationDto } from "@/lib/registrations/buildRegistrationDto";
 import { serializeRegistration } from "@/lib/registrations/serialize";
 import { resolvePhotoUrl, resolvePhotoUrls } from "@/lib/registrations/photo";
-import type { RegistrationDto } from "@/lib/registrations/types";
+import {
+  loadRegistrationPhotosForMany,
+  serializeRegistrationPhotos,
+} from "@/lib/registrations/registrationPhotos";
+import type { RegistrationDto, RegistrationPhotoDto } from "@/lib/registrations/types";
 import { parseCreateRegistrationBody } from "@/lib/registrations/validation";
 
 export const runtime = "nodejs";
@@ -50,8 +55,13 @@ async function enforceRateLimit(request: Request) {
 function serializeWithoutRules(
   registration: Parameters<typeof serializeRegistration>[0],
   householdRole: MemberRole,
+  photos: RegistrationPhotoDto[] = [],
 ): RegistrationDto {
   const days = daysUntilExpiration(registration.registrationExpiresOn);
+  const coverUrl =
+    photos.find((photo) => photo.isCover)?.url ??
+    photos[0]?.url ??
+    registration.photoUrl;
   return {
     id: registration.id,
     householdId: registration.householdId,
@@ -65,7 +75,8 @@ function serializeWithoutRules(
     model: registration.model,
     year: registration.year,
     nickname: registration.nickname,
-    photoUrl: registration.photoUrl,
+    photoUrl: coverUrl ?? null,
+    photos,
     bodyClass: registration.bodyClass,
     details:
       registration.details &&
@@ -110,15 +121,28 @@ export async function GET(request: Request) {
 
   const rulesMap = await loadStateRulesMap(registrations.map((r) => r.state));
 
+  let photoMap: Awaited<ReturnType<typeof loadRegistrationPhotosForMany>>;
+  try {
+    photoMap = await loadRegistrationPhotosForMany(
+      registrations.map((registration) => registration.id),
+    );
+  } catch {
+    photoMap = new Map();
+  }
+
   const withPhotos = await resolvePhotoUrls(registrations);
 
-  const dto = withPhotos.map((registration) => {
-    const role = roleMap.get(registration.householdId) ?? "viewer";
-    const config = rulesMap.get(registration.state.toUpperCase());
-    return config
-      ? serializeRegistration(registration, config, new Date(), role)
-      : serializeWithoutRules(registration, role);
-  });
+  const dto = await Promise.all(
+    withPhotos.map(async (registration) => {
+      const role = roleMap.get(registration.householdId) ?? "viewer";
+      const config = rulesMap.get(registration.state.toUpperCase());
+      const photoRows = photoMap.get(registration.id) ?? [];
+      const photos = await serializeRegistrationPhotos(photoRows);
+      return config
+        ? serializeRegistration(registration, config, new Date(), role, photos)
+        : serializeWithoutRules(registration, role, photos);
+    }),
+  );
 
   return NextResponse.json(
     { registrations: dto },
@@ -210,15 +234,13 @@ export async function POST(request: Request) {
   });
 
   const resolved = await resolvePhotoUrl(registration);
+  const dto =
+    (await buildRegistrationDto(resolved, "owner")) ??
+    serializeRegistration(resolved, stateRules, new Date(), "owner", []);
 
   return NextResponse.json(
     {
-      registration: serializeRegistration(
-        resolved,
-        stateRules,
-        new Date(),
-        "owner",
-      ),
+      registration: dto,
     },
     { status: 201, headers: rateLimitHeaders(limited) },
   );

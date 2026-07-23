@@ -19,11 +19,17 @@ import {
   requireOwner,
   userCanAccessHousehold,
 } from "@/lib/registrations/household";
+import { buildRegistrationDto } from "@/lib/registrations/buildRegistrationDto";
 import { serializeRegistration } from "@/lib/registrations/serialize";
 import { resolvePhotoUrl } from "@/lib/registrations/photo";
+import {
+  loadRegistrationPhotos,
+  serializeRegistrationPhotos,
+} from "@/lib/registrations/registrationPhotos";
 import type {
   RegistrationDetails,
   RegistrationDto,
+  RegistrationPhotoDto,
 } from "@/lib/registrations/types";
 import { parsePatchRegistrationBody } from "@/lib/registrations/validation";
 
@@ -62,8 +68,13 @@ function asDetails(value: Prisma.JsonValue): RegistrationDetails {
 function serializeWithoutRules(
   registration: Parameters<typeof serializeRegistration>[0],
   householdRole: MemberRole,
+  photos: RegistrationPhotoDto[] = [],
 ): RegistrationDto {
   const days = daysUntilExpiration(registration.registrationExpiresOn);
+  const coverUrl =
+    photos.find((photo) => photo.isCover)?.url ??
+    photos[0]?.url ??
+    registration.photoUrl;
   return {
     id: registration.id,
     householdId: registration.householdId,
@@ -77,7 +88,8 @@ function serializeWithoutRules(
     model: registration.model,
     year: registration.year,
     nickname: registration.nickname,
-    photoUrl: registration.photoUrl,
+    photoUrl: coverUrl ?? null,
+    photos,
     bodyClass: registration.bodyClass,
     details: asDetails(registration.details),
     registrationExpiresOn: registration.registrationExpiresOn
@@ -131,11 +143,18 @@ export async function GET(request: Request, context: RouteContext) {
   const role =
     (await getMembershipRole(profile.id, registration.householdId)) ??
     "viewer";
-  const config = await loadStateRules(registration.state);
-  const resolved = await resolvePhotoUrl(registration);
-  const dto = config
-    ? serializeRegistration(resolved, config, new Date(), role)
-    : serializeWithoutRules(resolved, role);
+  const dto = await buildRegistrationDto(registration, role);
+  if (!dto) {
+    const photoRows = await loadRegistrationPhotos(registration.id);
+    const photos = await serializeRegistrationPhotos(photoRows);
+    const resolved = await resolvePhotoUrl(registration);
+    return NextResponse.json(
+      {
+        registration: serializeWithoutRules(resolved, role, photos),
+      },
+      { headers: rateLimitHeaders(limited) },
+    );
+  }
 
   return NextResponse.json(
     { registration: dto },
@@ -241,17 +260,16 @@ export async function PATCH(request: Request, context: RouteContext) {
     },
   });
 
-  const resolved = await resolvePhotoUrl(registration);
+  const dto = await buildRegistrationDto(registration, "owner");
+  if (!dto) {
+    return NextResponse.json(
+      { error: "State rules are not available for this registration" },
+      { status: 400, headers: rateLimitHeaders(limited) },
+    );
+  }
 
   return NextResponse.json(
-    {
-      registration: serializeRegistration(
-        resolved,
-        stateRules,
-        new Date(),
-        "owner",
-      ),
-    },
+    { registration: dto },
     { headers: rateLimitHeaders(limited) },
   );
 }

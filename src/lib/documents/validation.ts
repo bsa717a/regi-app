@@ -143,7 +143,7 @@ export function parseCreateDocumentBody(
     return {
       ok: false,
       error:
-        "type must be one of: registration, insurance, title, emissions, temp_permit",
+        "type must be one of: registration, insurance, other, title, emissions, temp_permit",
     };
   }
 

@@ -13,6 +13,13 @@ export type RegistrationDetails = {
   [key: string]: unknown;
 };
 
+export type RegistrationPhotoDto = {
+  id: string;
+  url: string;
+  isCover: boolean;
+  sortOrder: number;
+};
+
 export type RegistrationDto = {
   id: string;
   householdId: string;
@@ -28,7 +35,9 @@ export type RegistrationDto = {
   model: string | null;
   year: number | null;
   nickname: string | null;
+  /** Signed URL for the cover garage photo (garage card hero). */
   photoUrl: string | null;
+  photos: RegistrationPhotoDto[];
   bodyClass: string | null;
   details: RegistrationDetails;
   registrationExpiresOn: string;

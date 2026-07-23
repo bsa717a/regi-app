@@ -5,6 +5,7 @@ import { roleCanEdit } from "@/lib/household/roles";
 import type {
   RegistrationDetails,
   RegistrationDto,
+  RegistrationPhotoDto,
 } from "@/lib/registrations/types";
 
 function asDetails(value: Prisma.JsonValue): RegistrationDetails {
@@ -19,12 +20,18 @@ export function serializeRegistration(
   config: StateRulesConfig,
   asOf: Date = new Date(),
   householdRole: MemberRole = "owner",
+  photos: RegistrationPhotoDto[] = [],
 ): RegistrationDto {
   const status = computeRegistrationStatus(
     registration.registrationExpiresOn,
     config,
     asOf,
   );
+
+  const coverUrl =
+    photos.find((photo) => photo.isCover)?.url ??
+    photos[0]?.url ??
+    registration.photoUrl;
 
   return {
     id: registration.id,
@@ -39,7 +46,8 @@ export function serializeRegistration(
     model: registration.model,
     year: registration.year,
     nickname: registration.nickname,
-    photoUrl: registration.photoUrl,
+    photoUrl: coverUrl ?? null,
+    photos,
     bodyClass: registration.bodyClass,
     details: asDetails(registration.details),
     registrationExpiresOn: registration.registrationExpiresOn

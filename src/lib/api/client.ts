@@ -333,6 +333,92 @@ export async function deleteRegistrationPhoto(
   return data.registration;
 }
 
+export async function requestRegistrationPhotosUploadUrl(
+  token: string,
+  registrationId: string,
+  input: {
+    filename: string;
+    contentType: string;
+    contentLength: number;
+  },
+): Promise<UploadUrlResponse> {
+  return apiFetch<UploadUrlResponse>(
+    `/api/registrations/${registrationId}/photos/upload-url`,
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+}
+
+export async function confirmRegistrationPhotosAdd(
+  token: string,
+  registrationId: string,
+  input: { gcsPath: string },
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${registrationId}/photos`,
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+  return data.registration;
+}
+
+export async function deleteRegistrationPhotoById(
+  token: string,
+  registrationId: string,
+  photoId: string,
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${registrationId}/photos/${photoId}`,
+    {
+      method: "DELETE",
+      token,
+    },
+  );
+  return data.registration;
+}
+
+export async function setRegistrationCoverPhoto(
+  token: string,
+  registrationId: string,
+  photoId: string,
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${registrationId}/photos/${photoId}/cover`,
+    {
+      method: "PATCH",
+      token,
+    },
+  );
+  return data.registration;
+}
+
+export async function syncRegistrationPhotos(
+  token: string,
+  registrationId: string,
+  input: {
+    deletePhotoIds: string[];
+    addGcsPaths: string[];
+    coverPhotoId?: string | null;
+    coverAddIndex?: number | null;
+  },
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${registrationId}/photos`,
+    {
+      method: "PATCH",
+      token,
+      body: input,
+    },
+  );
+  return data.registration;
+}
+
 export async function joinWaitlist(
   token: string,
   input: { email?: string; state: string },

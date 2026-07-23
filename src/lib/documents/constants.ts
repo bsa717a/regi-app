@@ -17,6 +17,7 @@ export type AllowedContentType = (typeof ALLOWED_CONTENT_TYPES)[number];
 export const DOCUMENT_TYPES: DocumentType[] = [
   "registration",
   "insurance",
+  "other",
   "title",
   "emissions",
   "temp_permit",
@@ -25,6 +26,7 @@ export const DOCUMENT_TYPES: DocumentType[] = [
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   registration: "Registration",
   insurance: "Insurance",
+  other: "Other",
   title: "Title",
   emissions: "Emissions",
   temp_permit: "Temporary permit",

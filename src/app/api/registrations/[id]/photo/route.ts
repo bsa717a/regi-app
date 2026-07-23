@@ -8,13 +8,17 @@ import {
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { loadEditableRegistration } from "@/lib/documents/ownership";
-import { loadStateRules } from "@/lib/stateEngine/loadRules";
 import {
   parsePhotoConfirmBody,
-  resolvePhotoUrl,
   validatePhotoGcsPath,
 } from "@/lib/registrations/photo";
-import { serializeRegistration } from "@/lib/registrations/serialize";
+import { buildRegistrationDto } from "@/lib/registrations/buildRegistrationDto";
+import {
+  addRegistrationPhoto,
+  deleteRegistrationPhotoById,
+  loadRegistrationPhotos,
+  syncRegistrationCoverPhoto,
+} from "@/lib/registrations/registrationPhotos";
 import { deleteObject, objectExists } from "@/lib/storage/gcs";
 
 export const runtime = "nodejs";
@@ -103,41 +107,70 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  if (existing.photoGcsPath && existing.photoGcsPath !== parsed.gcsPath) {
-    try {
-      await deleteObject(existing.photoGcsPath);
-    } catch {
-      // Best-effort cleanup of the previous photo.
+  const photos = await loadRegistrationPhotos(existing.id);
+  const duplicate = photos.find((photo) => photo.gcsPath === parsed.gcsPath);
+  if (duplicate) {
+    const dto = await buildRegistrationDto(existing, "owner");
+    if (!dto) {
+      return NextResponse.json(
+        { error: "State rules are not available for this registration" },
+        { status: 400, headers: rateLimitHeaders(limited) },
+      );
     }
+    return NextResponse.json(
+      { registration: dto },
+      { headers: rateLimitHeaders(limited) },
+    );
   }
 
-  const registration = await prisma.registration.update({
-    where: { id: existing.id },
-    data: {
-      photoGcsPath: parsed.gcsPath,
-      photoUrl: null,
-    },
-  });
+  try {
+    if (
+      photos.length === 1 &&
+      existing.photoGcsPath &&
+      existing.photoGcsPath !== parsed.gcsPath
+    ) {
+      const current = photos[0]!;
+      const previousGcsPath = current.gcsPath;
+      await prisma.registrationPhoto.update({
+        where: { id: current.id },
+        data: { gcsPath: parsed.gcsPath, isCover: true },
+      });
+      await syncRegistrationCoverPhoto(existing.id);
+      try {
+        await deleteObject(previousGcsPath);
+      } catch {
+        // Best-effort cleanup of the replaced object.
+      }
+    } else {
+      await addRegistrationPhoto({
+        registrationId: existing.id,
+        householdId: existing.householdId,
+        gcsPath: parsed.gcsPath,
+      });
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "PHOTO_LIMIT") {
+      return NextResponse.json(
+        { error: "You can add up to 5 photos per registration." },
+        { status: 400, headers: rateLimitHeaders(limited) },
+      );
+    }
+    return NextResponse.json(
+      { error: "Invalid photo path" },
+      { status: 400, headers: rateLimitHeaders(limited) },
+    );
+  }
 
-  const config = await loadStateRules(registration.state);
-  if (!config) {
+  const dto = await buildRegistrationDto(existing, "owner");
+  if (!dto) {
     return NextResponse.json(
       { error: "State rules are not available for this registration" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
-  const resolved = await resolvePhotoUrl(registration);
-
   return NextResponse.json(
-    {
-      registration: serializeRegistration(
-        resolved,
-        config,
-        new Date(),
-        "owner",
-      ),
-    },
+    { registration: dto },
     { headers: rateLimitHeaders(limited) },
   );
 }
@@ -165,32 +198,49 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   const { registration: existing } = access;
-  if (!existing.photoGcsPath) {
+  const photos = await loadRegistrationPhotos(existing.id);
+  if (photos.length === 0 && !existing.photoGcsPath) {
     return NextResponse.json(
       { error: "No photo to remove" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
-  try {
-    await deleteObject(existing.photoGcsPath);
-  } catch {
-    return NextResponse.json(
-      { error: "Could not delete photo from storage. Please try again." },
-      { status: 500, headers: rateLimitHeaders(limited) },
-    );
+  if (photos.length > 0) {
+    for (const photo of photos) {
+      try {
+        await deleteRegistrationPhotoById({
+          registrationId: existing.id,
+          photoId: photo.id,
+        });
+      } catch {
+        return NextResponse.json(
+          { error: "Could not delete photo from storage. Please try again." },
+          { status: 500, headers: rateLimitHeaders(limited) },
+        );
+      }
+    }
+  } else if (existing.photoGcsPath) {
+    try {
+      await deleteObject(existing.photoGcsPath);
+    } catch {
+      return NextResponse.json(
+        { error: "Could not delete photo from storage. Please try again." },
+        { status: 500, headers: rateLimitHeaders(limited) },
+      );
+    }
+
+    await prisma.registration.update({
+      where: { id: existing.id },
+      data: {
+        photoGcsPath: null,
+        photoUrl: null,
+      },
+    });
   }
 
-  const registration = await prisma.registration.update({
-    where: { id: existing.id },
-    data: {
-      photoGcsPath: null,
-      photoUrl: null,
-    },
-  });
-
-  const config = await loadStateRules(registration.state);
-  if (!config) {
+  const dto = await buildRegistrationDto(existing, "owner");
+  if (!dto) {
     return NextResponse.json(
       { error: "State rules are not available for this registration" },
       { status: 400, headers: rateLimitHeaders(limited) },
@@ -198,14 +248,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   return NextResponse.json(
-    {
-      registration: serializeRegistration(
-        registration,
-        config,
-        new Date(),
-        "owner",
-      ),
-    },
+    { registration: dto },
     { headers: rateLimitHeaders(limited) },
   );
 }
