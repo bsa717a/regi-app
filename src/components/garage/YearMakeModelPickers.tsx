@@ -86,6 +86,7 @@ export function YearMakeModelPickers({
   useEffect(() => {
     if (!canLoadModels || parsedYear == null) return;
 
+    const modelYear = parsedYear;
     let cancelled = false;
 
     async function loadModels() {
@@ -93,7 +94,7 @@ export function YearMakeModelPickers({
       setModelsError(null);
       try {
         const token = await getToken();
-        const loaded = await listVehicleModels(token, make, parsedYear);
+        const loaded = await listVehicleModels(token, make, modelYear);
         if (cancelled) return;
         setModels(loaded.map((entry) => entry.name));
       } catch (err) {
