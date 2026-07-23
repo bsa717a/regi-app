@@ -66,9 +66,9 @@ describe("advanceRenewalStatus", () => {
     findUnique.mockResolvedValue({
       id: "ren_1",
       status,
-      vehicleId: "veh_1",
-      vehicle: {
-        id: "veh_1",
+      registrationId: "reg_1",
+      registration: {
+        id: "reg_1",
         nickname: "Mom's Tahoe",
         year: 2021,
         make: "Chevrolet",
@@ -150,9 +150,9 @@ describe("advanceRenewalStatus", () => {
     findUnique.mockResolvedValue({
       id: "ren_1",
       status: "Reviewing",
-      vehicleId: "veh_1",
-      vehicle: {
-        id: "veh_1",
+      registrationId: "reg_1",
+      registration: {
+        id: "reg_1",
         nickname: null,
         year: 2020,
         make: "Toyota",

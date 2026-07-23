@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { parseStateRulesConfig } from "@/lib/stateEngine/parseConfig";
-import { stateName } from "@/lib/vehicles/states";
+import { stateName } from "@/lib/registrations/states";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +52,14 @@ export async function GET(request: Request) {
         code: row.stateCode,
         name: config.displayName || stateName(row.stateCode),
         dueSoonThresholdDays: config.renewalWindow.dueSoonThresholdDays,
+        registrationTypes: config.registrationTypes.map((type) => ({
+          type: type.type,
+          label: type.label,
+          pluralLabel: type.pluralLabel,
+          identityFields: type.identityFields,
+          decode: type.decode,
+          notes: type.notes ?? null,
+        })),
       };
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);

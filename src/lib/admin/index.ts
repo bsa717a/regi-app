@@ -4,7 +4,7 @@ export {
   type AdminSearchQuery,
   type AdminSearchResult,
   type AdminSearchUserHit,
-  type AdminSearchVehicleHit,
+  type AdminSearchRegistrationHit,
 } from "./search";
 export {
   ACTIVE_QUEUE_STATUSES,

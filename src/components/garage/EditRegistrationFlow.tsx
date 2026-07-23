@@ -1,0 +1,391 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import {
+  fieldClassName,
+  labelClassName,
+  primaryButtonClassName,
+} from "@/components/auth/AuthFormStyles";
+import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
+import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { ApiError, updateRegistration } from "@/lib/api/client";
+import type {
+  RegistrationDetails,
+  RegistrationDto,
+} from "@/lib/registrations/types";
+import { REGISTRATION_TYPE_LABELS } from "@/lib/registrations/illustrations";
+import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
+
+export function EditRegistrationFlow({
+  registration,
+  onCancel,
+  onSaved,
+}: {
+  registration: RegistrationDto;
+  onCancel: () => void;
+  onSaved: (vehicle: RegistrationDto) => void;
+}) {
+  const { getIdToken } = useAuth();
+
+  const [vin, setVin] = useState(registration.vin ?? "");
+  const [plate, setPlate] = useState(registration.plate ?? "");
+  const [year, setYear] = useState(
+    registration.year ? String(registration.year) : "",
+  );
+  const [make, setMake] = useState(registration.make ?? "");
+  const [model, setModel] = useState(registration.model ?? "");
+  const [nickname, setNickname] = useState(registration.nickname ?? "");
+  const [photoUrl, setPhotoUrl] = useState(registration.photoUrl ?? "");
+  const [expiresOn, setExpiresOn] = useState(registration.registrationExpiresOn);
+  const [hin, setHin] = useState(registration.details.hin ?? "");
+  const [serial, setSerial] = useState(registration.details.serial ?? "");
+  const [ohvClass, setOhvClass] = useState(registration.details.ohvClass ?? "");
+  const [unladenWeightLbs, setUnladenWeightLbs] = useState(
+    registration.details.unladenWeightLbs != null
+      ? String(registration.details.unladenWeightLbs)
+      : "",
+  );
+  const [lengthFeet, setLengthFeet] = useState(
+    registration.details.lengthFeet != null
+      ? String(registration.details.lengthFeet)
+      : "",
+  );
+  const [horsepower, setHorsepower] = useState(
+    registration.details.horsepower != null
+      ? String(registration.details.horsepower)
+      : "",
+  );
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const typeLabel = REGISTRATION_TYPE_LABELS[registration.type];
+  const showVin =
+    registration.type === "passenger" ||
+    registration.type === "motorcycle" ||
+    registration.type === "trailer" ||
+    registration.type === "ohv" ||
+    registration.type === "snowmobile";
+  const showHin = registration.type === "boat";
+  const showSerial = registration.type === "ohv" || registration.type === "snowmobile";
+  const showOhvClass = registration.type === "ohv";
+  const showUnladenWeight = registration.type === "trailer";
+  const showBoatDetails = registration.type === "boat";
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+
+    let normalizedVin: string | null = null;
+    if (vin.trim()) {
+      normalizedVin = normalizeVin(vin);
+      if (!isValidVinFormat(normalizedVin)) {
+        setError("VIN must be 17 characters (letters and numbers, no I/O/Q).");
+        return;
+      }
+    }
+
+    const y = year.trim() ? Number.parseInt(year, 10) : null;
+    if (year.trim() && (!Number.isFinite(y) || y! < 1900 || y! > 2100)) {
+      setError("Enter a valid year.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error("Please sign in again.");
+
+      const details: RegistrationDetails = {};
+      if (showHin) details.hin = hin.trim() || null;
+      if (showSerial) details.serial = serial.trim() || null;
+      if (showOhvClass) details.ohvClass = ohvClass.trim() || null;
+      if (showUnladenWeight) {
+        details.unladenWeightLbs = unladenWeightLbs.trim()
+          ? Number.parseInt(unladenWeightLbs, 10)
+          : null;
+      }
+      if (showBoatDetails) {
+        details.lengthFeet = lengthFeet.trim()
+          ? Number.parseFloat(lengthFeet)
+          : null;
+        details.horsepower = horsepower.trim()
+          ? Number.parseInt(horsepower, 10)
+          : null;
+      }
+
+      const updated = await updateRegistration(token, registration.id, {
+        vin: normalizedVin,
+        plate: plate.trim() ? plate.trim().toUpperCase() : null,
+        year: y,
+        make: make.trim() || null,
+        model: model.trim() || null,
+        nickname: nickname.trim() || null,
+        photoUrl: photoUrl.trim() || null,
+        registrationExpiresOn: expiresOn,
+        details,
+      });
+      onSaved(updated);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not save changes. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-lg">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="text-sm font-medium text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+      >
+        ← Back to garage
+      </button>
+
+      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+        Edit registration
+      </h2>
+      <p className="mt-1 text-base text-slate-600">
+        Update the details below. The registration type can&apos;t be changed.
+      </p>
+
+      <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+        <div className="h-24">
+          <VehicleIllustration
+            bodyClass={registration.bodyClass}
+            photoUrl={registration.photoUrl}
+            label={registration.nickname || typeLabel}
+            registrationType={registration.type}
+          />
+        </div>
+        <div className="px-4 py-3">
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200/80">
+            {typeLabel}
+          </span>
+        </div>
+      </div>
+
+      {error ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-2xl bg-rose-50 px-3.5 py-3 text-sm text-rose-800"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        {showVin ? (
+          <div>
+            <label htmlFor="edit-vin" className={labelClassName}>
+              VIN <span className="font-normal text-slate-500">(optional)</span>
+            </label>
+            <input
+              id="edit-vin"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={17}
+              className={`${fieldClassName} font-mono tracking-wide uppercase`}
+              value={vin}
+              onChange={(e) => setVin(e.target.value.toUpperCase())}
+            />
+          </div>
+        ) : null}
+
+        <div>
+          <label htmlFor="edit-plate" className={labelClassName}>
+            {registration.type === "boat"
+              ? "Registration number"
+              : registration.type === "ohv" || registration.type === "snowmobile"
+                ? "Decal number"
+                : "License plate"}{" "}
+            <span className="font-normal text-slate-500">(optional)</span>
+          </label>
+          <input
+            id="edit-plate"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            className={`${fieldClassName} uppercase`}
+            value={plate}
+            onChange={(e) => setPlate(e.target.value.toUpperCase())}
+          />
+        </div>
+
+        {showHin ? (
+          <div>
+            <label htmlFor="edit-hin" className={labelClassName}>
+              Hull Identification Number (HIN)
+            </label>
+            <input
+              id="edit-hin"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className={`${fieldClassName} font-mono uppercase`}
+              value={hin}
+              onChange={(e) => setHin(e.target.value.toUpperCase())}
+            />
+          </div>
+        ) : null}
+
+        {showSerial ? (
+          <div>
+            <label htmlFor="edit-serial" className={labelClassName}>
+              Serial number{" "}
+              <span className="font-normal text-slate-500">(optional)</span>
+            </label>
+            <input
+              id="edit-serial"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className={`${fieldClassName} font-mono uppercase`}
+              value={serial}
+              onChange={(e) => setSerial(e.target.value.toUpperCase())}
+            />
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-1">
+            <label htmlFor="edit-year" className={labelClassName}>
+              Year
+            </label>
+            <input
+              id="edit-year"
+              inputMode="numeric"
+              className={fieldClassName}
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+            />
+          </div>
+          <div className="col-span-2">
+            <label htmlFor="edit-make" className={labelClassName}>
+              Make
+            </label>
+            <input
+              id="edit-make"
+              className={fieldClassName}
+              value={make}
+              onChange={(e) => setMake(e.target.value)}
+            />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="edit-model" className={labelClassName}>
+            Model
+          </label>
+          <input
+            id="edit-model"
+            className={fieldClassName}
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          />
+        </div>
+
+        <ExpirationPicker value={expiresOn} onChange={setExpiresOn} />
+
+        {showUnladenWeight ? (
+          <div>
+            <label htmlFor="edit-unladenWeightLbs" className={labelClassName}>
+              Unladen weight (lbs){" "}
+              <span className="font-normal text-slate-500">(optional)</span>
+            </label>
+            <input
+              id="edit-unladenWeightLbs"
+              inputMode="numeric"
+              className={fieldClassName}
+              value={unladenWeightLbs}
+              onChange={(e) => setUnladenWeightLbs(e.target.value)}
+            />
+          </div>
+        ) : null}
+
+        {showBoatDetails ? (
+          <>
+            <div>
+              <label htmlFor="edit-lengthFeet" className={labelClassName}>
+                Length (feet){" "}
+                <span className="font-normal text-slate-500">(optional)</span>
+              </label>
+              <input
+                id="edit-lengthFeet"
+                inputMode="decimal"
+                className={fieldClassName}
+                value={lengthFeet}
+                onChange={(e) => setLengthFeet(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-horsepower" className={labelClassName}>
+                Horsepower{" "}
+                <span className="font-normal text-slate-500">(optional)</span>
+              </label>
+              <input
+                id="edit-horsepower"
+                inputMode="numeric"
+                className={fieldClassName}
+                value={horsepower}
+                onChange={(e) => setHorsepower(e.target.value)}
+              />
+            </div>
+          </>
+        ) : null}
+
+        {showOhvClass ? (
+          <div>
+            <label htmlFor="edit-ohvClass" className={labelClassName}>
+              OHV class{" "}
+              <span className="font-normal text-slate-500">(optional)</span>
+            </label>
+            <input
+              id="edit-ohvClass"
+              className={fieldClassName}
+              value={ohvClass}
+              onChange={(e) => setOhvClass(e.target.value)}
+            />
+          </div>
+        ) : null}
+
+        <div>
+          <label htmlFor="edit-nickname" className={labelClassName}>
+            Nickname <span className="font-normal text-slate-500">(optional)</span>
+          </label>
+          <input
+            id="edit-nickname"
+            className={fieldClassName}
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="edit-photoUrl" className={labelClassName}>
+            Photo URL{" "}
+            <span className="font-normal text-slate-500">(optional)</span>
+          </label>
+          <input
+            id="edit-photoUrl"
+            type="url"
+            className={fieldClassName}
+            value={photoUrl}
+            onChange={(e) => setPhotoUrl(e.target.value)}
+            placeholder="https://… or leave blank for an illustration"
+          />
+        </div>
+
+        <button type="submit" className={primaryButtonClassName} disabled={busy}>
+          {busy ? "Saving…" : "Save changes"}
+        </button>
+      </form>
+    </section>
+  );
+}

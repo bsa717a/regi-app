@@ -1,13 +1,13 @@
-import type { Document, Renewal, Vehicle } from "@prisma/client";
+import type { Document, Registration, Renewal } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   requireOwner,
   userCanAccessHousehold,
-} from "@/lib/vehicles/household";
+} from "@/lib/registrations/household";
 import { mergeDocumentsForRenewal } from "./vaultDocs";
 
 export type RenewalWithRelations = Renewal & {
-  vehicle: Vehicle;
+  registration: Registration;
   documents: Document[];
 };
 
@@ -19,17 +19,17 @@ async function loadRenewal(renewalId: string): Promise<RenewalWithRelations | nu
   const renewal = await prisma.renewal.findUnique({
     where: { id: renewalId },
     include: {
-      vehicle: true,
+      registration: true,
       documents: { orderBy: [{ type: "asc" }, { createdAt: "desc" }] },
     },
   });
   if (!renewal) return null;
 
-  // Include vehicle vault docs (renewalId null) so prior vault uploads count
+  // Include registration vault docs (renewalId null) so prior vault uploads count
   // toward renewal completeness and appear in the concierge UI.
   const vaultDocs = await prisma.document.findMany({
     where: {
-      vehicleId: renewal.vehicleId,
+      registrationId: renewal.registrationId,
       renewalId: null,
     },
     orderBy: [{ type: "asc" }, { createdAt: "desc" }],
@@ -48,7 +48,7 @@ async function loadRenewal(renewalId: string): Promise<RenewalWithRelations | nu
 }
 
 /**
- * Load a renewal and ensure the user can access its vehicle household.
+ * Load a renewal and ensure the user can access its registration household.
  * Returns 404 when inaccessible to avoid leaking existence.
  */
 export async function loadAccessibleRenewal(
@@ -62,7 +62,7 @@ export async function loadAccessibleRenewal(
 
   const allowed = await userCanAccessHousehold(
     userId,
-    renewal.vehicle.householdId,
+    renewal.registration.householdId,
   );
   if (!allowed) {
     return { ok: false, status: 404, error: "Not found" };
@@ -83,7 +83,7 @@ export async function loadEditableRenewal(
 
   const owner = await requireOwner(
     userId,
-    access.renewal.vehicle.householdId,
+    access.renewal.registration.householdId,
     "change this renewal",
   );
   if (!owner.ok) {

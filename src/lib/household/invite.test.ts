@@ -36,10 +36,10 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("@/lib/vehicles/household", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/vehicles/household")>(
-    "@/lib/vehicles/household",
-  );
+vi.mock("@/lib/registrations/household", async () => {
+  const actual = await vi.importActual<
+    typeof import("@/lib/registrations/household")
+  >("@/lib/registrations/household");
   return {
     ...actual,
     getPrimaryHouseholdId: vi.fn(async () => "hh_1"),

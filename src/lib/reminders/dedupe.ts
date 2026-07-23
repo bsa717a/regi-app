@@ -6,12 +6,12 @@ import { formatUtcDateKey, startOfUtcDay } from "./dates";
  * Re-running the daily job with the same inputs yields the same key → no duplicates.
  */
 export function buildReminderDedupeKey(params: {
-  vehicleId: string;
+  registrationId: string;
   userId: string;
   channel: NotificationChannel;
   templateKey: string;
   scheduledFor: Date;
 }): string {
   const day = formatUtcDateKey(startOfUtcDay(params.scheduledFor));
-  return `${params.vehicleId}:${params.userId}:${params.channel}:${params.templateKey}:${day}`;
+  return `${params.registrationId}:${params.userId}:${params.channel}:${params.templateKey}:${day}`;
 }

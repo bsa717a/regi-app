@@ -34,17 +34,17 @@ export function sanitizeFilename(filename: string): string {
 
 /**
  * Build a private object key. Never expose this as a public URL.
- * Pattern: households/{householdId}/vehicles/{vehicleId}/{uuid}-{filename}
+ * Pattern: households/{householdId}/registrations/{registrationId}/{uuid}-{filename}
  */
 export function buildGcsPath(input: {
   householdId: string;
-  vehicleId: string;
+  registrationId: string;
   originalFilename: string;
   uuid?: string;
 }): string {
   const id = input.uuid ?? crypto.randomUUID();
   const safe = sanitizeFilename(input.originalFilename);
-  return `households/${input.householdId}/vehicles/${input.vehicleId}/${id}-${safe}`;
+  return `households/${input.householdId}/registrations/${input.registrationId}/${id}-${safe}`;
 }
 
 export function contentLengthRangeValue(
@@ -54,7 +54,7 @@ export function contentLengthRangeValue(
 }
 
 export type UploadUrlRequest = {
-  vehicleId: string;
+  registrationId: string;
   filename: string;
   contentType: AllowedContentType;
   contentLength: number;
@@ -63,8 +63,8 @@ export type UploadUrlRequest = {
 export function parseUploadUrlBody(
   body: Record<string, unknown>,
 ): { ok: true; data: UploadUrlRequest } | { ok: false; error: string } {
-  if (typeof body.vehicleId !== "string" || !body.vehicleId.trim()) {
-    return { ok: false, error: "vehicleId is required" };
+  if (typeof body.registrationId !== "string" || !body.registrationId.trim()) {
+    return { ok: false, error: "registrationId is required" };
   }
 
   if (typeof body.filename !== "string" || !body.filename.trim()) {
@@ -114,7 +114,7 @@ export function parseUploadUrlBody(
   return {
     ok: true,
     data: {
-      vehicleId: body.vehicleId.trim(),
+      registrationId: body.registrationId.trim(),
       filename: body.filename.trim(),
       contentType,
       contentLength,
@@ -123,7 +123,7 @@ export function parseUploadUrlBody(
 }
 
 export type CreateDocumentRequest = {
-  vehicleId: string;
+  registrationId: string;
   type: DocumentType;
   gcsPath: string;
   originalFilename: string;
@@ -134,8 +134,8 @@ export type CreateDocumentRequest = {
 export function parseCreateDocumentBody(
   body: Record<string, unknown>,
 ): { ok: true; data: CreateDocumentRequest } | { ok: false; error: string } {
-  if (typeof body.vehicleId !== "string" || !body.vehicleId.trim()) {
-    return { ok: false, error: "vehicleId is required" };
+  if (typeof body.registrationId !== "string" || !body.registrationId.trim()) {
+    return { ok: false, error: "registrationId is required" };
   }
 
   if (typeof body.type !== "string" || !isDocumentType(body.type)) {
@@ -180,7 +180,7 @@ export function parseCreateDocumentBody(
   return {
     ok: true,
     data: {
-      vehicleId: body.vehicleId.trim(),
+      registrationId: body.registrationId.trim(),
       type: body.type,
       gcsPath,
       originalFilename: sanitizeFilename(body.originalFilename.trim()),

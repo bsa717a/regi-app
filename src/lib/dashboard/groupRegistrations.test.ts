@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { groupDashboardVehicles } from "@/lib/dashboard/groupVehicles";
-import type { VehicleDto } from "@/lib/vehicles/types";
+import { groupDashboardRegistrations } from "@/lib/dashboard/groupRegistrations";
+import type { RegistrationDto } from "@/lib/registrations/types";
 
-function vehicle(
-  overrides: Partial<VehicleDto> &
-    Pick<VehicleDto, "id" | "status" | "daysUntilExpiration" | "registrationExpiresOn">,
-): VehicleDto {
+function registration(
+  overrides: Partial<RegistrationDto> &
+    Pick<
+      RegistrationDto,
+      "id" | "status" | "daysUntilExpiration" | "registrationExpiresOn"
+    >,
+): RegistrationDto {
   return {
     householdId: "hh1",
     householdRole: "owner",
     canEdit: true,
+    type: "passenger",
     vin: null,
     plate: null,
     state: "UT",
@@ -19,6 +23,7 @@ function vehicle(
     nickname: null,
     photoUrl: null,
     bodyClass: null,
+    details: {},
     createdBy: "u1",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -27,9 +32,9 @@ function vehicle(
   };
 }
 
-describe("groupDashboardVehicles", () => {
+describe("groupDashboardRegistrations", () => {
   it("returns empty groups for an empty garage", () => {
-    expect(groupDashboardVehicles([])).toEqual({
+    expect(groupDashboardRegistrations([])).toEqual({
       expired: [],
       upcoming: [],
       renewTarget: null,
@@ -37,26 +42,26 @@ describe("groupDashboardVehicles", () => {
   });
 
   it("sorts upcoming soonest-first and expired most-overdue-first", () => {
-    const currentFar = vehicle({
+    const currentFar = registration({
       id: "far",
       status: "Current",
       daysUntilExpiration: 200,
       registrationExpiresOn: "2027-02-01",
     });
-    const dueSoon = vehicle({
+    const dueSoon = registration({
       id: "soon",
       status: "Due Soon",
       daysUntilExpiration: 14,
       registrationExpiresOn: "2026-08-05",
     });
-    const expiredMild = vehicle({
+    const expiredMild = registration({
       id: "exp-mild",
       status: "Expired",
       daysUntilExpiration: -3,
       registrationExpiresOn: "2026-07-19",
       countdown: "Expired 3 days ago",
     });
-    const expiredBad = vehicle({
+    const expiredBad = registration({
       id: "exp-bad",
       status: "Expired",
       daysUntilExpiration: -40,
@@ -64,48 +69,49 @@ describe("groupDashboardVehicles", () => {
       countdown: "Expired 40 days ago",
     });
 
-    const groups = groupDashboardVehicles([
+    const groups = groupDashboardRegistrations([
       currentFar,
       expiredMild,
       dueSoon,
       expiredBad,
     ]);
 
-    expect(groups.expired.map((v) => v.id)).toEqual(["exp-bad", "exp-mild"]);
-    expect(groups.upcoming.map((v) => v.id)).toEqual(["soon", "far"]);
+    expect(groups.expired.map((r) => r.id)).toEqual(["exp-bad", "exp-mild"]);
+    expect(groups.upcoming.map((r) => r.id)).toEqual(["soon", "far"]);
   });
 
   it("picks renewTarget as first expired, else soonest due-soon", () => {
-    const expired = vehicle({
+    const expired = registration({
       id: "exp",
       status: "Expired",
       daysUntilExpiration: -2,
       registrationExpiresOn: "2026-07-20",
     });
-    const dueSoon = vehicle({
+    const dueSoon = registration({
       id: "soon",
       status: "Due Soon",
       daysUntilExpiration: 7,
       registrationExpiresOn: "2026-07-29",
     });
-    const current = vehicle({
+    const current = registration({
       id: "ok",
       status: "Current",
       daysUntilExpiration: 120,
       registrationExpiresOn: "2026-11-20",
     });
 
-    expect(groupDashboardVehicles([dueSoon, expired, current]).renewTarget?.id).toBe(
-      "exp",
-    );
-    expect(groupDashboardVehicles([current, dueSoon]).renewTarget?.id).toBe(
-      "soon",
-    );
-    expect(groupDashboardVehicles([current]).renewTarget).toBeNull();
+    expect(
+      groupDashboardRegistrations([dueSoon, expired, current]).renewTarget
+        ?.id,
+    ).toBe("exp");
+    expect(
+      groupDashboardRegistrations([current, dueSoon]).renewTarget?.id,
+    ).toBe("soon");
+    expect(groupDashboardRegistrations([current]).renewTarget).toBeNull();
   });
 
-  it("skips viewer-only vehicles for renewTarget", () => {
-    const sharedExpired = vehicle({
+  it("skips viewer-only registrations for renewTarget", () => {
+    const sharedExpired = registration({
       id: "shared-exp",
       status: "Expired",
       daysUntilExpiration: -5,
@@ -113,7 +119,7 @@ describe("groupDashboardVehicles", () => {
       householdRole: "viewer",
       canEdit: false,
     });
-    const ownedDueSoon = vehicle({
+    const ownedDueSoon = registration({
       id: "owned-soon",
       status: "Due Soon",
       daysUntilExpiration: 10,
@@ -121,8 +127,11 @@ describe("groupDashboardVehicles", () => {
     });
 
     expect(
-      groupDashboardVehicles([sharedExpired, ownedDueSoon]).renewTarget?.id,
+      groupDashboardRegistrations([sharedExpired, ownedDueSoon]).renewTarget
+        ?.id,
     ).toBe("owned-soon");
-    expect(groupDashboardVehicles([sharedExpired]).renewTarget).toBeNull();
+    expect(
+      groupDashboardRegistrations([sharedExpired]).renewTarget,
+    ).toBeNull();
   });
 });

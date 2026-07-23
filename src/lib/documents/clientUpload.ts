@@ -46,7 +46,7 @@ export function validateUploadFile(
 
 export async function uploadDocumentToVault(input: {
   token: string;
-  vehicleId: string;
+  registrationId: string;
   type: DocumentType;
   file: File;
   /** Optional — concierge renewal uploads land in the vault + link to the renewal. */
@@ -59,7 +59,7 @@ export async function uploadDocumentToVault(input: {
   }
 
   const signed = await requestDocumentUploadUrl(input.token, {
-    vehicleId: input.vehicleId,
+    registrationId: input.registrationId,
     filename: input.file.name,
     contentType: checked.contentType,
     contentLength: input.file.size,
@@ -76,7 +76,7 @@ export async function uploadDocumentToVault(input: {
 
   input.onProgress?.(92);
   const document = await confirmDocumentUpload(input.token, {
-    vehicleId: input.vehicleId,
+    registrationId: input.registrationId,
     type: input.type,
     gcsPath: signed.gcsPath,
     originalFilename: input.file.name,

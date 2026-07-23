@@ -8,10 +8,10 @@ import {
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import {
-  assertRenewalBelongsToVehicle,
-  gcsPathMatchesVehicle,
-  loadAccessibleVehicle,
-  loadEditableVehicle,
+  assertRenewalBelongsToRegistration,
+  gcsPathMatchesRegistration,
+  loadAccessibleRegistration,
+  loadEditableRegistration,
 } from "@/lib/documents/ownership";
 import { serializeDocument } from "@/lib/documents/serialize";
 import { parseCreateDocumentBody } from "@/lib/documents/validation";
@@ -41,7 +41,7 @@ async function enforceRateLimit(request: Request, suffix: string) {
 }
 
 /**
- * GET /api/documents?vehicleId=...
+ * GET /api/documents?registrationId=...
  * Auth + household access → list metadata (no signed/public URLs).
  */
 export async function GET(request: Request) {
@@ -52,16 +52,18 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const profile = await getOrCreateUser(auth.decoded);
-  const vehicleId = new URL(request.url).searchParams.get("vehicleId")?.trim();
+  const registrationId = new URL(request.url).searchParams
+    .get("registrationId")
+    ?.trim();
 
-  if (!vehicleId) {
+  if (!registrationId) {
     return NextResponse.json(
-      { error: "vehicleId query parameter is required" },
+      { error: "registrationId query parameter is required" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
-  const access = await loadAccessibleVehicle(profile.id, vehicleId);
+  const access = await loadAccessibleRegistration(profile.id, registrationId);
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },
@@ -70,7 +72,7 @@ export async function GET(request: Request) {
   }
 
   const documents = await prisma.document.findMany({
-    where: { vehicleId },
+    where: { registrationId },
     orderBy: [{ type: "asc" }, { createdAt: "desc" }],
   });
 
@@ -112,7 +114,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const access = await loadEditableVehicle(profile.id, parsed.data.vehicleId);
+  const access = await loadEditableRegistration(
+    profile.id,
+    parsed.data.registrationId,
+  );
   if (!access.ok) {
     return NextResponse.json(
       { error: access.error },
@@ -121,22 +126,22 @@ export async function POST(request: Request) {
   }
 
   if (
-    !gcsPathMatchesVehicle(
+    !gcsPathMatchesRegistration(
       parsed.data.gcsPath,
-      access.vehicle.householdId,
-      access.vehicle.id,
+      access.registration.householdId,
+      access.registration.id,
     )
   ) {
     return NextResponse.json(
-      { error: "gcsPath does not match this vehicle" },
+      { error: "gcsPath does not match this registration" },
       { status: 400, headers: rateLimitHeaders(limited) },
     );
   }
 
   if (parsed.data.renewalId) {
-    const renewalCheck = await assertRenewalBelongsToVehicle(
+    const renewalCheck = await assertRenewalBelongsToRegistration(
       parsed.data.renewalId,
-      access.vehicle.id,
+      access.registration.id,
     );
     if (!renewalCheck.ok) {
       return NextResponse.json(
@@ -166,7 +171,7 @@ export async function POST(request: Request) {
 
   const document = await prisma.document.create({
     data: {
-      vehicleId: access.vehicle.id,
+      registrationId: access.registration.id,
       renewalId: parsed.data.renewalId ?? null,
       type: parsed.data.type,
       gcsPath: parsed.data.gcsPath,

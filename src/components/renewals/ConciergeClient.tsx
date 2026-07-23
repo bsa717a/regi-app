@@ -21,10 +21,10 @@ import {
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import type { RenewalDto, RequiredDocumentStatus } from "@/lib/renewals/types";
-import { titleCaseMakeModel } from "@/lib/vehicles/illustrations";
+import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
 function vehicleLabel(renewal: RenewalDto): string {
-  const v = renewal.vehicle;
+  const v = renewal.registration;
   if (v.nickname?.trim()) return v.nickname.trim();
   const parts = [
     v.year,
@@ -33,7 +33,7 @@ function vehicleLabel(renewal: RenewalDto): string {
   ]
     .filter(Boolean)
     .join(" ");
-  return parts || "Vehicle";
+  return parts || "Registration";
 }
 
 function isPostSubmit(status: RenewalDto["status"]): boolean {
@@ -100,7 +100,7 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
       const token = idToken ?? (await getIdToken());
       if (!token) throw new ApiError("Not signed in", 401);
       const { renewal: next } = await createRenewal(token, {
-        vehicleId: renewal.vehicleId,
+        registrationId: renewal.registrationId,
         county,
       });
       setRenewal(next);
@@ -177,7 +177,7 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
         </div>
       ) : null}
 
-      {!loading && renewal && !renewal.vehicle.canEdit ? (
+      {!loading && renewal && !renewal.registration.canEdit ? (
         <div className="space-y-6">
           <section className="rounded-3xl border border-slate-200 bg-slate-50/80 px-4 py-5">
             <p className="text-sm font-medium text-slate-700">Shared · view only</p>
@@ -214,7 +214,7 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
         </div>
       ) : null}
 
-      {!loading && renewal && renewal.vehicle.canEdit ? (
+      {!loading && renewal && renewal.registration.canEdit ? (
         isPostSubmit(renewal.status) ? (
           <SubmittedView renewal={renewal} onRefresh={refresh} />
         ) : (
@@ -321,7 +321,7 @@ function DraftView({
           and submit — no payment in this MVP.
         </p>
         <p className="mt-2 text-sm font-medium text-slate-700">
-          {renewal.vehicle.countdown}
+          {renewal.registration.countdown}
         </p>
       </section>
 
@@ -462,7 +462,7 @@ function DocumentUploadSlot({
       if (!token) throw new ApiError("Not signed in", 401);
       await uploadDocumentToVault({
         token,
-        vehicleId: renewal.vehicleId,
+        registrationId: renewal.registrationId,
         type: requirement.type as DocumentType,
         file,
         renewalId: renewal.id,

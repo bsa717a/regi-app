@@ -28,6 +28,7 @@ function configWithThreshold(dueSoonThresholdDays: number): StateRulesConfig {
       postExpiration: { intervalDays: 3 },
     },
     conciergeWorkflow: [],
+    registrationTypes: [],
   };
 }
 

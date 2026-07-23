@@ -24,16 +24,16 @@ describe("sanitizeFilename", () => {
 });
 
 describe("buildGcsPath", () => {
-  it("uses households/vehicles prefix with uuid and sanitized name", () => {
+  it("uses households/registrations prefix with uuid and sanitized name", () => {
     const path = buildGcsPath({
       householdId: "hh_1",
-      vehicleId: "veh_1",
+      registrationId: "reg_1",
       originalFilename: "reg card.pdf",
       uuid: "11111111-2222-3333-4444-555555555555",
     });
 
     expect(path).toBe(
-      "households/hh_1/vehicles/veh_1/11111111-2222-3333-4444-555555555555-reg card.pdf",
+      "households/hh_1/registrations/reg_1/11111111-2222-3333-4444-555555555555-reg card.pdf",
     );
   });
 });
@@ -41,7 +41,7 @@ describe("buildGcsPath", () => {
 describe("content-type and size validation", () => {
   it("accepts allowed types within size limit", () => {
     const parsed = parseUploadUrlBody({
-      vehicleId: "veh_1",
+      registrationId: "reg_1",
       filename: "card.jpg",
       contentType: "image/jpeg",
       contentLength: 1024,
@@ -51,7 +51,7 @@ describe("content-type and size validation", () => {
 
   it("rejects disallowed content types", () => {
     const parsed = parseUploadUrlBody({
-      vehicleId: "veh_1",
+      registrationId: "reg_1",
       filename: "x.exe",
       contentType: "application/octet-stream",
       contentLength: 100,
@@ -64,7 +64,7 @@ describe("content-type and size validation", () => {
 
   it("rejects files over the max size", () => {
     const parsed = parseUploadUrlBody({
-      vehicleId: "veh_1",
+      registrationId: "reg_1",
       filename: "big.pdf",
       contentType: "application/pdf",
       contentLength: MAX_UPLOAD_BYTES + 1,
@@ -101,9 +101,9 @@ describe("content-type and size validation", () => {
 describe("parseCreateDocumentBody", () => {
   it("accepts optional renewalId for the concierge hook", () => {
     const parsed = parseCreateDocumentBody({
-      vehicleId: "veh_1",
+      registrationId: "reg_1",
       type: "insurance",
-      gcsPath: "households/hh/vehicles/veh_1/uuid-file.pdf",
+      gcsPath: "households/hh/registrations/reg_1/uuid-file.pdf",
       originalFilename: "ins.pdf",
       renewalId: "ren_1",
     });
@@ -117,16 +117,16 @@ describe("parseCreateDocumentBody", () => {
   it("rejects invalid document type and path traversal", () => {
     expect(
       parseCreateDocumentBody({
-        vehicleId: "veh_1",
+        registrationId: "reg_1",
         type: "passport",
-        gcsPath: "households/hh/vehicles/veh_1/a.pdf",
+        gcsPath: "households/hh/registrations/reg_1/a.pdf",
         originalFilename: "a.pdf",
       }).ok,
     ).toBe(false);
 
     expect(
       parseCreateDocumentBody({
-        vehicleId: "veh_1",
+        registrationId: "reg_1",
         type: "title",
         gcsPath: "households/hh/../secret",
         originalFilename: "a.pdf",

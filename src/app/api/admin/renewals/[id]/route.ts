@@ -15,7 +15,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/admin/renewals/[id]
- * Full renewal detail for staff: vehicle, owner, docs (signed URLs), fees,
+ * Full renewal detail for staff: registration, owner, docs (signed URLs), fees,
  * status history, notes, payment status n/a (MVP).
  */
 export async function GET(request: Request, context: RouteContext) {
@@ -30,7 +30,7 @@ export async function GET(request: Request, context: RouteContext) {
   const renewal = await prisma.renewal.findUnique({
     where: { id: id.trim() },
     include: {
-      vehicle: true,
+      registration: true,
       requester: {
         select: { id: true, email: true, name: true },
       },

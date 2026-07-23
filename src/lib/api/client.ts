@@ -1,4 +1,5 @@
-import type { RenewalStatus } from "@prisma/client";
+import type { RegistrationType, RenewalStatus } from "@prisma/client";
+import type { RegistrationIdentityField } from "@/lib/stateEngine/types";
 import type {
   AdminRenewalDetailResponse,
   AdminRenewalsResponse,
@@ -24,10 +25,10 @@ import type {
   InviteHouseholdResponse,
 } from "@/lib/household/types";
 import type {
-  CreateVehicleInput,
-  PatchVehicleInput,
-  VehicleDto,
-} from "@/lib/vehicles/types";
+  CreateRegistrationInput,
+  PatchRegistrationInput,
+  RegistrationDto,
+} from "@/lib/registrations/types";
 
 export class ApiError extends Error {
   status: number;
@@ -155,53 +156,63 @@ export async function decodeVinApi(
   );
 }
 
-export async function listVehicles(token: string): Promise<VehicleDto[]> {
-  const data = await apiFetch<{ vehicles: VehicleDto[] }>("/api/vehicles", {
-    token,
-  });
-  return data.vehicles;
-}
-
-export async function createVehicle(
+export async function listRegistrations(
   token: string,
-  input: CreateVehicleInput,
-): Promise<VehicleDto> {
-  const data = await apiFetch<{ vehicle: VehicleDto }>("/api/vehicles", {
-    method: "POST",
-    token,
-    body: input,
-  });
-  return data.vehicle;
+): Promise<RegistrationDto[]> {
+  const data = await apiFetch<{ registrations: RegistrationDto[] }>(
+    "/api/registrations",
+    { token },
+  );
+  return data.registrations;
 }
 
-export async function getVehicle(
+export async function createRegistration(
   token: string,
-  id: string,
-): Promise<VehicleDto> {
-  const data = await apiFetch<{ vehicle: VehicleDto }>(`/api/vehicles/${id}`, {
-    token,
-  });
-  return data.vehicle;
+  input: CreateRegistrationInput,
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    "/api/registrations",
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+  return data.registration;
 }
 
-export async function updateVehicle(
+export async function getRegistration(
   token: string,
   id: string,
-  patch: PatchVehicleInput,
-): Promise<VehicleDto> {
-  const data = await apiFetch<{ vehicle: VehicleDto }>(`/api/vehicles/${id}`, {
-    method: "PATCH",
-    token,
-    body: patch,
-  });
-  return data.vehicle;
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${id}`,
+    { token },
+  );
+  return data.registration;
 }
 
-export async function deleteVehicle(
+export async function updateRegistration(
+  token: string,
+  id: string,
+  patch: PatchRegistrationInput,
+): Promise<RegistrationDto> {
+  const data = await apiFetch<{ registration: RegistrationDto }>(
+    `/api/registrations/${id}`,
+    {
+      method: "PATCH",
+      token,
+      body: patch,
+    },
+  );
+  return data.registration;
+}
+
+export async function deleteRegistration(
   token: string,
   id: string,
 ): Promise<void> {
-  await apiFetch<{ ok: true }>(`/api/vehicles/${id}`, {
+  await apiFetch<{ ok: true }>(`/api/registrations/${id}`, {
     method: "DELETE",
     token,
   });
@@ -218,10 +229,20 @@ export async function joinWaitlist(
   });
 }
 
+export type ActiveStateRegistrationTypeDto = {
+  type: RegistrationType;
+  label: string;
+  pluralLabel: string;
+  identityFields: RegistrationIdentityField[];
+  decode: "nhtsa_vin" | "none";
+  notes: string | null;
+};
+
 export type ActiveStateDto = {
   code: string;
   name: string;
   dueSoonThresholdDays: number;
+  registrationTypes: ActiveStateRegistrationTypeDto[];
 };
 
 export async function listActiveStates(
@@ -249,9 +270,9 @@ export async function listNotifications(
 
 export async function listDocuments(
   token: string,
-  vehicleId: string,
+  registrationId: string,
 ): Promise<DocumentDto[]> {
-  const params = new URLSearchParams({ vehicleId });
+  const params = new URLSearchParams({ registrationId });
   const data = await apiFetch<{ documents: DocumentDto[] }>(
     `/api/documents?${params}`,
     { token },
@@ -262,7 +283,7 @@ export async function listDocuments(
 export async function requestDocumentUploadUrl(
   token: string,
   input: {
-    vehicleId: string;
+    registrationId: string;
     filename: string;
     contentType: string;
     contentLength: number;
@@ -293,9 +314,9 @@ export async function confirmDocumentUpload(
 
 export async function listRenewals(
   token: string,
-  vehicleId: string,
+  registrationId: string,
 ): Promise<RenewalDto[]> {
-  const params = new URLSearchParams({ vehicleId });
+  const params = new URLSearchParams({ registrationId });
   const data = await apiFetch<{ renewals: RenewalDto[] }>(
     `/api/renewals?${params}`,
     { token },
@@ -316,7 +337,7 @@ export async function getRenewal(
 
 export async function createRenewal(
   token: string,
-  input: { vehicleId: string; county?: string | null },
+  input: { registrationId: string; county?: string | null },
 ): Promise<{ renewal: RenewalDto; resumed: boolean }> {
   return apiFetch<{ renewal: RenewalDto; resumed: boolean }>("/api/renewals", {
     method: "POST",

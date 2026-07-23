@@ -2,7 +2,7 @@ import type { NotificationChannel } from "@prisma/client";
 import type { ReminderSchedule } from "@/lib/stateEngine/types";
 
 /** Input shape for pure reminder planning (no Prisma types required). */
-export type ReminderVehicleInput = {
+export type ReminderRegistrationInput = {
   id: string;
   registrationExpiresOn: Date | string;
   /** Users who should receive reminders (accepted household members). */
@@ -16,11 +16,11 @@ export type ReminderVehicleInput = {
 /** One notification row that should exist after the daily tick. */
 export type PlannedNotification = {
   userId: string;
-  vehicleId: string;
+  registrationId: string;
   channel: NotificationChannel;
   templateKey: string;
   scheduledFor: Date;
-  /** Idempotency key: vehicleId:userId:channel:templateKey:YYYY-MM-DD */
+  /** Idempotency key: registrationId:userId:channel:templateKey:YYYY-MM-DD */
   dedupeKey: string;
   daysUntilExpiration: number;
   variables: ReminderTemplateVariables;

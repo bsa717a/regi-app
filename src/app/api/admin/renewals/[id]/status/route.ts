@@ -56,7 +56,7 @@ export async function POST(request: Request, context: RouteContext) {
     const refreshed = await prisma.renewal.findUnique({
       where: { id: result.renewal.id },
       include: {
-        vehicle: true,
+        registration: true,
         requester: { select: { id: true, email: true, name: true } },
       },
     });

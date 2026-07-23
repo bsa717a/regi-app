@@ -6,7 +6,7 @@ function doc(
   overrides: Partial<Document> & Pick<Document, "id" | "type" | "renewalId">,
 ): Document {
   return {
-    vehicleId: "veh-1",
+    registrationId: "reg-1",
     gcsPath: "path",
     originalFilename: "f.pdf",
     uploadedBy: "user-1",

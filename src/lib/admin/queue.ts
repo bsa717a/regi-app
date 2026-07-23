@@ -29,14 +29,14 @@ export function buildRenewalQueueWhere(
 }
 
 /**
- * Overdue = active renewal whose vehicle registration has already expired.
+ * Overdue = active renewal whose registration has already expired.
  */
 export function buildOverdueRenewalWhere(now = new Date()): Prisma.RenewalWhereInput {
   const day = new Date(now);
   day.setUTCHours(0, 0, 0, 0);
   return {
     status: { in: ACTIVE_QUEUE_STATUSES },
-    vehicle: {
+    registration: {
       registrationExpiresOn: { lt: day },
     },
   };

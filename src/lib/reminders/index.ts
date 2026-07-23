@@ -2,7 +2,7 @@ export { startOfUtcDay, formatUtcDateKey } from "./dates";
 export { buildReminderDedupeKey } from "./dedupe";
 export {
   matchReminderForToday,
-  planRemindersForVehicles,
+  planRemindersForRegistrations,
   plannedDedupeKeys,
   preExpirationTemplateKey,
   postExpirationTemplateKey,
@@ -14,5 +14,5 @@ export type {
   PlannedNotification,
   PlanRemindersOptions,
   ReminderTemplateVariables,
-  ReminderVehicleInput,
+  ReminderRegistrationInput,
 } from "./types";

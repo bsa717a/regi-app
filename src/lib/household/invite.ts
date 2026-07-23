@@ -8,7 +8,7 @@ import type {
   HouseholdMemberDto,
   InviteHouseholdResponse,
 } from "@/lib/household/types";
-import { getPrimaryHouseholdId } from "@/lib/vehicles/household";
+import { getPrimaryHouseholdId } from "@/lib/registrations/household";
 
 export type InviteDeps = {
   db?: PrismaClient;

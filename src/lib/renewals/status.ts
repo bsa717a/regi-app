@@ -73,17 +73,17 @@ export type AdvanceRenewalStatusResult = {
   transitionedAt: Date;
 };
 
-function vehicleDisplayName(vehicle: {
+function registrationDisplayName(registration: {
   nickname: string | null;
   year: number | null;
   make: string | null;
   model: string | null;
 }): string {
-  if (vehicle.nickname?.trim()) return vehicle.nickname.trim();
-  const parts = [vehicle.year, vehicle.make, vehicle.model]
+  if (registration.nickname?.trim()) return registration.nickname.trim();
+  const parts = [registration.year, registration.make, registration.model]
     .filter(Boolean)
     .join(" ");
-  return parts || "your vehicle";
+  return parts || "your registration";
 }
 
 function friendlyStatusLabel(status: RenewalStatus): string {
@@ -128,7 +128,7 @@ export async function advanceRenewalStatus(
   const existing = await deps.db.renewal.findUnique({
     where: { id: renewalId },
     include: {
-      vehicle: {
+      registration: {
         select: {
           id: true,
           nickname: true,
@@ -169,7 +169,7 @@ export async function advanceRenewalStatus(
   });
 
   const templateKey = `renewal_status_${newStatus}`;
-  const vehicleName = vehicleDisplayName(existing.vehicle);
+  const vehicleName = registrationDisplayName(existing.registration);
   const statusLabel = friendlyStatusLabel(newStatus);
   const variables = {
     vehicleName,
@@ -191,7 +191,7 @@ export async function advanceRenewalStatus(
         await deps.db.notification.create({
           data: {
             userId: existing.requester.id,
-            vehicleId: existing.vehicle.id,
+            registrationId: existing.registration.id,
             channel,
             templateKey,
             scheduledFor: now,

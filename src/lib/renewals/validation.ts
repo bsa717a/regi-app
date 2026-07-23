@@ -7,10 +7,10 @@ export type ParseResult<T> =
 export function parseCreateRenewalBody(
   body: Record<string, unknown>,
 ): ParseResult<CreateRenewalInput> {
-  const vehicleId =
-    typeof body.vehicleId === "string" ? body.vehicleId.trim() : "";
-  if (!vehicleId) {
-    return { ok: false, error: "vehicleId is required" };
+  const registrationId =
+    typeof body.registrationId === "string" ? body.registrationId.trim() : "";
+  if (!registrationId) {
+    return { ok: false, error: "registrationId is required" };
   }
 
   let county: string | null | undefined;
@@ -24,7 +24,7 @@ export function parseCreateRenewalBody(
     return { ok: false, error: "county must be a string or null" };
   }
 
-  return { ok: true, data: { vehicleId, county } };
+  return { ok: true, data: { registrationId, county } };
 }
 
 export function isEmailVerified(decoded: {

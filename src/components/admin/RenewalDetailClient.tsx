@@ -132,22 +132,27 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-slate-900">
-                  {[renewal.vehicle.year, renewal.vehicle.make, renewal.vehicle.model]
+                  {[
+                    renewal.registration.year,
+                    renewal.registration.make,
+                    renewal.registration.model,
+                  ]
                     .filter(Boolean)
-                    .join(" ") || "Vehicle"}
-                  {renewal.vehicle.nickname
-                    ? ` — ${renewal.vehicle.nickname}`
+                    .join(" ") || "Registration"}
+                  {renewal.registration.nickname
+                    ? ` — ${renewal.registration.nickname}`
                     : ""}
                 </h2>
                 <p className="text-slate-600">
-                  Plate {renewal.vehicle.plate || "—"} · VIN{" "}
-                  {renewal.vehicle.vin || "—"} · {renewal.vehicle.state}
+                  Plate {renewal.registration.plate || "—"} · VIN{" "}
+                  {renewal.registration.vin || "—"} · {renewal.registration.state}
                 </p>
                 <p className="text-slate-600">
                   Owner: {renewal.owner.name || "—"} ({renewal.owner.email})
                 </p>
                 <p className="text-slate-600">
-                  Registration expires {renewal.vehicle.registrationExpiresOn}
+                  Registration expires{" "}
+                  {renewal.registration.registrationExpiresOn}
                 </p>
               </div>
               <span className="rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white">

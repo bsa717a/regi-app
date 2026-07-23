@@ -137,8 +137,8 @@ const TEMPLATES: Record<string, NotificationTemplate> = {
     key: "household_invite",
     tone: "friendly",
     subject: "You're invited to share {{householdName}} on REGI",
-    text: "{{inviterEmail}} invited you to view vehicles in {{householdName}} on REGI. Accept here (sign in with this email): {{inviteUrl}}",
-    html: "<p><strong>{{inviterEmail}}</strong> invited you to view vehicles in <strong>{{householdName}}</strong> on REGI.</p><p><a href=\"{{inviteUrl}}\">Accept the invite</a> — sign in with this email address.</p><p>As a viewer you can see vehicles, statuses, and documents, and you'll get reminders. You won't be able to edit or renew.</p>",
+    text: "{{inviterEmail}} invited you to view registrations in {{householdName}} on REGI. Accept here (sign in with this email): {{inviteUrl}}",
+    html: "<p><strong>{{inviterEmail}}</strong> invited you to view registrations in <strong>{{householdName}}</strong> on REGI.</p><p><a href=\"{{inviteUrl}}\">Accept the invite</a> — sign in with this email address.</p><p>As a viewer you can see registrations, statuses, and documents, and you'll get reminders. You won't be able to edit or renew.</p>",
   },
 };
 

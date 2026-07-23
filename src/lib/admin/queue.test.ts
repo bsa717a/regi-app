@@ -38,7 +38,7 @@ describe("buildOverdueRenewalWhere", () => {
       new Date("2026-07-22T15:00:00.000Z"),
     );
     expect(where.status).toEqual({ in: ACTIVE_QUEUE_STATUSES });
-    expect(where.vehicle).toEqual({
+    expect(where.registration).toEqual({
       registrationExpiresOn: {
         lt: new Date("2026-07-22T00:00:00.000Z"),
       },

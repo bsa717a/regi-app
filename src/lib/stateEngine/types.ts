@@ -14,6 +14,15 @@ export type StateDocumentType =
   | "emissions"
   | "temp_permit";
 
+/** Utah DMV core registration types (mirrors Prisma RegistrationType). */
+export type RegistrationType =
+  | "passenger"
+  | "motorcycle"
+  | "trailer"
+  | "ohv"
+  | "snowmobile"
+  | "boat";
+
 /** Concierge workflow statuses (mirrors Prisma RenewalStatus). */
 export type ConciergeStatus =
   | "Requested"
@@ -105,6 +114,25 @@ export type ConciergeWorkflowStep = {
   description?: string;
 };
 
+export type RegistrationIdentityField =
+  | "vin"
+  | "plate"
+  | "hin"
+  | "serial"
+  | "yearMakeModel";
+
+export type RegistrationTypeRules = {
+  type: RegistrationType;
+  label: string;
+  pluralLabel: string;
+  identityFields: RegistrationIdentityField[];
+  decode: "nhtsa_vin" | "none";
+  /** When set, replaces top-level requiredDocuments for this type. */
+  requiredDocuments?: RequiredDocumentRule[];
+  fees?: Partial<FeeStructure>;
+  notes?: string;
+};
+
 /**
  * Single source of truth for one U.S. state's registration rules.
  * Stored as `state_rules.config` jsonb.
@@ -117,4 +145,6 @@ export type StateRulesConfig = {
   fees: FeeStructure;
   reminderSchedule: ReminderSchedule;
   conciergeWorkflow: ConciergeWorkflowStep[];
+  /** Supported registration types for this state (Utah DMV core set). */
+  registrationTypes: RegistrationTypeRules[];
 };

@@ -1,4 +1,11 @@
+import type { RegistrationType } from "@prisma/client";
 import { normalizeVin, isValidVinFormat } from "@/lib/vin/decode";
+import {
+  getRegistrationTypeRules,
+  isValidRegistrationType,
+} from "@/lib/stateEngine/registrationTypes";
+import type { StateRulesConfig } from "@/lib/stateEngine/types";
+import type { RegistrationDetails } from "@/lib/registrations/types";
 
 export function readOptionalString(value: unknown): string | null | undefined {
   if (value === undefined) return undefined;
@@ -54,7 +61,82 @@ export function normalizePlate(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, "");
 }
 
-export type ParsedVehicleBody = {
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function parseDetails(value: unknown): RegistrationDetails | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return {};
+  if (typeof value !== "object" || Array.isArray(value)) return undefined;
+  const raw = value as Record<string, unknown>;
+  const details: RegistrationDetails = {};
+
+  if (raw.hin !== undefined) {
+    const hin = readOptionalString(raw.hin);
+    if (hin === undefined) return undefined;
+    details.hin = hin;
+  }
+  if (raw.serial !== undefined) {
+    const serial = readOptionalString(raw.serial);
+    if (serial === undefined) return undefined;
+    details.serial = serial;
+  }
+  if (raw.ohvClass !== undefined) {
+    const ohvClass = readOptionalString(raw.ohvClass);
+    if (ohvClass === undefined) return undefined;
+    details.ohvClass = ohvClass;
+  }
+  if (raw.unladenWeightLbs !== undefined) {
+    if (raw.unladenWeightLbs === null) {
+      details.unladenWeightLbs = null;
+    } else if (
+      typeof raw.unladenWeightLbs === "number" &&
+      Number.isFinite(raw.unladenWeightLbs) &&
+      raw.unladenWeightLbs >= 0
+    ) {
+      details.unladenWeightLbs = Math.round(raw.unladenWeightLbs);
+    } else {
+      return undefined;
+    }
+  }
+  if (raw.lengthFeet !== undefined) {
+    if (raw.lengthFeet === null) {
+      details.lengthFeet = null;
+    } else if (
+      typeof raw.lengthFeet === "number" &&
+      Number.isFinite(raw.lengthFeet) &&
+      raw.lengthFeet > 0
+    ) {
+      details.lengthFeet = raw.lengthFeet;
+    } else {
+      return undefined;
+    }
+  }
+  if (raw.horsepower !== undefined) {
+    if (raw.horsepower === null) {
+      details.horsepower = null;
+    } else if (
+      typeof raw.horsepower === "number" &&
+      Number.isFinite(raw.horsepower) &&
+      raw.horsepower >= 0
+    ) {
+      details.horsepower = Math.round(raw.horsepower);
+    } else {
+      return undefined;
+    }
+  }
+
+  return details;
+}
+
+export type ParsedRegistrationBody = {
+  type: RegistrationType;
   vin: string | null;
   plate: string | null;
   state: string;
@@ -64,12 +146,76 @@ export type ParsedVehicleBody = {
   nickname: string | null;
   photoUrl: string | null;
   bodyClass: string | null;
+  details: RegistrationDetails;
   registrationExpiresOn: Date;
 };
 
-export function parseCreateVehicleBody(
+function validateIdentity(
+  type: RegistrationType,
+  config: StateRulesConfig,
+  data: {
+    vin: string | null;
+    plate: string | null;
+    make: string | null;
+    model: string | null;
+    year: number | null;
+    details: RegistrationDetails;
+  },
+): string | null {
+  const rules = getRegistrationTypeRules(config, type);
+  if (!rules) {
+    return `Registration type "${type}" is not supported in this state`;
+  }
+
+  const fields = new Set(rules.identityFields);
+  const hasVin = Boolean(data.vin);
+  const hasPlate = Boolean(data.plate);
+  const hasHin = Boolean(data.details.hin);
+  const hasSerial = Boolean(data.details.serial);
+  const hasYmm = Boolean(data.year && data.make && data.model);
+
+  if (fields.has("vin") && fields.has("plate")) {
+    if (!hasVin && !hasPlate && !(fields.has("yearMakeModel") && hasYmm)) {
+      return "Provide a VIN or a license plate";
+    }
+  } else if (fields.has("vin") && !hasVin) {
+    return "VIN is required for this registration type";
+  } else if (fields.has("plate") && !hasPlate && !fields.has("hin") && !fields.has("serial")) {
+    return "Plate / registration number is required";
+  }
+
+  if (fields.has("hin") && !hasHin && !hasPlate && !hasSerial) {
+    return "Provide a HIN, registration number, or serial";
+  }
+
+  if (fields.has("serial") && !hasSerial && !hasVin && !hasPlate && !hasHin) {
+    return "Provide a serial number or another identity field";
+  }
+
+  if (fields.has("yearMakeModel") && !hasYmm && !hasVin && !hasPlate && !hasHin) {
+    return "Provide year, make, and model (or another identity field)";
+  }
+
+  if (data.vin && rules.decode === "none") {
+    // VIN allowed but not required / decoded for these types.
+  }
+
+  return null;
+}
+
+export function parseCreateRegistrationBody(
   body: Record<string, unknown>,
-): { ok: true; data: ParsedVehicleBody } | { ok: false; error: string } {
+  config: StateRulesConfig,
+): { ok: true; data: ParsedRegistrationBody } | { ok: false; error: string } {
+  if (!isValidRegistrationType(body.type)) {
+    return {
+      ok: false,
+      error:
+        "type must be one of: passenger, motorcycle, trailer, ohv, snowmobile, boat",
+    };
+  }
+  const type = body.type;
+
   const state = readRequiredState(body.state);
   if (!state) {
     return { ok: false, error: "state must be a 2-letter state code" };
@@ -100,12 +246,9 @@ export function parseCreateVehicleBody(
   }
 
   const plate = rawPlate ? normalizePlate(rawPlate) : null;
-
-  if (!vin && !plate) {
-    return {
-      ok: false,
-      error: "Provide a VIN or a license plate",
-    };
+  const details = parseDetails(body.details) ?? {};
+  if (body.details !== undefined && parseDetails(body.details) === undefined) {
+    return { ok: false, error: "details contains invalid fields" };
   }
 
   const year = readYear(body.year);
@@ -123,9 +266,22 @@ export function parseCreateVehicleBody(
     return { ok: false, error: "photoUrl must be an http(s) URL" };
   }
 
+  const identityError = validateIdentity(type, config, {
+    vin,
+    plate,
+    make,
+    model,
+    year: year ?? null,
+    details,
+  });
+  if (identityError) {
+    return { ok: false, error: identityError };
+  }
+
   return {
     ok: true,
     data: {
+      type,
       vin,
       plate,
       state,
@@ -135,26 +291,32 @@ export function parseCreateVehicleBody(
       nickname,
       photoUrl,
       bodyClass,
+      details,
       registrationExpiresOn,
     },
   };
 }
 
-function isHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-export function parsePatchVehicleBody(
+export function parsePatchRegistrationBody(
   body: Record<string, unknown>,
+  type: RegistrationType,
+  config: StateRulesConfig,
+  existing: {
+    vin: string | null;
+    plate: string | null;
+    make: string | null;
+    model: string | null;
+    year: number | null;
+    details: RegistrationDetails;
+  },
 ):
-  | { ok: true; data: Partial<ParsedVehicleBody> }
+  | { ok: true; data: Partial<Omit<ParsedRegistrationBody, "type">> }
   | { ok: false; error: string } {
-  const data: Partial<ParsedVehicleBody> = {};
+  if (body.type !== undefined) {
+    return { ok: false, error: "Registration type cannot be changed" };
+  }
+
+  const data: Partial<Omit<ParsedRegistrationBody, "type">> = {};
 
   if (body.state !== undefined) {
     const state = readRequiredState(body.state);
@@ -252,8 +414,28 @@ export function parsePatchVehicleBody(
     data.bodyClass = bodyClass;
   }
 
+  if (body.details !== undefined) {
+    const details = parseDetails(body.details);
+    if (details === undefined) {
+      return { ok: false, error: "details contains invalid fields" };
+    }
+    data.details = { ...existing.details, ...details };
+  }
+
   if (Object.keys(data).length === 0) {
     return { ok: false, error: "No valid fields to update" };
+  }
+
+  const identityError = validateIdentity(type, config, {
+    vin: data.vin !== undefined ? data.vin : existing.vin,
+    plate: data.plate !== undefined ? data.plate : existing.plate,
+    make: data.make !== undefined ? data.make : existing.make,
+    model: data.model !== undefined ? data.model : existing.model,
+    year: data.year !== undefined ? data.year : existing.year,
+    details: data.details !== undefined ? data.details : existing.details,
+  });
+  if (identityError) {
+    return { ok: false, error: identityError };
   }
 
   return { ok: true, data };

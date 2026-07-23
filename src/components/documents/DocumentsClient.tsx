@@ -21,7 +21,7 @@ import {
   deleteDocument,
   getDocumentDownloadUrl,
   listDocuments,
-  listVehicles,
+  listRegistrations,
 } from "@/lib/api/client";
 import {
   DOCUMENT_TYPE_LABELS,
@@ -30,16 +30,16 @@ import {
 } from "@/lib/documents/constants";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import type { DocumentDto } from "@/lib/documents/types";
-import type { VehicleDto } from "@/lib/vehicles/types";
+import type { RegistrationDto } from "@/lib/registrations/types";
 
-function vehicleLabel(vehicle: VehicleDto): string {
+function vehicleLabel(vehicle: RegistrationDto): string {
   if (vehicle.nickname?.trim()) return vehicle.nickname.trim();
   const parts = [vehicle.year, vehicle.make, vehicle.model]
     .filter(Boolean)
     .join(" ");
   if (parts) return parts;
   if (vehicle.plate) return vehicle.plate;
-  return "Vehicle";
+  return "Registration";
 }
 
 function formatUploadedAt(iso: string): string {
@@ -64,7 +64,7 @@ function groupByType(docs: DocumentDto[]): Record<DocumentType, DocumentDto[]> {
 
 export function DocumentsClient() {
   const { idToken, getIdToken, loading: authLoading } = useAuth();
-  const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
+  const [vehicles, setVehicles] = useState<RegistrationDto[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
     null,
   );
@@ -89,7 +89,7 @@ export function DocumentsClient() {
           }
           return;
         }
-        const rows = await listVehicles(token);
+        const rows = await listRegistrations(token);
         if (!cancelled) {
           setVehicles(rows);
           setSelectedVehicleId((prev) => {
@@ -104,7 +104,7 @@ export function DocumentsClient() {
           setError(
             err instanceof ApiError
               ? err.message
-              : "Could not load your vehicles.",
+              : "Could not load your registrations.",
           );
           setLoadingVehicles(false);
         }
@@ -121,10 +121,10 @@ export function DocumentsClient() {
     if (authLoading) return;
 
     let cancelled = false;
-    const vehicleId = selectedVehicleId;
+    const registrationId = selectedVehicleId;
 
     async function run() {
-      if (!vehicleId) {
+      if (!registrationId) {
         if (!cancelled) {
           setDocuments([]);
           setLoadingDocs(false);
@@ -143,7 +143,7 @@ export function DocumentsClient() {
           }
           return;
         }
-        const rows = await listDocuments(token, vehicleId);
+        const rows = await listDocuments(token, registrationId);
         if (!cancelled) {
           setDocuments(rows);
           setError(null);
@@ -217,11 +217,11 @@ export function DocumentsClient() {
         <section className="flex min-h-[55vh] flex-col justify-center">
           <p className="text-sm font-medium text-teal-800">Document vault</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-            Add a vehicle first
+            Add a registration first
           </h2>
           <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600">
-            Registration cards, insurance, and titles live with each vehicle in
-            your garage.
+            Registration cards, insurance, and titles live with each
+            registration in your garage.
           </p>
           <a
             href="/garage"
@@ -236,7 +236,7 @@ export function DocumentsClient() {
         <div className="space-y-5">
           <div>
             <label htmlFor="vault-vehicle" className={labelClassName}>
-              Vehicle
+              Registration
             </label>
             <select
               id="vault-vehicle"
@@ -277,8 +277,8 @@ export function DocumentsClient() {
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
                   role="status"
                 >
-                  Shared vehicle · view and download only. Ask the household
-                  owner to upload or delete documents.
+                  Shared registration · view and download only. Ask the
+                  household owner to upload or delete documents.
                 </p>
               ) : null}
 
@@ -351,7 +351,7 @@ function DocumentTypeSections({
         <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-slate-600">
           {canEdit
             ? "Upload a registration card, insurance, title, emissions certificate, or temporary permit. Files stay private — downloads use short-lived links."
-            : "No documents yet for this shared vehicle. The household owner can upload files here."}
+            : "No documents yet for this shared registration. The household owner can upload files here."}
         </p>
         {canEdit ? (
           <button
@@ -478,7 +478,7 @@ function UploadSheet({
   onUploaded,
   getToken,
 }: {
-  vehicle: VehicleDto;
+  vehicle: RegistrationDto;
   onClose: () => void;
   onUploaded: (doc: DocumentDto) => void;
   getToken: () => Promise<string | null>;
@@ -515,7 +515,7 @@ function UploadSheet({
 
       const doc = await uploadDocumentToVault({
         token,
-        vehicleId: vehicle.id,
+        registrationId: vehicle.id,
         type,
         file,
         onProgress: setProgress,

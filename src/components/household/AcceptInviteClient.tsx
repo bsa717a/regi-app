@@ -78,7 +78,7 @@ export function AcceptInviteClient() {
             Joined {householdName ?? "the household"}
           </h2>
           <p className="mt-2 text-base text-slate-600">
-            You can view shared vehicles, statuses, and documents. Renewals and
+            You can view shared registrations, statuses, and documents. Renewals and
             edits stay with the household owner.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">

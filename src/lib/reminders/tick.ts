@@ -5,12 +5,12 @@ import { parseStateRulesConfig } from "@/lib/stateEngine/parseConfig";
 import { daysUntilExpiration } from "@/lib/stateEngine/status";
 import type { ReminderSchedule, StateRulesConfig } from "@/lib/stateEngine/types";
 import { startOfUtcDay } from "./dates";
-import { planRemindersForVehicles } from "./schedule";
-import type { PlannedNotification, ReminderVehicleInput } from "./types";
+import { planRemindersForRegistrations } from "./schedule";
+import type { PlannedNotification, ReminderRegistrationInput } from "./types";
 
 export type ReminderTickResult = {
   asOf: string;
-  vehiclesEvaluated: number;
+  registrationsEvaluated: number;
   planned: number;
   upserted: number;
   skippedDuplicate: number;
@@ -28,7 +28,7 @@ export type ReminderTickDeps = {
 };
 
 function defaultScheduleFallback(): ReminderSchedule {
-  // Only used if a vehicle's state_rules row is missing/unparseable.
+  // Only used if a registration's state_rules row is missing/unparseable.
   // Prefer state_rules.config in all normal paths.
   return {
     daysBeforeExpiration: [90, 60, 30, 14, 7, 3, 0],
@@ -43,7 +43,7 @@ function scheduleFromConfig(config: StateRulesConfig | null): ReminderSchedule {
 
 /**
  * Daily reminder job:
- * 1) Evaluate all vehicles against state_rules reminderSchedule
+ * 1) Evaluate all registrations against state_rules reminderSchedule
  * 2) Upsert due notification rows idempotently (dedupe_key)
  * 3) Dispatch pending rows that are due now (respect notification_prefs)
  * 4) Record per-row success/failure without aborting the whole run
@@ -60,8 +60,8 @@ export async function runReminderTick(
   let failed = 0;
   let skippedByPrefs = 0;
 
-  const [vehicles, stateRules] = await Promise.all([
-    deps.db.vehicle.findMany({
+  const [registrations, stateRules] = await Promise.all([
+    deps.db.registration.findMany({
       select: {
         id: true,
         state: true,
@@ -92,36 +92,36 @@ export async function runReminderTick(
     configByState.set(row.stateCode, parseStateRulesConfig(row.config));
   }
 
-  // Group vehicles by state so each batch uses that state's reminderSchedule.
-  const byState = new Map<string, typeof vehicles>();
-  for (const v of vehicles) {
-    const list = byState.get(v.state) ?? [];
-    list.push(v);
-    byState.set(v.state, list);
+  // Group registrations by state so each batch uses that state's reminderSchedule.
+  const byState = new Map<string, typeof registrations>();
+  for (const r of registrations) {
+    const list = byState.get(r.state) ?? [];
+    list.push(r);
+    byState.set(r.state, list);
   }
 
   const allPlanned: PlannedNotification[] = [];
 
-  for (const [state, stateVehicles] of byState) {
+  for (const [state, stateRegistrations] of byState) {
     const schedule = scheduleFromConfig(configByState.get(state) ?? null);
-    const inputs: ReminderVehicleInput[] = stateVehicles.map((v) => {
-      const memberIds = v.household.members
+    const inputs: ReminderRegistrationInput[] = stateRegistrations.map((r) => {
+      const memberIds = r.household.members
         .map((m) => m.userId)
         .filter((id): id is string => Boolean(id));
-      const recipients = memberIds.length > 0 ? memberIds : [v.createdBy];
+      const recipients = memberIds.length > 0 ? memberIds : [r.createdBy];
       return {
-        id: v.id,
-        registrationExpiresOn: v.registrationExpiresOn,
+        id: r.id,
+        registrationExpiresOn: r.registrationExpiresOn,
         recipientUserIds: [...new Set(recipients)],
-        nickname: v.nickname,
-        year: v.year,
-        make: v.make,
-        model: v.model,
+        nickname: r.nickname,
+        year: r.year,
+        make: r.make,
+        model: r.model,
       };
     });
 
     allPlanned.push(
-      ...planRemindersForVehicles(inputs, { schedule, asOf }),
+      ...planRemindersForRegistrations(inputs, { schedule, asOf }),
     );
   }
 
@@ -140,7 +140,7 @@ export async function runReminderTick(
       await deps.db.notification.create({
         data: {
           userId: planned.userId,
-          vehicleId: planned.vehicleId,
+          registrationId: planned.registrationId,
           channel: planned.channel,
           templateKey: planned.templateKey,
           scheduledFor: planned.scheduledFor,
@@ -175,7 +175,7 @@ export async function runReminderTick(
           notificationPrefs: true,
         },
       },
-      vehicle: {
+      registration: {
         select: {
           nickname: true,
           year: true,
@@ -207,23 +207,23 @@ export async function runReminderTick(
     }
 
     const vehicleName =
-      row.vehicle?.nickname?.trim() ||
-      [row.vehicle?.year, row.vehicle?.make, row.vehicle?.model]
+      row.registration?.nickname?.trim() ||
+      [row.registration?.year, row.registration?.make, row.registration?.model]
         .filter(Boolean)
         .join(" ") ||
       "your vehicle";
 
-    const daysUntil = row.vehicle?.registrationExpiresOn
-      ? daysUntilExpiration(row.vehicle.registrationExpiresOn, asOf)
+    const daysUntil = row.registration?.registrationExpiresOn
+      ? daysUntilExpiration(row.registration.registrationExpiresOn, asOf)
       : 0;
 
     const variables: Record<string, string | number | boolean> = {
       vehicleName,
       daysLeft: Math.max(daysUntil, 0),
       daysAfter: daysUntil < 0 ? Math.abs(daysUntil) : 0,
-      year: row.vehicle?.year != null ? String(row.vehicle.year) : "",
-      make: row.vehicle?.make ?? "",
-      model: row.vehicle?.model ?? "",
+      year: row.registration?.year != null ? String(row.registration.year) : "",
+      make: row.registration?.make ?? "",
+      model: row.registration?.model ?? "",
     };
 
     const plannedMatch = allPlanned.find((p) => p.dedupeKey === row.dedupeKey);
@@ -269,7 +269,7 @@ export async function runReminderTick(
 
   return {
     asOf: asOf.toISOString(),
-    vehiclesEvaluated: vehicles.length,
+    registrationsEvaluated: registrations.length,
     planned: allPlanned.length,
     upserted,
     skippedDuplicate,

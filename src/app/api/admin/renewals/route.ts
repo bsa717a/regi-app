@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     orderBy: [{ updatedAt: "desc" }],
     take: 100,
     include: {
-      vehicle: true,
+      registration: true,
       requester: {
         select: { id: true, email: true, name: true },
       },

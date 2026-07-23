@@ -3,6 +3,9 @@ export type {
   ConciergeWorkflowStep,
   DocumentApplicability,
   FeeStructure,
+  RegistrationIdentityField,
+  RegistrationType,
+  RegistrationTypeRules,
   ReminderSchedule,
   RenewalWindowRules,
   RequiredDocumentRule,
@@ -27,3 +30,10 @@ export {
 } from "./parseConfig";
 
 export { loadStateRules, loadStateRulesMap } from "./loadRules";
+
+export {
+  getFeesForType,
+  getRegistrationTypeRules,
+  getRequiredDocumentsForType,
+  isValidRegistrationType,
+} from "./registrationTypes";
