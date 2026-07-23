@@ -13,6 +13,7 @@ const gradients: Record<RegistrationIllustrationKind, string> = {
   van: "from-teal-700 via-slate-700 to-slate-900",
   coupe: "from-emerald-600 via-teal-800 to-slate-900",
   motorcycle: "from-slate-700 via-teal-800 to-slate-950",
+  motorhome: "from-amber-700 via-orange-800 to-slate-900",
   trailer: "from-amber-600 via-amber-800 to-slate-900",
   ohv: "from-orange-600 via-orange-800 to-slate-900",
   snowmobile: "from-sky-500 via-sky-700 to-slate-900",
@@ -60,6 +61,16 @@ function Silhouette({ kind }: { kind: RegistrationIllustrationKind }) {
           <circle cx="54" cy="36" r="8" fill="none" stroke="currentColor" strokeWidth="3" />
           <path d="M24 34c4-10 10-14 18-14l6 6-4 8H28z" />
           <path d="M30 22l6-8 4 2-4 8z" />
+        </g>
+      );
+    case "motorhome":
+      return (
+        <g fill="currentColor">
+          <path d="M8 34h56v6H8z" opacity="0.2" />
+          <path d="M10 20h38l4 8h14v10H10V20z" />
+          <path d="M14 24h10v6H14z" opacity="0.35" />
+          <circle cx="22" cy="38" r="5.5" />
+          <circle cx="52" cy="38" r="5.5" />
         </g>
       );
     case "coupe":

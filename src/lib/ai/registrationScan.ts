@@ -27,8 +27,9 @@ const REGISTRATION_SCAN_PROMPT = `You are reading a US vehicle registration card
 
 Extract every field you can clearly read. Use null for anything missing, illegible, or uncertain.
 
-registrationType must be one of: passenger, motorcycle, trailer, ohv, snowmobile, boat — or null if unclear.
+registrationType must be one of: passenger, motorhome, motorcycle, trailer, ohv, snowmobile, boat — or null if unclear.
 - passenger: cars, SUVs, vans, light trucks
+- motorhome: self-propelled RVs (Class A, B, or C motorhomes)
 - motorcycle: motorcycles and scooters
 - trailer: towable trailers
 - ohv: ATVs, UTVs, dirt bikes, side-by-sides

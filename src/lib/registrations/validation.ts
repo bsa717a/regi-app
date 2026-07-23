@@ -6,6 +6,7 @@ import {
 } from "@/lib/stateEngine/registrationTypes";
 import type { StateRulesConfig } from "@/lib/stateEngine/types";
 import type { RegistrationDetails } from "@/lib/registrations/types";
+import { isValidMotorhomeClass } from "@/lib/registrations/motorhome";
 
 export function readOptionalString(value: unknown): string | null | undefined {
   if (value === undefined) return undefined;
@@ -91,6 +92,14 @@ function parseDetails(value: unknown): RegistrationDetails | undefined {
     const ohvClass = readOptionalString(raw.ohvClass);
     if (ohvClass === undefined) return undefined;
     details.ohvClass = ohvClass;
+  }
+  if (raw.motorhomeClass !== undefined) {
+    const motorhomeClass = readOptionalString(raw.motorhomeClass);
+    if (motorhomeClass === undefined) return undefined;
+    if (motorhomeClass !== null && !isValidMotorhomeClass(motorhomeClass)) {
+      return undefined;
+    }
+    details.motorhomeClass = motorhomeClass;
   }
   if (raw.unladenWeightLbs !== undefined) {
     if (raw.unladenWeightLbs === null) {
@@ -211,7 +220,7 @@ export function parseCreateRegistrationBody(
     return {
       ok: false,
       error:
-        "type must be one of: passenger, motorcycle, trailer, ohv, snowmobile, boat",
+        "type must be one of: passenger, motorhome, motorcycle, trailer, ohv, snowmobile, boat",
     };
   }
   const type = body.type;
@@ -276,6 +285,16 @@ export function parseCreateRegistrationBody(
   });
   if (identityError) {
     return { ok: false, error: identityError };
+  }
+
+  if (type === "motorhome") {
+    const motorhomeClass = details.motorhomeClass;
+    if (!motorhomeClass || !isValidMotorhomeClass(motorhomeClass)) {
+      return {
+        ok: false,
+        error: "motorhomeClass must be one of: A, B, C",
+      };
+    }
   }
 
   return {
@@ -436,6 +455,18 @@ export function parsePatchRegistrationBody(
   });
   if (identityError) {
     return { ok: false, error: identityError };
+  }
+
+  if (type === "motorhome") {
+    const mergedDetails =
+      data.details !== undefined ? data.details : existing.details;
+    const motorhomeClass = mergedDetails.motorhomeClass;
+    if (!motorhomeClass || !isValidMotorhomeClass(motorhomeClass)) {
+      return {
+        ok: false,
+        error: "motorhomeClass must be one of: A, B, C",
+      };
+    }
   }
 
   return { ok: true, data };

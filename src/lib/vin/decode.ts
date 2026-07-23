@@ -1,14 +1,20 @@
+import type { RegistrationType } from "@prisma/client";
+import { inferRegistrationTypeFromNhtsaRow } from "@/lib/vin/inferRegistrationType";
+
 export type VinDecodeResult = {
   year: number | null;
   make: string | null;
   model: string | null;
   bodyClass: string | null;
+  vehicleType: string | null;
+  trailerType: string | null;
 };
 
 export type VinDecodeSuccess = {
   ok: true;
   vin: string;
   vehicle: VinDecodeResult;
+  registrationType: RegistrationType | null;
 };
 
 export type VinDecodeFailure = {
@@ -52,7 +58,14 @@ export function cleanVinDecodeResult(
   row: Record<string, unknown> | null | undefined,
 ): VinDecodeResult {
   if (!row) {
-    return { year: null, make: null, model: null, bodyClass: null };
+    return {
+      year: null,
+      make: null,
+      model: null,
+      bodyClass: null,
+      vehicleType: null,
+      trailerType: null,
+    };
   }
 
   return {
@@ -60,6 +73,8 @@ export function cleanVinDecodeResult(
     make: cleanField(row.Make),
     model: cleanField(row.Model),
     bodyClass: cleanField(row.BodyClass),
+    vehicleType: cleanField(row.VehicleType),
+    trailerType: cleanField(row.TrailerType),
   };
 }
 
@@ -118,7 +133,8 @@ export async function decodeVin(
     const data = (await response.json()) as {
       Results?: Array<Record<string, unknown>>;
     };
-    const vehicle = cleanVinDecodeResult(data.Results?.[0]);
+    const row = data.Results?.[0];
+    const vehicle = cleanVinDecodeResult(row);
 
     if (!hasUsableDecode(vehicle)) {
       return {
@@ -129,7 +145,12 @@ export async function decodeVin(
       };
     }
 
-    return { ok: true, vin, vehicle };
+    return {
+      ok: true,
+      vin,
+      vehicle,
+      registrationType: inferRegistrationTypeFromNhtsaRow(row),
+    };
   } catch {
     return {
       ok: false,

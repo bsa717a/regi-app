@@ -5,6 +5,7 @@ import {
   fieldClassName,
   labelClassName,
   primaryButtonClassName,
+  selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
 import { RegistrationPhotoPicker } from "@/components/garage/RegistrationPhotoPicker";
@@ -25,6 +26,11 @@ import {
   uploadRegistrationPhoto,
 } from "@/lib/registrations/photoUpload";
 import { REGISTRATION_TYPE_LABELS } from "@/lib/registrations/illustrations";
+import {
+  MOTORHOME_CLASSES,
+  MOTORHOME_CLASS_LABELS,
+  isValidMotorhomeClass,
+} from "@/lib/registrations/motorhome";
 import { isValidVinFormat, normalizeVin } from "@/lib/vin/decode";
 
 export function EditRegistrationFlow({
@@ -54,6 +60,9 @@ export function EditRegistrationFlow({
   const [hin, setHin] = useState(registration.details.hin ?? "");
   const [serial, setSerial] = useState(registration.details.serial ?? "");
   const [ohvClass, setOhvClass] = useState(registration.details.ohvClass ?? "");
+  const [motorhomeClass, setMotorhomeClass] = useState(
+    registration.details.motorhomeClass ?? "",
+  );
   const [unladenWeightLbs, setUnladenWeightLbs] = useState(
     registration.details.unladenWeightLbs != null
       ? String(registration.details.unladenWeightLbs)
@@ -92,6 +101,7 @@ export function EditRegistrationFlow({
   const typeLabel = REGISTRATION_TYPE_LABELS[registration.type];
   const showVin =
     registration.type === "passenger" ||
+    registration.type === "motorhome" ||
     registration.type === "motorcycle" ||
     registration.type === "trailer" ||
     registration.type === "ohv" ||
@@ -99,6 +109,7 @@ export function EditRegistrationFlow({
   const showHin = registration.type === "boat";
   const showSerial = registration.type === "ohv" || registration.type === "snowmobile";
   const showOhvClass = registration.type === "ohv";
+  const showMotorhomeClass = registration.type === "motorhome";
   const showUnladenWeight = registration.type === "trailer";
   const showBoatDetails = registration.type === "boat";
 
@@ -130,6 +141,14 @@ export function EditRegistrationFlow({
       if (showHin) details.hin = hin.trim() || null;
       if (showSerial) details.serial = serial.trim() || null;
       if (showOhvClass) details.ohvClass = ohvClass.trim() || null;
+      if (showMotorhomeClass) {
+        if (!isValidMotorhomeClass(motorhomeClass)) {
+          setError("Select a motorhome class (A, B, or C).");
+          setBusy(false);
+          return;
+        }
+        details.motorhomeClass = motorhomeClass;
+      }
       if (showUnladenWeight) {
         details.unladenWeightLbs = unladenWeightLbs.trim()
           ? Number.parseInt(unladenWeightLbs, 10)
@@ -437,6 +456,28 @@ export function EditRegistrationFlow({
               value={ohvClass}
               onChange={(e) => setOhvClass(e.target.value)}
             />
+          </div>
+        ) : null}
+
+        {showMotorhomeClass ? (
+          <div>
+            <label htmlFor="edit-motorhomeClass" className={labelClassName}>
+              Motorhome class
+            </label>
+            <select
+              id="edit-motorhomeClass"
+              required
+              className={selectClassName}
+              value={motorhomeClass}
+              onChange={(e) => setMotorhomeClass(e.target.value)}
+            >
+              <option value="">Select class…</option>
+              {MOTORHOME_CLASSES.map((motorhomeClassOption) => (
+                <option key={motorhomeClassOption} value={motorhomeClassOption}>
+                  {MOTORHOME_CLASS_LABELS[motorhomeClassOption]}
+                </option>
+              ))}
+            </select>
           </div>
         ) : null}
 

@@ -7,6 +7,7 @@ export type RegistrationIllustrationKind =
   | "van"
   | "coupe"
   | "motorcycle"
+  | "motorhome"
   | "trailer"
   | "ohv"
   | "snowmobile"
@@ -17,6 +18,7 @@ export function illustrationKindFromType(
   type: RegistrationType,
   bodyClass?: string | null,
 ): RegistrationIllustrationKind {
+  if (type === "motorhome") return "motorhome";
   if (type === "motorcycle") return "motorcycle";
   if (type === "trailer") return "trailer";
   if (type === "ohv") return "ohv";
@@ -29,6 +31,7 @@ export function illustrationKindFromType(
 /** Catalog-style type art (same approach as Metabolic badge PNGs). */
 export const REGISTRATION_TYPE_ART: Record<RegistrationType, string> = {
   passenger: "/images/registration-types/passenger.webp",
+  motorhome: "/images/registration-types/motorhome.webp",
   motorcycle: "/images/registration-types/motorcycle.webp",
   trailer: "/images/registration-types/trailer.webp",
   ohv: "/images/registration-types/ohv.webp",
@@ -87,6 +90,7 @@ export function titleCaseMakeModel(value: string | null | undefined): string {
 
 export const REGISTRATION_TYPE_LABELS: Record<RegistrationType, string> = {
   passenger: "Passenger vehicle",
+  motorhome: "Motorhome",
   motorcycle: "Motorcycle",
   trailer: "Trailer",
   ohv: "OHV",

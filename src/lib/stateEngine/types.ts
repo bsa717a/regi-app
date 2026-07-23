@@ -17,6 +17,7 @@ export type StateDocumentType =
 /** Utah DMV core registration types (mirrors Prisma RegistrationType). */
 export type RegistrationType =
   | "passenger"
+  | "motorhome"
   | "motorcycle"
   | "trailer"
   | "ohv"

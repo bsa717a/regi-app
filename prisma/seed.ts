@@ -139,6 +139,14 @@ export const UTAH_STATE_RULES_CONFIG: StateRulesConfig = {
       decode: "nhtsa_vin",
     },
     {
+      type: "motorhome",
+      label: "Motorhome",
+      pluralLabel: "Motorhomes",
+      identityFields: ["vin", "plate", "yearMakeModel"],
+      decode: "nhtsa_vin",
+      notes: "Utah motor home fees differ from passenger vehicles.",
+    },
+    {
       type: "motorcycle",
       label: "Motorcycle",
       pluralLabel: "Motorcycles",

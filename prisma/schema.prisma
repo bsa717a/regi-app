@@ -29,6 +29,7 @@ enum InviteStatus {
 
 enum RegistrationType {
   passenger
+  motorhome
   motorcycle
   trailer
   ohv
