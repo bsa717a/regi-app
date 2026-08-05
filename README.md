@@ -145,11 +145,42 @@ Every push to `main` runs [.github/workflows/deploy-main.yml](.github/workflows/
 2. `prisma migrate deploy` against Cloud SQL (no seed)  
 3. Deploy Cloud Run service `regi`
 
-**GitHub secret required:** `GCP_SA_KEY` — JSON key for `regi-deploy@regi-app-v1.iam.gserviceaccount.com` (Cloud Build submit). Runtime secrets stay in Secret Manager (`regi-database-url`, `regi-cron-secret`, `regi-gemini-api-key`).
+**GitHub secret required:** `GCP_SA_KEY` — JSON key for `regi-deploy@regi-app-v1.iam.gserviceaccount.com` (Cloud Build submit).
+
+**Secret Manager (never commit values):** `regi-database-url`, `regi-cron-secret`, `regi-gemini-api-key`, `regi-firebase-web-api-key`.
 
 Manual re-run: Actions → **Deploy main** → **Run workflow**.
 
 Production URL: https://regi-90502049802.us-central1.run.app
+
+### Firebase web API key (Secret Manager)
+
+`NEXT_PUBLIC_FIREBASE_API_KEY` is client-visible after build, but must **not** live in git. Cloud Build loads it from Secret Manager (`regi-firebase-web-api-key`) for the Docker build-arg and Cloud Run env.
+
+One-time setup (paste the key locally; do not commit it):
+
+```bash
+# Create (or: gcloud secrets versions add regi-firebase-web-api-key --data-file=-)
+printf '%s' 'PASTE_KEY_HERE' | gcloud secrets create regi-firebase-web-api-key \
+  --project=regi-app-v1 \
+  --data-file=-
+
+# Cloud Build SA (confirm member via: gcloud secrets get-iam-policy regi-database-url --project=regi-app-v1)
+gcloud secrets add-iam-policy-binding regi-firebase-web-api-key \
+  --project=regi-app-v1 \
+  --member="serviceAccount:PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+# Cloud Run runtime SA
+gcloud secrets add-iam-policy-binding regi-firebase-web-api-key \
+  --project=regi-app-v1 \
+  --member="serviceAccount:regi-admin@regi-app-v1.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+**Restrict / rotate the key (after a leak):** GCP Console → APIs & Services → Credentials → browser key for `regi-app-v1`. Prefer create a new key → store in Secret Manager → deploy → disable the old key. Application restrictions: HTTP referrers for `https://regi-90502049802.us-central1.run.app/*` (and localhost if needed). API restrictions: Identity Toolkit / Token Service and only Firebase APIs this app uses. Then check Metrics/Logs for unexpected usage.
+
+**Close GitHub secret scanning alert:** after the key is restricted or rotated and plaintext is gone from `main` → Security → Secret scanning alerts → mark the Google API Key alert as **Revoked**.
 
 ### Manual deploy (optional)
 
@@ -172,7 +203,8 @@ postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/regi-app-v1:us-centr
 | -------- | ----- |
 | `DATABASE_URL` | Cloud SQL unix-socket URL (Secret Manager) |
 | `FIREBASE_PROJECT_ID` / ADC | Admin SDK via the Cloud Run service account |
-| `NEXT_PUBLIC_FIREBASE_*` | Client Firebase config (public; baked at image build) |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | From Secret Manager `regi-firebase-web-api-key` (build + runtime) |
+| `NEXT_PUBLIC_FIREBASE_*` | Other client Firebase config (project id, auth domain, etc.) |
 | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | Web Push key; blank disables push UI gracefully |
 | `GCS_BUCKET` / `GCP_PROJECT_ID` | Document vault |
 | `CRON_SECRET` | Secures `POST /api/cron/reminders` |
