@@ -31,7 +31,7 @@ export function GuestGuard({ children }: { children: ReactNode }) {
         role="status"
         aria-live="polite"
       >
-        <p className="text-sm text-slate-600">Loading…</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">Loading…</p>
       </div>
     );
   }
@@ -48,7 +48,9 @@ export function GuestGuard({ children }: { children: ReactNode }) {
         role="status"
         aria-live="polite"
       >
-        <p className="text-sm text-slate-600">Taking you to your garage…</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Taking you to your garage…
+        </p>
       </div>
     );
   }

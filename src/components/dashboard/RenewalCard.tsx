@@ -27,21 +27,23 @@ export function RenewalCard({
     <article
       className={`rounded-3xl border px-4 py-4 shadow-sm transition ${
         expired
-          ? "border-rose-300 bg-rose-50 shadow-rose-100/80"
+          ? "border-rose-300 bg-rose-50 shadow-rose-100/80 dark:border-rose-800 dark:bg-rose-950/40 dark:shadow-none"
           : vehicle.status === "Due Soon"
-            ? "border-amber-200 bg-amber-50/70 shadow-amber-100/60"
-            : "border-slate-200/80 bg-white shadow-slate-200/50"
+            ? "border-amber-200 bg-amber-50/70 shadow-amber-100/60 dark:border-amber-800 dark:bg-amber-950/40 dark:shadow-none"
+            : "border-slate-200/80 bg-white shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold tracking-tight text-slate-900">
+          <h3 className="truncate text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             {label}
           </h3>
           {vehicle.nickname ? (
-            <p className="mt-0.5 truncate text-sm text-slate-600">{headline}</p>
+            <p className="mt-0.5 truncate text-sm text-slate-600 dark:text-slate-400">
+              {headline}
+            </p>
           ) : null}
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             {identityLine(vehicle)} · {vehicle.state}
           </p>
         </div>
@@ -50,10 +52,10 @@ export function RenewalCard({
       <p
         className={`mt-3 text-sm font-semibold ${
           expired
-            ? "text-rose-800"
+            ? "text-rose-800 dark:text-rose-300"
             : vehicle.status === "Due Soon"
-              ? "text-amber-900"
-              : "text-teal-800"
+              ? "text-amber-900 dark:text-amber-200"
+              : "text-teal-800 dark:text-teal-300"
         }`}
       >
         {vehicle.countdown}
@@ -63,19 +65,19 @@ export function RenewalCard({
         (vehicle.status === "Due Soon" || vehicle.status === "Expired") ? (
           <Link
             href={`/renewals/new?registrationId=${encodeURIComponent(vehicle.id)}`}
-            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
           >
             Renew Registration
           </Link>
         ) : null}
         {!vehicle.canEdit ? (
-          <span className="text-xs font-medium text-slate-600">
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
             View only · shared household
           </span>
         ) : null}
         <Link
           href="/garage"
-          className="text-sm font-semibold text-slate-600 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+          className="text-sm font-semibold text-slate-600 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-300"
         >
           View in garage
         </Link>

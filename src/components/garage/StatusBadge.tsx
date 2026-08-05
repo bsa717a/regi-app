@@ -1,9 +1,12 @@
 import type { RegistrationStatus } from "@/lib/stateEngine/status";
 
 const styles: Record<RegistrationStatus, string> = {
-  Current: "bg-emerald-100 text-emerald-900 ring-emerald-200",
-  "Due Soon": "bg-amber-100 text-amber-950 ring-amber-200",
-  Expired: "bg-rose-100 text-rose-900 ring-rose-200",
+  Current:
+    "bg-emerald-100 text-emerald-900 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-200 dark:ring-emerald-800",
+  "Due Soon":
+    "bg-amber-100 text-amber-950 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-200 dark:ring-amber-800",
+  Expired:
+    "bg-rose-100 text-rose-900 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-200 dark:ring-rose-800",
 };
 
 const dots: Record<RegistrationStatus, string> = {

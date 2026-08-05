@@ -147,7 +147,7 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
       action={
         <Link
           href="/dashboard"
-          className="rounded-xl px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+          className="rounded-xl px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:hover:bg-teal-950/50 dark:focus-visible:outline-teal-400"
         >
           Done
         </Link>
@@ -179,18 +179,20 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
 
       {!loading && renewal && !renewal.registration.canEdit ? (
         <div className="space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-slate-50/80 px-4 py-5">
-            <p className="text-sm font-medium text-slate-700">Shared · view only</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+          <section className="rounded-3xl border border-slate-200 bg-slate-50/80 px-4 py-5 dark:border-slate-700 dark:bg-slate-900/80">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Shared · view only
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
               {vehicleLabel(renewal)}
             </h2>
-            <p className="mt-2 text-base leading-relaxed text-slate-600">
+            <p className="mt-2 text-base leading-relaxed text-slate-600 dark:text-slate-400">
               You can follow renewal progress. Only the household owner can
               upload documents or submit.
             </p>
             <button
               type="button"
-              className="mt-4 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+              className="mt-4 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
               onClick={refresh}
             >
               Refresh status
@@ -199,11 +201,11 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
           <section aria-labelledby="viewer-progress-heading">
             <h2
               id="viewer-progress-heading"
-              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
             >
               Progress
             </h2>
-            <div className="mt-3 rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm">
+            <div className="mt-3 rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:shadow-none">
               <ProgressTracker
                 status={renewal.status}
                 workflow={renewal.workflow}
@@ -246,18 +248,20 @@ function SubmittedView({
 }) {
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 px-4 py-5">
-        <p className="text-sm font-medium text-teal-800">You&apos;re all set</p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+      <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 px-4 py-5 dark:border-teal-800 dark:bg-gradient-to-br dark:from-teal-950/60 dark:via-slate-900 dark:to-slate-950">
+        <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+          You&apos;re all set
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           We&apos;re on it for {vehicleLabel(renewal)}
         </h2>
-        <p className="mt-2 text-base leading-relaxed text-slate-600">
+        <p className="mt-2 text-base leading-relaxed text-slate-600 dark:text-slate-400">
           Sit back — REGI&apos;s concierge will handle the rest. Watch the
           tracker below for updates.
         </p>
         <button
           type="button"
-          className="mt-4 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+          className="mt-4 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
           onClick={onRefresh}
         >
           Refresh status
@@ -267,11 +271,11 @@ function SubmittedView({
       <section aria-labelledby="progress-heading">
         <h2
           id="progress-heading"
-          className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+          className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
         >
           Progress
         </h2>
-        <div className="mt-3 rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm">
+        <div className="mt-3 rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:shadow-none">
           <ProgressTracker
             status={renewal.status}
             workflow={renewal.workflow}
@@ -312,15 +316,17 @@ function DraftView({
   return (
     <div className="space-y-6">
       <section>
-        <p className="text-sm font-medium text-teal-800">Registration concierge</p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">
+        <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+          Registration concierge
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           Renew {vehicleLabel(renewal)}
         </h2>
-        <p className="mt-2 text-base leading-relaxed text-slate-600">
+        <p className="mt-2 text-base leading-relaxed text-slate-600 dark:text-slate-300">
           Upload the required docs (about 5 minutes), review the fee estimate,
           and submit — no payment in this MVP.
         </p>
-        <p className="mt-2 text-sm font-medium text-slate-700">
+        <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
           {renewal.registration.countdown}
         </p>
       </section>
@@ -329,11 +335,11 @@ function DraftView({
         <section aria-labelledby="county-heading">
           <h2
             id="county-heading"
-            className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+            className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
           >
             Registration county
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Some documents (like emissions) only apply in certain counties.
           </p>
           <label htmlFor="renewal-county" className={`${labelClassName} mt-3`}>
@@ -363,11 +369,14 @@ function DraftView({
         <div className="flex items-end justify-between gap-3">
           <h2
             id="docs-heading"
-            className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+            className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
           >
             Required documents
           </h2>
-          <p className="text-xs font-medium text-slate-500" aria-live="polite">
+          <p
+            className="text-xs font-medium text-slate-500 dark:text-slate-400"
+            aria-live="polite"
+          >
             {missingCount === 0
               ? "All set"
               : `${missingCount} still needed`}
@@ -386,7 +395,7 @@ function DraftView({
           ))}
         </ul>
         {renewal.requiredDocuments.length === 0 ? (
-          <p className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600">
+          <p className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
             No required documents for this configuration. You can submit when
             ready.
           </p>
@@ -406,7 +415,7 @@ function DraftView({
       ) : null}
 
       {submitError ? (
-        <p role="alert" className="text-sm text-rose-700">
+        <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
           {submitError}
         </p>
       ) : null}
@@ -426,7 +435,7 @@ function DraftView({
       >
         {submitting ? "Submitting…" : "Submit renewal"}
       </button>
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         No charge today — fees above are estimates only.
       </p>
     </div>
@@ -489,17 +498,20 @@ function DocumentUploadSlot({
       aria-labelledby={labelId}
       className={`rounded-3xl border px-4 py-4 ${
         requirement.uploaded
-          ? "border-teal-200 bg-teal-50/60"
-          : "border-slate-200/80 bg-white"
+          ? "border-teal-200 bg-teal-50/60 dark:border-teal-800 dark:bg-teal-950/40"
+          : "border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 id={labelId} className="font-semibold text-slate-900">
+          <h3
+            id={labelId}
+            className="font-semibold text-slate-900 dark:text-slate-100"
+          >
             {requirement.label}
           </h3>
           {requirement.notes ? (
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
               {requirement.notes}
             </p>
           ) : null}
@@ -508,7 +520,7 @@ function DocumentUploadSlot({
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
             requirement.uploaded
               ? "bg-teal-700 text-white"
-              : "bg-amber-100 text-amber-900"
+              : "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
           }`}
         >
           {requirement.uploaded ? "Uploaded" : "Needed"}
@@ -517,7 +529,9 @@ function DocumentUploadSlot({
 
       <div
         className={`mt-4 rounded-2xl border-2 border-dashed px-3 py-4 text-center transition ${
-          dragOver ? "border-teal-600 bg-teal-50" : "border-slate-200 bg-slate-50/70"
+          dragOver
+            ? "border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/50"
+            : "border-slate-200 bg-slate-50/70 dark:border-slate-600 dark:bg-slate-950/50"
         }`}
         onDragEnter={(e) => {
           e.preventDefault();
@@ -537,14 +551,14 @@ function DocumentUploadSlot({
           void uploadFile(e.dataTransfer.files?.[0]);
         }}
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Photo or PDF · up to {maxMb} MB
         </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
             type="button"
             disabled={uploading}
-            className="rounded-xl bg-teal-700 px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
+            className="rounded-xl bg-teal-700 px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:bg-teal-600 dark:hover:bg-teal-500"
             onClick={() => inputRef.current?.click()}
           >
             {requirement.uploaded ? "Replace / add" : "Choose file"}
@@ -552,7 +566,7 @@ function DocumentUploadSlot({
           <button
             type="button"
             disabled={uploading}
-            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
+            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
             onClick={() => cameraRef.current?.click()}
           >
             Take photo
@@ -585,7 +599,7 @@ function DocumentUploadSlot({
 
       {progress !== null ? (
         <div className="mt-3" aria-live="polite">
-          <div className="mb-1 flex justify-between text-xs text-slate-600">
+          <div className="mb-1 flex justify-between text-xs text-slate-600 dark:text-slate-400">
             <span>Uploading</span>
             <span>{progress}%</span>
           </div>
@@ -599,7 +613,7 @@ function DocumentUploadSlot({
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-rose-700">
+        <p role="alert" className="mt-2 text-sm text-rose-700 dark:text-rose-300">
           {error}
         </p>
       ) : null}

@@ -112,10 +112,10 @@ export function ProgressTracker({
               <span
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
                   current
-                    ? "bg-teal-700 text-white ring-4 ring-teal-100"
+                    ? "bg-teal-700 text-white ring-4 ring-teal-100 dark:ring-teal-900"
                     : done
                       ? "bg-teal-600 text-white"
-                      : "bg-slate-200 text-slate-600"
+                      : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
                 }`}
                 aria-current={current ? "step" : undefined}
               >
@@ -136,7 +136,7 @@ export function ProgressTracker({
               {index < USER_FACING_STATUSES.length - 1 ? (
                 <span
                   className={`my-1 w-0.5 flex-1 min-h-6 ${
-                    done ? "bg-teal-500" : "bg-slate-200"
+                    done ? "bg-teal-500" : "bg-slate-200 dark:bg-slate-700"
                   }`}
                   aria-hidden
                 />
@@ -146,24 +146,26 @@ export function ProgressTracker({
               <p
                 className={`text-sm font-semibold ${
                   current
-                    ? "text-teal-900"
+                    ? "text-teal-900 dark:text-teal-200"
                     : done
-                      ? "text-slate-900"
-                      : "text-slate-500"
+                      ? "text-slate-900 dark:text-slate-100"
+                      : "text-slate-500 dark:text-slate-400"
                 }`}
               >
                 {label}
                 {current ? (
-                  <span className="ml-2 text-xs font-medium uppercase tracking-wide text-teal-700">
+                  <span className="ml-2 text-xs font-medium uppercase tracking-wide text-teal-700 dark:text-teal-300">
                     Current
                   </span>
                 ) : null}
               </p>
-              <p className="mt-0.5 text-sm leading-relaxed text-slate-600">
+              <p className="mt-0.5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 {description}
               </p>
               {when && (done || current) ? (
-                <p className="mt-1 text-xs text-slate-500">{when}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {when}
+                </p>
               ) : null}
             </div>
           </li>

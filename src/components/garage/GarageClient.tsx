@@ -188,11 +188,13 @@ export function GarageClient() {
 
       {!loading && !error && vehicles.length === 0 ? (
         <section className="flex min-h-[55vh] flex-col justify-center">
-          <p className="text-sm font-medium text-teal-800">Your garage</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+          <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+            Your garage
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Add your first registration
           </h2>
-          <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600">
+          <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600 dark:text-slate-400">
             Passenger vehicle, motorcycle, trailer, OHV, snowmobile, or boat —
             pick a type and we&apos;ll walk you through it in under 30
             seconds.
@@ -215,7 +217,7 @@ export function GarageClient() {
 
       {!loading && !error && vehicles.length > 0 ? (
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} ·
             soonest expiration first
           </p>

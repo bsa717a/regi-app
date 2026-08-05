@@ -102,8 +102,10 @@ export function DashboardClient() {
       <AppShell title="Dashboard">
         {emptyGarage ? (
           <div className="mb-6">
-            <p className="text-sm font-medium text-teal-800">Welcome home</p>
-            <p className="mt-2 max-w-md text-base leading-relaxed text-slate-600">
+            <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+              Welcome home
+            </p>
+            <p className="mt-2 max-w-md text-base leading-relaxed text-slate-600 dark:text-slate-400">
               Your garage is empty — pick a registration type and we&apos;ll
               track the sticker from here.
             </p>
@@ -169,15 +171,17 @@ export function DashboardClient() {
       {!loading && !error ? (
         <div className="space-y-8">
           <section aria-labelledby="dashboard-summary-heading">
-            <p className="text-sm font-medium text-teal-800">At a glance</p>
+            <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+              At a glance
+            </p>
             <h2
               id="dashboard-summary-heading"
-              className="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
+              className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
             >
               {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} in
               your garage
             </h2>
-            <p className="mt-2 text-base text-slate-600">
+            <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
               {groups.expired.length > 0
                 ? `${groups.expired.length} expired · renew soon`
                 : groups.renewTarget
@@ -189,7 +193,7 @@ export function DashboardClient() {
           <section aria-labelledby="quick-actions-heading">
             <h2
               id="quick-actions-heading"
-              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
             >
               Quick actions
             </h2>
@@ -204,7 +208,7 @@ export function DashboardClient() {
               <div className="space-y-2">
                 <button
                   type="button"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                   disabled={!groups.renewTarget}
                   onClick={() => {
                     if (!groups.renewTarget) return;
@@ -219,11 +223,17 @@ export function DashboardClient() {
                   Renew Now
                 </button>
                 {groups.renewTarget ? (
-                  <p id="renew-target-hint" className="text-xs text-slate-500">
+                  <p
+                    id="renew-target-hint"
+                    className="text-xs text-slate-500 dark:text-slate-400"
+                  >
                     For {renewTargetLabel(groups.renewTarget)} · concierge
                   </p>
                 ) : (
-                  <p id="renew-disabled-hint" className="text-xs text-slate-500">
+                  <p
+                    id="renew-disabled-hint"
+                    className="text-xs text-slate-500 dark:text-slate-400"
+                  >
                     No renewals due yet
                   </p>
                 )}
@@ -235,7 +245,7 @@ export function DashboardClient() {
             <section aria-labelledby="expired-heading">
               <h2
                 id="expired-heading"
-                className="text-sm font-semibold uppercase tracking-[0.14em] text-rose-700"
+                className="text-sm font-semibold uppercase tracking-[0.14em] text-rose-700 dark:text-rose-300"
               >
                 Expired — act now
               </h2>
@@ -252,12 +262,12 @@ export function DashboardClient() {
           <section aria-labelledby="upcoming-heading">
             <h2
               id="upcoming-heading"
-              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
             >
               Upcoming renewals
             </h2>
             {groups.upcoming.length === 0 ? (
-              <p className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600">
+              <p className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                 No upcoming renewals — expired registrations are listed above.
               </p>
             ) : (
@@ -274,36 +284,40 @@ export function DashboardClient() {
           <section aria-labelledby="notifications-heading">
             <h2
               id="notifications-heading"
-              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500"
+              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
             >
               Recent notifications
             </h2>
             {notifications.length === 0 ? (
-              <div className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-6">
-                <p className="font-medium text-slate-900">Inbox zero (for now)</p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              <div className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-6 dark:border-slate-700 dark:bg-slate-900">
+                <p className="font-medium text-slate-900 dark:text-slate-100">
+                  Inbox zero (for now)
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                   When renewal reminders go out, they&apos;ll show up here —
                   friendly nudges before the sticker gets nervous.
                 </p>
               </div>
             ) : (
-              <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-3xl border border-slate-200/80 bg-white">
+              <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-3xl border border-slate-200/80 bg-white dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
                 {notifications.map((n) => (
                   <li key={n.id} className="px-4 py-3.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900">{n.title}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">
+                          {n.title}
+                        </p>
                         {n.registrationLabel ? (
-                          <p className="mt-0.5 text-sm text-slate-600">
+                          <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
                             {n.registrationLabel}
                           </p>
                         ) : null}
-                        <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
+                        <p className="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           {n.channel} · {n.status}
                         </p>
                       </div>
                       <time
-                        className="shrink-0 text-xs text-slate-500"
+                        className="shrink-0 text-xs text-slate-500 dark:text-slate-400"
                         dateTime={n.sentAt ?? n.scheduledFor}
                       >
                         {formatRelativeTime(n.sentAt ?? n.scheduledFor)}

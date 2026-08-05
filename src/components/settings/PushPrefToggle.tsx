@@ -110,23 +110,32 @@ export function PushPrefToggle({
   const isDisabled = Boolean(disabled || busy || !pushAvailable);
 
   return (
-    <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+    <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
       <div>
         <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-slate-900" id="pref-push-label">
+          <p
+            className="text-sm font-semibold text-slate-900 dark:text-slate-100"
+            id="pref-push-label"
+          >
             Push
           </p>
           {!pushAvailable ? (
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
               Unavailable
             </span>
           ) : null}
         </div>
-        <p className="mt-0.5 text-sm text-slate-600" id="pref-push-desc">
+        <p
+          className="mt-0.5 text-sm text-slate-600 dark:text-slate-400"
+          id="pref-push-desc"
+        >
           Alerts on this device when REGI is installed.
         </p>
         {note ? (
-          <p className="mt-2 text-xs leading-relaxed text-slate-500" role="note">
+          <p
+            className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+            role="note"
+          >
             {note}
           </p>
         ) : null}

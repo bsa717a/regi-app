@@ -20,8 +20,10 @@ export function HomeRedirect() {
       role="status"
       aria-live="polite"
     >
-      <p className="text-3xl font-semibold tracking-tight text-slate-900">REGI</p>
-      <p className="mt-3 text-sm text-slate-600">
+      <p className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+        REGI
+      </p>
+      <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
         {loading ? "Starting up…" : "Redirecting…"}
       </p>
     </main>

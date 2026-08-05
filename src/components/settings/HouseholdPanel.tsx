@@ -143,14 +143,14 @@ export function HouseholdPanel() {
       {owned ? (
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-slate-900">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               {owned.name}
             </h3>
-            <span className="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-900">
+            <span className="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
               Your role: Owner
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Invite a spouse or partner to view registrations, statuses,
             documents, and reminders. Viewers cannot edit or renew.
           </p>
@@ -159,26 +159,26 @@ export function HouseholdPanel() {
             {owned.members.map((member) => (
               <li
                 key={member.id}
-                className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                className="flex items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {member.name || member.email || "Invited member"}
                     {member.isCurrentUser ? " (you)" : ""}
                   </p>
                   {member.email && member.name ? (
-                    <p className="truncate text-sm text-slate-600">
+                    <p className="truncate text-sm text-slate-600 dark:text-slate-400">
                       {member.email}
                     </p>
                   ) : null}
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {roleLabel(member.role)} · {statusLabel(member.inviteStatus)}
                   </p>
                 </div>
                 {member.role !== "owner" ? (
                   <button
                     type="button"
-                    className="shrink-0 text-sm font-semibold text-rose-700 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:opacity-50"
+                    className="shrink-0 text-sm font-semibold text-rose-700 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:opacity-50 dark:text-rose-300 dark:focus-visible:outline-rose-400"
                     disabled={removingId === member.id}
                     onClick={() =>
                       void onRemove(
@@ -226,15 +226,17 @@ export function HouseholdPanel() {
       )}
 
       {shared.length > 0 ? (
-        <div className="space-y-4 border-t border-slate-200 pt-6">
-          <h3 className="text-base font-semibold text-slate-900">
+        <div className="space-y-4 border-t border-slate-200 pt-6 dark:border-slate-700">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
             Shared with you
           </h3>
           {shared.map((hh) => (
             <div key={hh.id}>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium text-slate-900">{hh.name}</p>
-                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                <p className="font-medium text-slate-900 dark:text-slate-100">
+                  {hh.name}
+                </p>
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   Your role: Viewer (read-only)
                 </span>
               </div>
@@ -244,13 +246,13 @@ export function HouseholdPanel() {
                   .map((member) => (
                     <li
                       key={member.id}
-                      className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm"
+                      className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/80"
                     >
-                      <p className="font-medium text-slate-900">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
                         {member.name || member.email}
                         {member.isCurrentUser ? " (you)" : ""}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {roleLabel(member.role)}
                       </p>
                     </li>
