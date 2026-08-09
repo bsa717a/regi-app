@@ -303,11 +303,13 @@ export function DocumentsClient() {
 
       {!loadingVehicles && vehicles.length === 0 && !error ? (
         <section className="flex min-h-[55vh] flex-col justify-center">
-          <p className="text-sm font-medium text-teal-800">Document vault</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+          <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+            Document vault
+          </p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Add a registration first
           </h2>
-          <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600">
+          <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600 dark:text-slate-400">
             Registration cards, insurance, and titles live with each
             registration in your garage.
           </p>
@@ -477,12 +479,14 @@ function DocumentList({
 
   if (documents.length === 0) {
     return (
-      <section className="rounded-3xl border border-dashed border-teal-200/80 bg-white/70 px-5 py-10 text-center">
-        <p className="text-sm font-medium text-teal-800">Empty vault</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+      <section className="rounded-3xl border border-dashed border-teal-200/80 bg-white/70 px-5 py-10 text-center dark:border-teal-800 dark:bg-slate-900/80">
+        <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+          Empty vault
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
           {filterActive ? "No documents for this registration" : "No documents yet"}
         </h2>
-        <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-slate-600">
+        <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-slate-600 dark:text-slate-400">
           {hasEditableVehicle
             ? "Upload a registration card, insurance, title, emissions certificate, temporary permit, or other document. Files stay private — downloads use short-lived links."
             : filterActive
@@ -504,17 +508,17 @@ function DocumentList({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         {documents.length} document{documents.length === 1 ? "" : "s"} ·
         private storage
       </p>
       {actionError ? (
-        <p role="alert" className="text-sm text-rose-700">
+        <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
           {actionError}
         </p>
       ) : null}
-      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white">
-        <ul className="divide-y divide-slate-100">
+      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {documents.map((doc) => {
             const vehicle = vehicleById.get(doc.registrationId);
             const canEdit = Boolean(vehicle?.canEdit);
@@ -525,17 +529,17 @@ function DocumentList({
                 className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800 dark:text-teal-300">
                     {documentTileLabel(doc, vehicle)}
                   </p>
                   <button
                     type="button"
                     onClick={() => onView(doc)}
-                    className="mt-1 max-w-full truncate text-left text-base font-medium text-slate-900 underline-offset-4 hover:text-teal-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+                    className="mt-1 max-w-full truncate text-left text-base font-medium text-slate-900 underline-offset-4 hover:text-teal-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-100 dark:hover:text-teal-300"
                   >
                     {doc.originalFilename}
                   </button>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Uploaded {formatUploadedAt(doc.createdAt)}
                   </p>
                 </div>
@@ -543,7 +547,7 @@ function DocumentList({
                   <button
                     type="button"
                     disabled={busyId === doc.id}
-                    className="rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
+                    className="rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70"
                     onClick={() => onView(doc)}
                   >
                     {canEdit ? "View/rename" : "View"}
@@ -551,7 +555,7 @@ function DocumentList({
                   <button
                     type="button"
                     disabled={busyId === doc.id}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                     onClick={async () => {
                       setActionError(null);
                       setBusyId(doc.id);

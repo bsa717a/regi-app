@@ -98,20 +98,22 @@ export function PwaInstallPrompt() {
       role="region"
       aria-label="Install REGI"
     >
-      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-teal-800/15 bg-white/95 p-4 shadow-lg shadow-slate-900/10 backdrop-blur">
+      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-teal-800/15 bg-white/95 p-4 shadow-lg shadow-slate-900/10 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:shadow-black/40">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Install REGI</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Install REGI
+            </p>
             {showIosHint ? (
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 On iPhone: tap Share, then{" "}
-                <span className="font-medium text-slate-800">
+                <span className="font-medium text-slate-800 dark:text-slate-200">
                   Add to Home Screen
                 </span>
                 .
               </p>
             ) : (
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 Add REGI to your home screen for faster access and push alerts.
               </p>
             )}
@@ -119,7 +121,7 @@ export function PwaInstallPrompt() {
           <button
             type="button"
             onClick={dismiss}
-            className="rounded-lg px-2 py-1 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className="rounded-lg px-2 py-1 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             aria-label="Dismiss install prompt"
           >
             Not now

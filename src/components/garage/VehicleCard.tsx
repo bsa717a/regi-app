@@ -216,10 +216,10 @@ export function VehicleCard({
             <p
               className={`mt-2 text-sm font-medium ${
                 vehicle.status === "Expired"
-                  ? "text-rose-700"
+                  ? "text-rose-700 dark:text-rose-300"
                   : vehicle.status === "Due Soon"
-                    ? "text-amber-800"
-                    : "text-teal-800"
+                    ? "text-amber-800 dark:text-amber-200"
+                    : "text-teal-800 dark:text-teal-300"
               }`}
             >
               {vehicle.countdown}
@@ -241,7 +241,7 @@ export function VehicleCard({
           <button
             type="button"
             onClick={() => void openRegistrationPreview()}
-            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline"
+            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
           >
             Registration card
           </button>
@@ -312,22 +312,24 @@ export function VehicleCard({
               <button
                 type="button"
                 onClick={() => void openRegistrationPreview()}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70 sm:w-auto"
               >
                 View registration card
               </button>
             ) : registrationDocLoading ? (
-              <p className="text-sm text-slate-500">Loading registration card…</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Loading registration card…
+              </p>
             ) : null}
 
             {registrationDocError ? (
-              <p className="text-sm text-rose-700" role="alert">
+              <p className="text-sm text-rose-700 dark:text-rose-300" role="alert">
                 {registrationDocError}
               </p>
             ) : null}
 
             {!vehicle.canEdit ? (
-              <p className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700">
+              <p className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 Shared with you · view only
               </p>
             ) : null}

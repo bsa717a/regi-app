@@ -11,10 +11,10 @@ export default async function NewRenewalPage({
   if (!registrationId) {
     return (
       <main className="mx-auto flex min-h-[50vh] max-w-3xl flex-col justify-center px-4 py-10">
-        <h1 className="text-2xl font-semibold text-slate-900">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
           Choose a registration
         </h1>
-        <p className="mt-2 text-slate-600">
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
           Open Renew from your dashboard or garage to start the concierge flow.
         </p>
         <a

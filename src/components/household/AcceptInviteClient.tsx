@@ -67,17 +67,21 @@ export function AcceptInviteClient() {
           aria-busy
         >
           <div className="h-28 animate-pulse rounded-3xl bg-slate-200/80" />
-          <p className="text-sm text-slate-600">Accepting your invite…</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Accepting your invite…
+          </p>
         </div>
       ) : null}
 
       {status === "done" ? (
-        <section className="rounded-3xl border border-teal-200 bg-teal-50/80 px-5 py-6">
-          <p className="text-sm font-medium text-teal-800">You&apos;re in</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+        <section className="rounded-3xl border border-teal-200 bg-teal-50/80 px-5 py-6 dark:border-teal-800 dark:bg-teal-950/40">
+          <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+            You&apos;re in
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             Joined {householdName ?? "the household"}
           </h2>
-          <p className="mt-2 text-base text-slate-600">
+          <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
             You can view shared registrations, statuses, and documents. Renewals and
             edits stay with the household owner.
           </p>

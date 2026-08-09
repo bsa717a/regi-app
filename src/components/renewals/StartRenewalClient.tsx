@@ -84,7 +84,7 @@ export function StartRenewalClient({
       {busy ? (
         <div className="space-y-4" aria-busy aria-label="Starting renewal">
           <div className="h-24 animate-pulse rounded-3xl bg-gradient-to-br from-teal-100 via-slate-100 to-slate-200" />
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {vehicle
               ? `Starting concierge for ${vehicleLabel(vehicle)}…`
               : "Loading registration…"}

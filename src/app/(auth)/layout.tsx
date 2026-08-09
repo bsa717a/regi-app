@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <Suspense
       fallback={
         <div className="flex flex-1 items-center justify-center px-6 py-16">
-          <p className="text-sm text-slate-600">Loading…</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Loading…</p>
         </div>
       }
     >

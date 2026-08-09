@@ -606,7 +606,9 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-500">Loading maintenance…</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Loading maintenance…
+          </p>
         ) : null}
 
         {enhancingReceipt ? (
@@ -712,7 +714,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                 <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                   Tasks
                 </h3>
-                <span className="text-xs font-medium text-slate-500">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   {activeTasks.length} active
                 </span>
               </div>
@@ -744,7 +746,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                             {task.statusDetail}
                           </p>
                           {task.lastPerformedOn ? (
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                               Last done {task.lastPerformedOn}
                               {task.lastHoursAtService != null
                                 ? ` @ ${task.lastHoursAtService} hrs`
@@ -846,7 +848,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {preset.name}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           {formatInterval({
                             intervalMonths: preset.intervalMonths ?? null,
                             intervalHours: preset.intervalHours ?? null,
@@ -959,7 +961,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                         onChange={(e) => setCustomRemindDays(e.target.value)}
                         placeholder="e.g. 30"
                       />
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         We&apos;ll email you on that day. Text reminders come
                         later.
                       </p>
@@ -1018,7 +1020,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                               : ""}
                           </p>
                           {log.notes ? (
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                               {log.notes}
                             </p>
                           ) : null}
@@ -1041,7 +1043,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                             type="button"
                             disabled={busy}
                             onClick={() => void onRemoveLog(log.id)}
-                            className="text-xs font-semibold text-rose-700 hover:underline disabled:opacity-50"
+                            className="text-xs font-semibold text-rose-700 hover:underline disabled:opacity-50 dark:text-rose-300"
                           >
                             Delete
                           </button>
@@ -1087,7 +1089,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                     <button
                       type="button"
                       onClick={() => clearReceiptAttachment()}
-                      className="text-xs font-semibold text-rose-700 hover:underline"
+                      className="text-xs font-semibold text-rose-700 hover:underline dark:text-rose-300"
                     >
                       Remove photo
                     </button>
@@ -1187,7 +1189,7 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                   onChange={(e) => setDoneRemindDays(e.target.value)}
                   placeholder="e.g. 15"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Email reminder. Text comes later.
                 </p>
               </div>
