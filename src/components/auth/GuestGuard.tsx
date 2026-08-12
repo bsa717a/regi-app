@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useGarageDoorReveal } from "@/components/auth/GarageDoorReveal";
 import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
@@ -10,19 +10,13 @@ export function GuestGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const { revealing } = useGarageDoorReveal();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     // revealTo() owns navigation during the garage-door open sequence.
     if (!loading && user && !revealing) {
-      const next = searchParams.get("next");
-      const safeNext =
-        next && next.startsWith("/") && !next.startsWith("//")
-          ? next
-          : DEFAULT_SIGNED_IN_HOME;
-      router.replace(safeNext);
+      router.replace(DEFAULT_SIGNED_IN_HOME);
     }
-  }, [loading, user, revealing, router, searchParams]);
+  }, [loading, user, revealing, router]);
 
   if (loading) {
     return (
