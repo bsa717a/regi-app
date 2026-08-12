@@ -173,6 +173,8 @@ Push on iOS uses `@capacitor-firebase/messaging` (not web VAPID). Tokens are sto
 6. In Xcode: Signing & Capabilities → confirm **Push Notifications** (+ Background Modes → Remote notifications)
 7. `npm run cap:sync` (or `cap:sync:local` for localhost) then Stop → Run in Xcode
 
+APNs entitlement: Debug uses `App.entitlements` (`aps-environment` = `development`); Release/Archive uses `AppRelease.entitlements` (`production`) for TestFlight / App Store.
+
 **In-app:** Settings → Push toggle. Native path requests notification permission, fetches an FCM token, and `POST /api/push/register` with `platform: "ios"`.
 
 Simulator note: remote push often needs a **physical iPhone**; local permission/token flows can still be exercised.
