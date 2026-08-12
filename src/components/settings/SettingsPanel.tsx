@@ -14,6 +14,8 @@ import { ThemeSetting } from "@/components/settings/ThemeSetting";
 import { HouseholdPanel } from "@/components/settings/HouseholdPanel";
 import { NativeSecuritySection } from "@/components/settings/NativeSecuritySection";
 import { PushPrefToggle } from "@/components/settings/PushPrefToggle";
+import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
+import { LegalLinks } from "@/components/legal/LegalLinks";
 
 export function SettingsPanel() {
   const { user, profile, profileLoading, getIdToken, refreshProfile, logOut } =
@@ -225,6 +227,18 @@ function SettingsForm({
       ) : null}
 
       <section className="border-t border-slate-200 pt-6 dark:border-slate-700">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Legal
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          How REGI uses your data, and the terms for using the app.
+        </p>
+        <div className="mt-3">
+          <LegalLinks />
+        </div>
+      </section>
+
+      <section className="border-t border-slate-200 pt-6 dark:border-slate-700">
         <button
           type="button"
           onClick={() => void logOut()}
@@ -233,6 +247,8 @@ function SettingsForm({
           Sign out
         </button>
       </section>
+
+      <DeleteAccountSection />
     </div>
   );
 }
