@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -121,6 +122,10 @@ export function GarageClient() {
     );
   }
 
+  const needsAttention = vehicles.filter(
+    (v) => v.status === "Due Soon" || v.status === "Expired",
+  ).length;
+
   return (
     <AppShell
       title="Garage"
@@ -221,6 +226,17 @@ export function GarageClient() {
             {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} ·
             soonest expiration first
           </p>
+          {needsAttention > 0 ? (
+            <p>
+              <Link
+                href="/renewals"
+                className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
+              >
+                {needsAttention} need{needsAttention === 1 ? "s" : ""} attention
+                → Renewals
+              </Link>
+            </p>
+          ) : null}
           <ul className="space-y-4">
             {vehicles.map((vehicle) => (
               <li key={vehicle.id}>

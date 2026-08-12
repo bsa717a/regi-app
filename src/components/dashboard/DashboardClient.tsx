@@ -81,7 +81,7 @@ export function DashboardClient() {
           setError(
             err instanceof ApiError
               ? err.message
-              : "Could not load your dashboard. Please try again.",
+              : "Could not load renewals. Please try again.",
           );
           setLoading(false);
         }
@@ -99,21 +99,21 @@ export function DashboardClient() {
 
   if (emptyGarage || adding) {
     return (
-      <AppShell title="Dashboard">
+      <AppShell title="Renewals">
         {emptyGarage ? (
           <div className="mb-6">
             <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
-              Welcome home
+              Renewals inbox
             </p>
             <p className="mt-2 max-w-md text-base leading-relaxed text-slate-600 dark:text-slate-400">
-              Your garage is empty — pick a registration type and we&apos;ll
-              track the sticker from here.
+              Your garage is empty — add a registration first, then we&apos;ll
+              track renewals here.
             </p>
           </div>
         ) : null}
         <AddRegistrationFlow
           onCancel={emptyGarage ? undefined : () => setAdding(false)}
-          cancelLabel="← Back to dashboard"
+          cancelLabel="← Back to renewals"
           onCreated={(vehicle) => {
             setVehicles((prev) =>
               [...prev, vehicle].sort(
@@ -130,7 +130,7 @@ export function DashboardClient() {
 
   return (
     <AppShell
-      title="Dashboard"
+      title="Renewals"
       action={
         vehicles.length > 0 ? (
           <button
@@ -144,7 +144,7 @@ export function DashboardClient() {
       }
     >
       {loading ? (
-        <div className="space-y-5" aria-busy aria-label="Loading dashboard">
+        <div className="space-y-5" aria-busy aria-label="Loading renewals">
           <div className="h-24 animate-pulse rounded-3xl bg-gradient-to-br from-teal-100 via-slate-100 to-slate-200" />
           <div className="h-28 animate-pulse rounded-3xl bg-slate-100" />
           <div className="h-28 animate-pulse rounded-3xl bg-slate-100" />
@@ -170,12 +170,12 @@ export function DashboardClient() {
 
       {!loading && !error ? (
         <div className="space-y-8">
-          <section aria-labelledby="dashboard-summary-heading">
+          <section aria-labelledby="renewals-summary-heading">
             <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
-              At a glance
+              Renewal inbox
             </p>
             <h2
-              id="dashboard-summary-heading"
+              id="renewals-summary-heading"
               className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
             >
               {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} in

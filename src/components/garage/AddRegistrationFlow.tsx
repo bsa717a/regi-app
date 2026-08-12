@@ -143,7 +143,7 @@ export function AddRegistrationFlow({
   cancelLabel = "← Back to garage",
   registrationType: initialType,
 }: {
-  /** When omitted, the back control is hidden (e.g. empty-garage dashboard). */
+  /** When omitted, the back control is hidden (e.g. empty garage). */
   onCancel?: () => void;
   onCreated: (vehicle: RegistrationDto, options?: { warning?: string }) => void;
   cancelLabel?: string;

@@ -94,7 +94,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/dashboard"
+            href="/garage"
             className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
           >
             Back to app

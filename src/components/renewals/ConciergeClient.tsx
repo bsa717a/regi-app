@@ -146,7 +146,7 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
       title={title}
       action={
         <Link
-          href="/dashboard"
+          href="/renewals"
           className="rounded-xl px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:hover:bg-teal-950/50 dark:focus-visible:outline-teal-400"
         >
           Done

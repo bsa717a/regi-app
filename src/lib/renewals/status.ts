@@ -62,7 +62,7 @@ export type AdvanceRenewalStatusDeps = {
    * when persistNotifications is true). Defaults to true.
    */
   sendNotifications?: boolean;
-  /** Persist notification rows for the dashboard inbox. Defaults to true. */
+  /** Persist notification rows for the renewals inbox. Defaults to true. */
   persistNotifications?: boolean;
 };
 
