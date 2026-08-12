@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ApiError, fetchAdminMe } from "@/lib/api/client";
 import type { AdminStaffDto } from "@/lib/admin/types";
@@ -14,7 +14,6 @@ import type { AdminStaffDto } from "@/lib/admin/types";
 export function StaffGuard({ children }: { children: ReactNode }) {
   const { user, loading, idToken, getIdToken, logOut } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const [staff, setStaff] = useState<AdminStaffDto | null>(null);
   const [forbidden, setForbidden] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -23,8 +22,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
     if (loading) return;
 
     if (!user) {
-      const next = encodeURIComponent(pathname || "/admin");
-      router.replace(`/login?next=${next}`);
+      router.replace("/login");
       return;
     }
 
@@ -51,8 +49,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) {
-          const next = encodeURIComponent(pathname || "/admin");
-          router.replace(`/login?next=${next}`);
+          router.replace("/login");
           setChecking(false);
           return;
         }
@@ -64,7 +61,7 @@ export function StaffGuard({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [loading, user, idToken, getIdToken, router, pathname]);
+  }, [loading, user, idToken, getIdToken, router]);
 
   if (loading || !user) {
     return (

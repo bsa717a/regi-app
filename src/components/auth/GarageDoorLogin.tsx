@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -38,18 +37,11 @@ function mapAuthError(error: unknown): string {
 
 export function GarageDoorLogin() {
   const { signIn } = useAuth();
-  const searchParams = useSearchParams();
   const { armReveal, cancelReveal, revealTo, revealing } = useGarageDoorReveal();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function destination(): string {
-    const next = searchParams.get("next");
-    if (next && next.startsWith("/") && !next.startsWith("//")) return next;
-    return DEFAULT_SIGNED_IN_HOME;
-  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,8 +51,8 @@ export function GarageDoorLogin() {
     armReveal();
     try {
       await signIn(email, password);
-      // Navigate under the closed door, then scroll up to reveal the app.
-      revealTo(destination());
+      // Always land in the garage after sign-in.
+      revealTo(DEFAULT_SIGNED_IN_HOME);
     } catch (err) {
       cancelReveal();
       setError(mapAuthError(err));
