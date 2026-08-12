@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { isNativeApp } from "@/lib/capacitor/platform";
+import { useIsNativeApp } from "@/lib/capacitor/useIsNativeApp";
 
 /**
  * Applies native shell chrome when running inside Capacitor.
  * No-ops on web / PWA.
  */
 export function CapacitorShell() {
+  const { isNative } = useIsNativeApp();
+
   useEffect(() => {
-    if (!isNativeApp()) return;
+    if (!isNative) return;
 
     let cancelled = false;
 
@@ -19,8 +21,8 @@ export function CapacitorShell() {
         if (cancelled) return;
         await StatusBar.setStyle({ style: Style.Dark });
         await StatusBar.setBackgroundColor({ color: "#0f172a" });
-      } catch (err) {
-        console.warn("[Capacitor] StatusBar setup failed", err);
+      } catch {
+        // StatusBar may be unavailable on some hosts.
       }
 
       try {
@@ -35,7 +37,7 @@ export function CapacitorShell() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isNative]);
 
   return null;
 }

@@ -1,20 +1,31 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
+const serverUrl = (
+  process.env.CAPACITOR_SERVER_URL?.trim() ||
+  "https://regi-90502049802.us-central1.run.app"
+).replace(/\/$/, "");
+
+const serverHost = new URL(serverUrl).hostname;
+
 /**
- * Capacitor loads the hosted Next.js app (Cloud Run). The local webDir is only
- * a bootstrap / offline shell — API + UI live on the server URL.
+ * Capacitor loads the hosted Next.js app directly so the native bridge
+ * (Face ID, Network, Push, etc.) is injected into the WebView.
+ *
+ * Override for simulator/device debugging:
+ *   CAPACITOR_SERVER_URL=http://127.0.0.1:8080 npm run cap:sync
  */
 const config: CapacitorConfig = {
   appId: "app.regi.ios",
   appName: "REGI",
   webDir: "capacitor-www",
   server: {
-    // Production Cloud Run. Override for device debugging, e.g.:
-    // CAPACITOR_SERVER_URL=http://192.168.1.20:8080 npx cap sync ios
-    url:
-      process.env.CAPACITOR_SERVER_URL?.trim() ||
-      "https://regi-90502049802.us-central1.run.app",
-    cleartext: process.env.CAPACITOR_SERVER_URL?.startsWith("http://") === true,
+    url: serverUrl,
+    allowNavigation: [serverHost],
+    cleartext: serverUrl.startsWith("http://"),
+  },
+  ios: {
+    contentInset: "automatic",
+    preferredContentMode: "mobile",
   },
   plugins: {
     SplashScreen: {

@@ -12,6 +12,7 @@ import {
 } from "@/components/auth/AuthFormStyles";
 import { ThemeSetting } from "@/components/settings/ThemeSetting";
 import { HouseholdPanel } from "@/components/settings/HouseholdPanel";
+import { NativeSecuritySection } from "@/components/settings/NativeSecuritySection";
 import { PushPrefToggle } from "@/components/settings/PushPrefToggle";
 
 export function SettingsPanel() {
@@ -122,6 +123,11 @@ function SettingsForm({
         </p>
         <ThemeSetting />
       </section>
+
+      <NativeSecuritySection
+        onMessage={setMessage}
+        onError={(msg) => setError(msg || null)}
+      />
 
       <section>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile</h2>

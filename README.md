@@ -114,13 +114,13 @@ public/                # static assets, manifest, service worker
 
 ## Capacitor iOS (Phase 1 shell)
 
-The iOS app is a Capacitor shell that loads the hosted Next.js app (Cloud Run). It does **not** replace deploy — APIs and UI still run on the server.
+The iOS app is a Capacitor shell that loads the hosted Next.js app via `server.url` so native plugins (Face ID, Network, Push) inject correctly. It does **not** replace deploy — APIs and UI still run on the server.
 
 | Item | Value |
 | ---- | ----- |
 | Bundle / app id | `app.regi.ios` |
-| Local webDir | `capacitor-www/` (bootstrap shell only) |
-| Default `server.url` | `https://regi-90502049802.us-central1.run.app` |
+| Local webDir | `capacitor-www/` (bootstrap + offline shell) |
+| Default host | `https://regi-90502049802.us-central1.run.app` |
 
 **Prerequisites:** Xcode (Capacitor 8 uses Swift Package Manager for plugins), Apple team for signing.
 
@@ -128,20 +128,40 @@ The iOS app is a Capacitor shell that loads the hosted Next.js app (Cloud Run). 
 # Sync native project + copy webDir
 npm run cap:sync
 
-# Open in Xcode (always launches Xcode.app, not the editor)
+# Open the .xcodeproj in Xcode.app (File → Open if needed)
 npm run cap:ios
 ```
 
-If `npx cap open ios` ever opens Cursor instead, use `npm run cap:ios` (it calls `open -a Xcode …` directly).
+**Point the shell at local Next** (needed to see unreleased UI like Face ID in the simulator):
 
-**Point at a local Next server** (device and Mac on same LAN):
+```bash
+# Terminal A — Next.js on :8080
+npm run dev
+
+# Terminal B — point the iOS shell at local Next (localhost works in Simulator)
+npm run cap:sync:local
+```
+
+**Restart `npm run dev` after changing `next.config.ts`** (needs `allowedDevOrigins` for Capacitor).
+
+Then Run again from Xcode (⌘R). Settings should show **Security → Face ID unlock**.
+
+For a physical iPhone, use your Mac’s LAN IP and add that host to `allowedDevOrigins`:
 
 ```bash
 CAPACITOR_SERVER_URL=http://YOUR_LAN_IP:8080 npm run cap:sync
-npm run cap:ios
 ```
 
-Do not commit secrets, `GoogleService-Info.plist` with restricted keys if treated as secret, or Xcode user state. Push/Face ID native wiring is a later phase; this shell includes the plugin packages only.
+To point back at production Cloud Run: `npm run cap:sync`.
+
+### Phase 2 native features (4.2)
+
+- **Face ID / Touch ID unlock** — Settings → Security (simulator: Features → Face ID → Enrolled)
+- **Offline shell** — local `capacitor-www` page if `/api/health` fails; in-app overlay if the network drops later
+- **Usage strings** — camera, photos, Face ID in `ios/App/App/Info.plist`
+- **Push (APNs)** — plugin installed; token registration is the next phase (needs Firebase iOS app + APNs key)
+
+Do not commit secrets or Xcode user state.
 
 ## Renewal reminders (daily cron)
 

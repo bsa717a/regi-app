@@ -1,5 +1,11 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import {
+  getAuth,
+  initializeAuth,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+  type Auth,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -36,6 +42,17 @@ export function getFirebaseApp(): FirebaseApp {
   return initializeApp(firebaseConfig);
 }
 
+/**
+ * Capacitor's WKWebView can hang on the default Auth bootstrap. Prefer an
+ * explicit persistence choice; fall back to getAuth() if already initialized.
+ */
 export function getFirebaseAuth(): Auth {
-  return getAuth(getFirebaseApp());
+  const app = getFirebaseApp();
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    });
+  } catch {
+    return getAuth(app);
+  }
 }
