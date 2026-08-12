@@ -25,6 +25,13 @@ export function useIsNativeApp(): { isNative: boolean; ready: boolean } {
       return;
     }
 
+    // Plain browsers never get a delayed bridge — only Capacitor shells do.
+    // Avoid blocking Settings (push toggle) for the full poll window on web.
+    if (!/Capacitor/i.test(navigator.userAgent)) {
+      finish(false);
+      return;
+    }
+
     const interval = window.setInterval(() => {
       if (isNativeApp()) {
         window.clearInterval(interval);

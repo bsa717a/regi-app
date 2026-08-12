@@ -1,10 +1,14 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient, PushPlatform } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export type PushTokenStore = Pick<
-  PrismaClient,
-  "pushToken"
->;
+export type PushTokenStore = Pick<PrismaClient, "pushToken">;
+
+export type RegisterPushTokenInput = {
+  userId: string;
+  token: string;
+  platform?: PushPlatform;
+  userAgent?: string | null;
+};
 
 /** Upsert a device token for a user; refreshes lastSeenAt on re-register. */
 export async function registerPushToken(
@@ -12,22 +16,35 @@ export async function registerPushToken(
   token: string,
   userAgent?: string | null,
   db: PushTokenStore = prisma,
+  platform: PushPlatform = "web",
 ): Promise<{ id: string; token: string; created: boolean }> {
+  return registerPushTokenDetailed(
+    { userId, token, userAgent, platform },
+    db,
+  );
+}
+
+export async function registerPushTokenDetailed(
+  input: RegisterPushTokenInput,
+  db: PushTokenStore = prisma,
+): Promise<{ id: string; token: string; created: boolean }> {
+  const platform = input.platform ?? "web";
   const existing = await db.pushToken.findUnique({
-    where: { token },
+    where: { token: input.token },
     select: { id: true, userId: true },
   });
 
   if (existing) {
     // Do not reassign another user's token — possession of the string alone
     // must not steal push delivery. Same-user re-register refreshes metadata.
-    if (existing.userId !== userId) {
+    if (existing.userId !== input.userId) {
       throw new Error("Push token is already registered to another account");
     }
     const updated = await db.pushToken.update({
-      where: { token },
+      where: { token: input.token },
       data: {
-        userAgent: userAgent ?? undefined,
+        platform,
+        userAgent: input.userAgent ?? undefined,
         lastSeenAt: new Date(),
       },
       select: { id: true, token: true },
@@ -37,9 +54,10 @@ export async function registerPushToken(
 
   const created = await db.pushToken.create({
     data: {
-      userId,
-      token,
-      userAgent: userAgent ?? null,
+      userId: input.userId,
+      token: input.token,
+      platform,
+      userAgent: input.userAgent ?? null,
     },
     select: { id: true, token: true },
   });
@@ -104,4 +122,9 @@ export function isInvalidFcmTokenError(code: string | undefined): boolean {
     normalized === "messaging/invalid-registration-token" ||
     normalized === "messaging/invalid-argument"
   );
+}
+
+export function parsePushPlatform(value: unknown): PushPlatform | null {
+  if (value === "web" || value === "ios" || value === "android") return value;
+  return null;
 }

@@ -82,6 +82,10 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>REGI uses Face ID to unlock your garage and renewals on this device.</string>
 	<key>NSCameraUsageDescription</key>

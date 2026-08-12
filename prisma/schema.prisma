@@ -129,14 +129,23 @@ model User {
   @@map("users")
 }
 
-/// FCM web-push device tokens for a user (one row per browser/device).
+enum PushPlatform {
+  web
+  ios
+  android
+
+  @@map("push_platform")
+}
+
+/// FCM device tokens for a user (one row per browser/device).
 model PushToken {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  token      String   @unique
-  userAgent  String?  @map("user_agent")
-  createdAt  DateTime @default(now()) @map("created_at")
-  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  id         String       @id @default(cuid())
+  userId     String       @map("user_id")
+  token      String       @unique
+  platform   PushPlatform @default(web)
+  userAgent  String?      @map("user_agent")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  lastSeenAt DateTime     @default(now()) @map("last_seen_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

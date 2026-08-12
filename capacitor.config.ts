@@ -1,3 +1,4 @@
+/// <reference types="@capacitor-firebase/messaging" />
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const serverUrl = (
@@ -12,7 +13,7 @@ const serverHost = new URL(serverUrl).hostname;
  * (Face ID, Network, Push, etc.) is injected into the WebView.
  *
  * Override for simulator/device debugging:
- *   CAPACITOR_SERVER_URL=http://127.0.0.1:8080 npm run cap:sync
+ *   CAPACITOR_SERVER_URL=http://localhost:8080 npm run cap:sync
  */
 const config: CapacitorConfig = {
   appId: "app.regi.ios",
@@ -26,6 +27,17 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: "automatic",
     preferredContentMode: "mobile",
+  },
+  experimental: {
+    ios: {
+      spm: {
+        packageOptions: {
+          "@capacitor-firebase/messaging": {
+            symlink: true,
+          },
+        },
+      },
+    },
   },
   plugins: {
     SplashScreen: {
@@ -41,7 +53,7 @@ const config: CapacitorConfig = {
       resize: "body",
       resizeOnFullScreen: true,
     },
-    PushNotifications: {
+    FirebaseMessaging: {
       presentationOptions: ["badge", "sound", "alert"],
     },
   },

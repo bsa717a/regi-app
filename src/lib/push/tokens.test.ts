@@ -9,7 +9,13 @@ import {
 function createMockDb() {
   const store = new Map<
     string,
-    { id: string; userId: string; token: string; userAgent: string | null }
+    {
+      id: string;
+      userId: string;
+      token: string;
+      userAgent: string | null;
+      platform: string;
+    }
   >();
 
   return {
@@ -25,13 +31,19 @@ function createMockDb() {
         async ({
           data,
         }: {
-          data: { userId: string; token: string; userAgent: string | null };
+          data: {
+            userId: string;
+            token: string;
+            userAgent: string | null;
+            platform?: string;
+          };
         }) => {
           const row = {
             id: `id-${store.size + 1}`,
             userId: data.userId,
             token: data.token,
             userAgent: data.userAgent,
+            platform: data.platform ?? "web",
           };
           store.set(data.token, row);
           return { id: row.id, token: row.token };
@@ -43,13 +55,19 @@ function createMockDb() {
           data,
         }: {
           where: { token: string };
-          data: { userId?: string; userAgent?: string; lastSeenAt: Date };
+          data: {
+            userId?: string;
+            userAgent?: string;
+            platform?: string;
+            lastSeenAt: Date;
+          };
         }) => {
           const existing = store.get(where.token)!;
           const next = {
             ...existing,
             userId: data.userId ?? existing.userId,
             userAgent: data.userAgent ?? existing.userAgent,
+            platform: data.platform ?? existing.platform,
           };
           store.set(where.token, next);
           return { id: next.id, token: next.token };
@@ -90,6 +108,19 @@ describe("push token helpers", () => {
     );
     expect(result.created).toBe(true);
     expect(db.store.get("token-abcdefg")?.userId).toBe("user-1");
+    expect(db.store.get("token-abcdefg")?.platform).toBe("web");
+  });
+
+  it("stores an ios platform when provided", async () => {
+    const result = await registerPushToken(
+      "user-1",
+      "token-ios-abcdefg",
+      "REGI/iOS",
+      db as never,
+      "ios",
+    );
+    expect(result.created).toBe(true);
+    expect(db.store.get("token-ios-abcdefg")?.platform).toBe("ios");
   });
 
   it("refreshes metadata when the same user re-registers", async () => {
