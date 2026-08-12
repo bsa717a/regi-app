@@ -8,6 +8,7 @@ import type {
   AdminStatsDto,
 } from "@/lib/admin/types";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
+import { DELETE_ACCOUNT_CONFIRMATION } from "@/lib/account/constants";
 import type { NotificationPrefs } from "@/lib/auth/notificationPrefs";
 import type {
   CreateDocumentRequest,
@@ -114,6 +115,14 @@ export async function updateMe(
     body: patch,
   });
   return data.user;
+}
+
+export async function deleteMyAccount(token: string): Promise<void> {
+  await apiFetch<{ ok: true }>("/api/me", {
+    method: "DELETE",
+    token,
+    body: { confirm: DELETE_ACCOUNT_CONFIRMATION },
+  });
 }
 
 export async function registerPushDeviceToken(

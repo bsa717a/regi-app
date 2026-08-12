@@ -15,6 +15,7 @@ import {
   linkClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { LegalLinks } from "@/components/legal/LegalLinks";
 import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
 function mapAuthError(error: unknown): string {
@@ -182,6 +183,7 @@ export function GarageDoorLogin() {
                     Create an account
                   </Link>
                 </p>
+                <LegalLinks className="mt-3 text-center text-sm [&_a]:text-teal-200 [&_a]:hover:text-teal-100" />
               </div>
             </div>
           </div>

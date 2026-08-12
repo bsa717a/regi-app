@@ -192,6 +192,18 @@ export async function deleteObject(gcsPath: string): Promise<void> {
   }
 }
 
+/**
+ * Delete every object under a household prefix.
+ * Refuses anything that is not `households/{id}/` so a bad caller cannot
+ * wipe the bucket.
+ */
+export async function deletePrefix(prefix: string): Promise<void> {
+  if (!/^households\/[^/]+\/$/.test(prefix) || prefix.includes("..")) {
+    throw new Error("Refusing to delete GCS prefix that is not a household path");
+  }
+  await getBucket().deleteFiles({ prefix, force: true });
+}
+
 /** Test helper to reset the singleton between suites. */
 export function __resetStorageForTests(): void {
   storageSingleton = undefined;

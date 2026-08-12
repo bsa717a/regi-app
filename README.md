@@ -179,6 +179,21 @@ APNs entitlement: Debug uses `App.entitlements` (`aps-environment` = `developmen
 
 Simulator note: remote push often needs a **physical iPhone**; local permission/token flows can still be exercised.
 
+### Phase 4 — legal, privacy, account deletion
+
+Public HTTPS pages (required before App Review):
+
+- Privacy Policy: `https://YOUR_HOST/privacy`
+- Terms of Use: `https://YOUR_HOST/terms`
+
+Production examples: [Privacy](https://regi-90502049802.us-central1.run.app/privacy), [Terms](https://regi-90502049802.us-central1.run.app/terms).
+
+**In-app:** Settings → Legal links; Settings → Delete account (Guideline 5.1.1(v)). Signup requires agreeing to both documents.
+
+**iOS:** `Info.plist` usage strings (camera, photos, Face ID) and `PrivacyInfo.xcprivacy` in the App target. App Store Connect Nutrition Labels are listed in `src/lib/legal/appStorePrivacyLabels.ts` for Phase 5.
+
+Optional: `NEXT_PUBLIC_LEGAL_CONTACT_EMAIL` (defaults to `support@regi.app`).
+
 Do not commit secrets, `GoogleService-Info.plist`, or Xcode user state.
 
 ## Renewal reminders (daily cron)

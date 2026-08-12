@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isDeleteConfirmation } from "@/lib/account/constants";
+import { deleteAccount } from "@/lib/account/deleteAccount";
 import { getOrCreateUser, toAuthUserProfile } from "@/lib/auth/getOrCreateUser";
 import {
   mergeNotificationPrefs,
@@ -165,6 +167,49 @@ export async function PATCH(request: Request) {
     {
       user: toAuthUserProfile(updated, ensured.householdId),
     },
+    { headers: rateLimitHeaders(limited) },
+  );
+}
+
+/**
+ * DELETE /api/me
+ * Guideline 5.1.1(v): in-app account deletion. Body must be { confirm: "DELETE" }.
+ */
+export async function DELETE(request: Request) {
+  const limited = await rateLimit({
+    key: clientKeyFromRequest(request, "api:me:delete"),
+    limit: 5,
+    windowMs: WINDOW_MS,
+  });
+
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: rateLimitHeaders(limited) },
+    );
+  }
+
+  const auth = await verifyRequest(request);
+  if (!auth.ok) return auth.response;
+
+  let body: unknown = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+
+  if (!isDeleteConfirmation(body)) {
+    return NextResponse.json(
+      { error: 'Confirm deletion by sending { "confirm": "DELETE" }' },
+      { status: 400, headers: rateLimitHeaders(limited) },
+    );
+  }
+
+  await deleteAccount(auth.decoded.uid);
+
+  return NextResponse.json(
+    { ok: true },
     { headers: rateLimitHeaders(limited) },
   );
 }
