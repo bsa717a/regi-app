@@ -17,8 +17,8 @@ function bySoonestExpiration(a: RegistrationDto, b: RegistrationDto): number {
 }
 
 /**
- * Split garage registrations for the dashboard: expired (flagged) vs upcoming
- * renewals (soonest first). Does not recompute status — uses API fields.
+ * Split garage registrations for the renewals inbox: expired (flagged) vs
+ * upcoming renewals (soonest first). Does not recompute status — uses API fields.
  */
 export function groupDashboardRegistrations(
   registrations: RegistrationDto[],

@@ -1,0 +1,18 @@
+---
+description: Always use GitHub account bsa717a for this repo
+alwaysApply: true
+---
+
+# GitHub account for regi-app
+
+This repository is owned by **bsa717a**. Always use that account for GitHub operations.
+
+Before any `gh` or `git push` / remote write:
+
+```bash
+gh auth switch --user bsa717a
+```
+
+Do not use `BSA71` (or any other account) for push, PR, merge, or API calls against `bsa717a/regi-app`.
+
+Local git is configured with `credential.username=bsa717a` and origin URL `https://bsa717a@github.com/bsa717a/regi-app.git`. Keep those settings.

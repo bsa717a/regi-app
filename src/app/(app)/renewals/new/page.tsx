@@ -15,13 +15,14 @@ export default async function NewRenewalPage({
           Choose a registration
         </h1>
         <p className="mt-2 text-slate-600 dark:text-slate-400">
-          Open Renew from your dashboard or garage to start the concierge flow.
+          Open Renew from your garage or renewals inbox to start the concierge
+          flow.
         </p>
         <a
-          href="/dashboard"
+          href="/renewals"
           className="mt-6 inline-flex w-fit rounded-xl bg-teal-700 px-4 py-3 text-sm font-semibold text-white"
         >
-          Go to dashboard
+          Go to renewals
         </a>
       </main>
     );

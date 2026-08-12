@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   { href: "/garage", label: "Garage", icon: GarageIcon },
-  { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
+  { href: "/renewals", label: "Renewals", icon: RenewalsIcon },
   { href: "/documents", label: "Documents", icon: DocumentsIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
@@ -68,7 +68,7 @@ function GarageIcon({ active }: { active: boolean }) {
   );
 }
 
-function DashboardIcon({ active }: { active: boolean }) {
+function RenewalsIcon({ active }: { active: boolean }) {
   return (
     <svg
       width="22"
@@ -81,10 +81,10 @@ function DashboardIcon({ active }: { active: boolean }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+      <path d="M4.5 12a7.5 7.5 0 0 1 12.6-5.5" />
+      <path d="M17 4.5v3h-3" />
+      <path d="M19.5 12a7.5 7.5 0 0 1-12.6 5.5" />
+      <path d="M7 19.5v-3h3" />
     </svg>
   );
 }

@@ -1,5 +1,6 @@
-import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
-  return <DashboardClient />;
+/** Legacy route — Renewals inbox lives at /renewals. */
+export default function DashboardRedirectPage() {
+  redirect("/renewals");
 }
