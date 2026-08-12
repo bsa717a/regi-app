@@ -156,12 +156,28 @@ To point back at production Cloud Run: `npm run cap:sync`.
 
 ### Phase 2 native features (4.2)
 
-- **Face ID / Touch ID unlock** — Settings → Security (simulator: Features → Face ID → Enrolled)
-- **Offline shell** — local `capacitor-www` page if `/api/health` fails; in-app overlay if the network drops later
-- **Usage strings** — camera, photos, Face ID in `ios/App/App/Info.plist`
-- **Push (APNs)** — plugin installed; token registration is the next phase (needs Firebase iOS app + APNs key)
+- **Face ID / Touch ID unlock** — Settings → Security (Device Hub: enable biometrics via `devicectl`)
+- **Offline / chrome** — in-app offline overlay; usage strings in `Info.plist`
 
-Do not commit secrets or Xcode user state.
+### Phase 3 — native push (APNs → FCM)
+
+Push on iOS uses `@capacitor-firebase/messaging` (not web VAPID). Tokens are stored in `push_tokens.platform` (`web` | `ios` | `android`).
+
+**One-time Apple / Firebase setup (required before push works on device):**
+
+1. Apple Developer → Identifiers → App ID `app.regi.ios` → enable **Push Notifications**
+2. Create an **APNs Auth Key** (`.p8`) and note Key ID + Team ID
+3. Firebase Console → Project settings → add an **iOS app** with bundle ID `app.regi.ios`
+4. Upload the APNs Auth Key under Cloud Messaging
+5. Download `GoogleService-Info.plist` into `ios/App/App/` (gitignored) and add it to the **App** target’s Copy Bundle Resources (missing this causes a black screen on launch — Firebase Messaging crashes without the plist in the app bundle)
+6. In Xcode: Signing & Capabilities → confirm **Push Notifications** (+ Background Modes → Remote notifications)
+7. `npm run cap:sync` (or `cap:sync:local` for localhost) then Stop → Run in Xcode
+
+**In-app:** Settings → Push toggle. Native path requests notification permission, fetches an FCM token, and `POST /api/push/register` with `platform: "ios"`.
+
+Simulator note: remote push often needs a **physical iPhone**; local permission/token flows can still be exercised.
+
+Do not commit secrets, `GoogleService-Info.plist`, or Xcode user state.
 
 ## Renewal reminders (daily cron)
 

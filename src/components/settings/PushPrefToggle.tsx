@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   registerPushDeviceToken,
   unregisterPushDeviceToken,
   updateMe,
 } from "@/lib/api/client";
-import { requestFcmToken } from "@/lib/firebase/messaging";
+import { requestDevicePushToken } from "@/lib/capacitor/push";
+import { useIsNativeApp } from "@/lib/capacitor/useIsNativeApp";
 import {
   getPushCapability,
   isVapidConfigured,
@@ -22,19 +23,9 @@ type Props = {
   onError: (message: string) => void;
 };
 
-function readInitialCapability() {
-  // SSR-safe: gate on VAPID only; browser APIs are checked when enabling.
-  return getPushCapability({
-    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-    hasNotificationApi: true,
-    hasServiceWorker: true,
-    notificationPermission: "default",
-  });
-}
-
 /**
  * Push channel toggle — registers/unregisters the FCM device token.
- * Degrades gracefully when VAPID is blank or permission is denied.
+ * Web uses VAPID; Capacitor iOS uses native Firebase Messaging + APNs.
  */
 export function PushPrefToggle({
   prefs,
@@ -44,8 +35,27 @@ export function PushPrefToggle({
   onMessage,
   onError,
 }: Props) {
+  const { isNative, ready: nativeReady } = useIsNativeApp();
   const [busy, setBusy] = useState(false);
-  const [capability, setCapability] = useState(readInitialCapability);
+  const [capability, setCapability] = useState(() =>
+    getPushCapability({
+      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      hasNotificationApi: true,
+      hasServiceWorker: true,
+      notificationPermission: "default",
+    }),
+  );
+
+  useEffect(() => {
+    if (!nativeReady) return;
+    setCapability(
+      getPushCapability({
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+        isNativeApp: isNative,
+      }),
+    );
+  }, [isNative, nativeReady]);
+
   const pushAvailable = capability.ok;
   const note = capability.ok ? null : capability.message;
 
@@ -61,35 +71,42 @@ export function PushPrefToggle({
       if (!authToken) throw new Error("Session expired. Sign in again.");
 
       if (enable) {
-        if (!isVapidConfigured()) {
+        if (!isNative && !isVapidConfigured()) {
           throw new Error(
             "Push isn’t configured yet. Ask an admin to set the Web Push key.",
           );
         }
 
-        const fcmToken = await requestFcmToken();
-        if (!fcmToken) {
+        const deviceToken = await requestDevicePushToken();
+        if (!deviceToken) {
           const nextCapability = getPushCapability({
             vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+            isNativeApp: isNative,
           });
           setCapability(nextCapability);
           throw new Error(
             nextCapability.ok
-              ? "Couldn’t enable push on this device. Check notification permission and try again."
+              ? isNative
+                ? "Couldn’t enable push on this iPhone. Check notification permission, and confirm Firebase iOS + APNs are set up."
+                : "Couldn’t enable push on this device. Check notification permission and try again."
               : nextCapability.message,
           );
         }
 
-        await registerPushDeviceToken(authToken, fcmToken);
+        await registerPushDeviceToken(
+          authToken,
+          deviceToken.token,
+          deviceToken.platform,
+        );
         await updateMe(authToken, { notificationPrefs: { push: true } });
         onMessage("Push alerts enabled for this device.");
         setCapability({ ok: true });
       } else {
         // Best-effort unregister — prefs still save if token lookup fails.
         try {
-          const fcmToken = await requestFcmToken();
-          if (fcmToken) {
-            await unregisterPushDeviceToken(authToken, fcmToken);
+          const deviceToken = await requestDevicePushToken();
+          if (deviceToken) {
+            await unregisterPushDeviceToken(authToken, deviceToken.token);
           }
         } catch {
           // ignore token cleanup failures
@@ -107,7 +124,7 @@ export function PushPrefToggle({
     }
   }
 
-  const isDisabled = Boolean(disabled || busy || !pushAvailable);
+  const isDisabled = Boolean(disabled || busy || !pushAvailable || !nativeReady);
 
   return (
     <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
@@ -129,7 +146,9 @@ export function PushPrefToggle({
           className="mt-0.5 text-sm text-slate-600 dark:text-slate-400"
           id="pref-push-desc"
         >
-          Alerts on this device when REGI is installed.
+          {isNative
+            ? "Alerts on this iPhone when a renewal needs attention."
+            : "Alerts on this device when REGI is installed."}
         </p>
         {note ? (
           <p
@@ -150,7 +169,9 @@ export function PushPrefToggle({
         disabled={isDisabled}
         onClick={() => void handleToggle(!(prefs.push && pushAvailable))}
         className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-          prefs.push && pushAvailable ? "bg-teal-700" : "bg-slate-300"
+          prefs.push && pushAvailable
+            ? "bg-teal-700 dark:bg-teal-500"
+            : "bg-slate-300 dark:bg-slate-600"
         }`}
       >
         <span

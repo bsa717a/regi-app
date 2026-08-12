@@ -6,7 +6,10 @@ import {
   rateLimitHeaders,
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
-import { registerPushToken } from "@/lib/push/tokens";
+import {
+  parsePushPlatform,
+  registerPushTokenDetailed,
+} from "@/lib/push/tokens";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +19,7 @@ const LIMIT = 30;
 
 type Body = {
   token?: unknown;
+  platform?: unknown;
 };
 
 export async function POST(request: Request) {
@@ -49,21 +53,34 @@ export async function POST(request: Request) {
     );
   }
 
+  const platform =
+    body.platform === undefined || body.platform === null
+      ? "web"
+      : parsePushPlatform(body.platform);
+  if (!platform) {
+    return NextResponse.json(
+      { error: "platform must be one of web, ios, android" },
+      { status: 400 },
+    );
+  }
+
   const profile = await getOrCreateUser(auth.decoded);
   const userAgent = request.headers.get("user-agent");
 
   try {
-    const result = await registerPushToken(
-      profile.id,
-      body.token.trim(),
+    const result = await registerPushTokenDetailed({
+      userId: profile.id,
+      token: body.token.trim(),
+      platform,
       userAgent,
-    );
+    });
 
     return NextResponse.json(
       {
         ok: true,
         id: result.id,
         created: result.created,
+        platform,
       },
       { headers: rateLimitHeaders(limited) },
     );

@@ -119,11 +119,12 @@ export async function updateMe(
 export async function registerPushDeviceToken(
   authToken: string,
   fcmToken: string,
-): Promise<{ ok: true; id: string; created: boolean }> {
+  platform: "web" | "ios" | "android" = "web",
+): Promise<{ ok: true; id: string; created: boolean; platform: string }> {
   return apiFetch("/api/push/register", {
     method: "POST",
     token: authToken,
-    body: { token: fcmToken },
+    body: { token: fcmToken, platform },
   });
 }
 

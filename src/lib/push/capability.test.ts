@@ -67,4 +67,13 @@ describe("push capability helpers", () => {
       }).ok,
     ).toBe(true);
   });
+
+  it("allows native Capacitor clients without a VAPID key", () => {
+    expect(
+      getPushCapability({
+        vapidKey: "",
+        isNativeApp: true,
+      }).ok,
+    ).toBe(true);
+  });
 });
