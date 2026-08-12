@@ -98,6 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsubAuth = () => {};
     let unsubToken = () => {};
 
+    // Hard ceiling so Capacitor/WKWebView can never leave the app on
+    // "Starting up…" if Firebase authStateReady hangs.
+    const hardTimer = window.setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, AUTH_READY_TIMEOUT_MS + 1_000);
+
     async function initAuth() {
       try {
         const auth = getFirebaseAuth();
@@ -105,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         unsubAuth = onAuthStateChanged(auth, (nextUser) => {
           if (cancelled) return;
           setUser(nextUser);
+          setLoading(false);
           void syncProfile(nextUser);
         });
 
@@ -141,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(hardTimer);
       unsubAuth();
       unsubToken();
     };
