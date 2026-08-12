@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { isNativeApp } from "@/lib/capacitor/platform";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -54,6 +55,7 @@ export function PwaInstallPrompt() {
 
   useEffect(() => {
     if (!isClient) return;
+    if (isNativeApp()) return;
     if (isStandalone()) return;
     if (readDismissed()) return;
 
@@ -68,7 +70,7 @@ export function PwaInstallPrompt() {
     };
   }, [isClient]);
 
-  if (!isClient || hide || isStandalone()) return null;
+  if (!isClient || hide || isNativeApp() || isStandalone()) return null;
 
   const showIosHint = isIos() && !deferred;
   const visible = Boolean(deferred) || showIosHint;

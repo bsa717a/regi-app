@@ -110,6 +110,38 @@ public/                # static assets, manifest, service worker
 - `public/sw.js` — app-shell precache + offline fallback (`public/offline.html`)
 - `PwaRegister` + `PwaInstallPrompt` — registers the SW; captures `beforeinstallprompt` (“Install REGI”); iOS gets an Add to Home Screen hint
 - Meta: `theme-color`, Apple web app capable, `viewport-fit=cover`, safe-area insets on header/bottom nav
+- Inside the Capacitor shell, PWA SW registration and the install prompt are skipped (`isNativeApp()`)
+
+## Capacitor iOS (Phase 1 shell)
+
+The iOS app is a Capacitor shell that loads the hosted Next.js app (Cloud Run). It does **not** replace deploy — APIs and UI still run on the server.
+
+| Item | Value |
+| ---- | ----- |
+| Bundle / app id | `app.regi.ios` |
+| Local webDir | `capacitor-www/` (bootstrap shell only) |
+| Default `server.url` | `https://regi-90502049802.us-central1.run.app` |
+
+**Prerequisites:** Xcode (Capacitor 8 uses Swift Package Manager for plugins), Apple team for signing.
+
+```bash
+# Sync native project + copy webDir
+npm run cap:sync
+
+# Open in Xcode (always launches Xcode.app, not the editor)
+npm run cap:ios
+```
+
+If `npx cap open ios` ever opens Cursor instead, use `npm run cap:ios` (it calls `open -a Xcode …` directly).
+
+**Point at a local Next server** (device and Mac on same LAN):
+
+```bash
+CAPACITOR_SERVER_URL=http://YOUR_LAN_IP:8080 npm run cap:sync
+npm run cap:ios
+```
+
+Do not commit secrets, `GoogleService-Info.plist` with restricted keys if treated as secret, or Xcode user state. Push/Face ID native wiring is a later phase; this shell includes the plugin packages only.
 
 ## Renewal reminders (daily cron)
 

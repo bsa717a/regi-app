@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
+import { isNativeApp } from "@/lib/capacitor/platform";
 
 /** Registers the PWA service worker (app shell + offline) when supported. */
 export function PwaRegister() {
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
+      return;
+    }
+
+    // Capacitor uses native push / offline shell — do not register the web SW.
+    if (isNativeApp()) {
       return;
     }
 

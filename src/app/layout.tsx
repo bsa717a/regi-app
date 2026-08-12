@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { GarageDoorRevealProvider } from "@/components/auth/GarageDoorReveal";
+import { CapacitorShell } from "@/components/CapacitorShell";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { PwaRegister } from "@/components/PwaRegister";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -70,6 +71,7 @@ export default function RootLayout({
           <AuthProvider>
             <GarageDoorRevealProvider>
               {children}
+              <CapacitorShell />
               <PwaRegister />
               <PwaInstallPrompt />
             </GarageDoorRevealProvider>

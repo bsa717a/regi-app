@@ -48,5 +48,15 @@ yarn-error.log*
 # Misc
 .turbo
 .vercel
+*.tsbuildinfo
 
 /src/generated/prisma
+
+# Capacitor / Xcode
+ios/App/Pods
+ios/App/Podfile.lock
+ios/DerivedData
+ios/App/build
+ios/capacitor-cordova-ios-plugins
+*.xcuserstate
+xcuserdata/

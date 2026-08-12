@@ -15,12 +15,21 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "cap:sync": "npx cap sync ios",
+    "cap:ios": "open -a /Applications/Xcode.app ios/App/App.xcodeproj"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@google-cloud/storage": "^7.21.0",
     "@google/genai": "^2.13.0",
     "@prisma/client": "6.19.3",
@@ -32,6 +41,8 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@playwright/test": "1.61.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "20.19.43",
