@@ -54,15 +54,18 @@ export function isFreeManualLookupConfigured(): boolean {
 }
 
 function manualLookupConfig(): GenerateContentConfig {
+  const googleSearchEnabled = isGoogleSearchEnabled();
+
   const config: GenerateContentConfig = {
-    responseMimeType: "application/json",
     temperature: 0.2,
     maxOutputTokens: 512,
     thinkingConfig: { thinkingBudget: 0 },
   };
 
-  if (isGoogleSearchEnabled()) {
+  if (googleSearchEnabled) {
     config.tools = [{ googleSearch: {} }];
+  } else {
+    config.responseMimeType = "application/json";
   }
 
   return config;

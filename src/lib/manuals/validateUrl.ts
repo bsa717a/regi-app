@@ -24,23 +24,23 @@ function parseHttpsUrl(raw: string): URL | null {
   }
 }
 
-function matchesHostPatterns(raw: string, patterns: RegExp[]): boolean {
-  return patterns.some((pattern) => pattern.test(raw));
+function matchesHostPatterns(hostname: string, patterns: RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(hostname));
 }
 
 /** Official OEM owner-manual links from free lookup. */
 export function isValidFreeManualUrl(raw: string): boolean {
   const parsed = parseHttpsUrl(raw);
   if (!parsed) return false;
-  return matchesHostPatterns(raw, OEM_HOST_PATTERNS);
+  return matchesHostPatterns(parsed.hostname, OEM_HOST_PATTERNS);
 }
 
 /** Links returned by the paid provider (OEM or known CDN path). */
 export function isValidPaidProviderManualUrl(raw: string): boolean {
   const parsed = parseHttpsUrl(raw);
   if (!parsed) return false;
-  if (matchesHostPatterns(raw, OEM_HOST_PATTERNS)) return true;
-  if (!matchesHostPatterns(raw, PAID_PROVIDER_HOST_PATTERNS)) return false;
+  if (matchesHostPatterns(parsed.hostname, OEM_HOST_PATTERNS)) return true;
+  if (!matchesHostPatterns(parsed.hostname, PAID_PROVIDER_HOST_PATTERNS)) return false;
   return /owners-manual/i.test(parsed.pathname);
 }
 

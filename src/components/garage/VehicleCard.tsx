@@ -255,7 +255,7 @@ export function VehicleCard({
       }
 
       if ("pending" in result && result.pending) {
-        setManualPaidOffer(false);
+        setManualPaidOffer(true);
         setManualMessage(result.message);
         return;
       }

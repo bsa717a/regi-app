@@ -143,26 +143,26 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  const existingPaid: ManualLookupRequest | null =
+  const existingRequest: ManualLookupRequest | null =
     await prisma.manualLookupRequest.findFirst({
       where: {
         registrationId: registration.id,
-        status: { in: ["paid", "fulfilled"] },
+        status: { in: ["paid", "fulfilled", "failed"] },
       },
       orderBy: { createdAt: "desc" },
     });
 
-  if (existingPaid?.resultUrl) {
+  if (existingRequest?.resultUrl) {
     await saveOwnerManualOnRegistration({
       registrationId: registration.id,
-      url: existingPaid.resultUrl,
+      url: existingRequest.resultUrl,
       source: "paid",
     });
 
     return NextResponse.json(
       {
         ok: true,
-        url: existingPaid.resultUrl,
+        url: existingRequest.resultUrl,
         charged: true,
         cached: true,
       },
@@ -170,10 +170,22 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  if (existingPaid) {
+  if (existingRequest?.status === "failed") {
+    return NextResponse.json(
+      {
+        ok: false,
+        charged: false,
+        error:
+          "A previous paid lookup for this vehicle could not find a manual. No additional charge was made.",
+      },
+      { status: 200, headers: rateLimitHeaders(limited) },
+    );
+  }
+
+  if (existingRequest) {
     const retryResponse = await fulfillPaidLookup({
       registration,
-      lookupRequestId: existingPaid.id,
+      lookupRequestId: existingRequest.id,
     });
     return new NextResponse(retryResponse.body, {
       status: retryResponse.status,
