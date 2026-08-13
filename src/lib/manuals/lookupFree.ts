@@ -1,10 +1,11 @@
 import { GoogleGenAI, type GenerateContentConfig } from "@google/genai";
 import type { RegistrationType } from "@prisma/client";
+import { extractManualUrlFromGeminiResponse } from "@/lib/manuals/extractManualUrl";
 import {
   buildManualSearchQuery,
   manualDocumentLabel,
 } from "@/lib/manuals/searchQuery";
-import { readManualUrl, type ManualUrlContext } from "@/lib/manuals/validateUrl";
+import type { ManualUrlContext } from "@/lib/manuals/validateUrl";
 
 export type FreeManualLookupInput = {
   year: number | null;
@@ -16,7 +17,7 @@ export type FreeManualLookupInput = {
 
 export type FreeManualLookupResult =
   | { ok: true; url: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: "unconfigured" | "not_found" | "invalid" };
 
 const FREE_MANUAL_PROMPT = `Find the official digital manual for this registered vehicle.
 
@@ -63,28 +64,19 @@ export function isFreeManualLookupConfigured(): boolean {
 
 function manualLookupConfig(): GenerateContentConfig {
   const config: GenerateContentConfig = {
-    responseMimeType: "application/json",
     temperature: 0.2,
     maxOutputTokens: 768,
     thinkingConfig: { thinkingBudget: 0 },
   };
 
   if (isGoogleSearchEnabled()) {
+    // Google Search grounding does not reliably work with forced JSON mime type.
     config.tools = [{ googleSearch: {} }];
+  } else {
+    config.responseMimeType = "application/json";
   }
 
   return config;
-}
-
-function parseModelJson(text: string): unknown {
-  const trimmed = text.trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Model returned invalid JSON");
-    return JSON.parse(match[0]);
-  }
 }
 
 function buildVehicleDescription(input: FreeManualLookupInput): string {
@@ -118,6 +110,7 @@ export async function lookupFreeOwnerManual(
   if (!input.year && !input.make && !input.model && !input.vin) {
     return {
       ok: false,
+      code: "invalid",
       error: "Add a VIN or year, make, and model to search for a manual.",
     };
   }
@@ -126,7 +119,8 @@ export async function lookupFreeOwnerManual(
   if (!client) {
     return {
       ok: false,
-      error: "Manual search is not available right now.",
+      code: "unconfigured",
+      error: "Manual search is not configured on this server.",
     };
   }
 
@@ -143,19 +137,21 @@ export async function lookupFreeOwnerManual(
       config: manualLookupConfig(),
     });
 
-    const text = response.text?.trim();
-    if (!text) {
-      return { ok: false, error: "Could not find a free digital manual." };
-    }
-
-    const parsed = parseModelJson(text) as { url?: unknown; confidence?: unknown };
-    const url = readManualUrl(parsed.url, urlContext);
+    const url = extractManualUrlFromGeminiResponse(response, urlContext);
     if (!url) {
-      return { ok: false, error: "Could not find a free digital manual." };
+      return {
+        ok: false,
+        code: "not_found",
+        error: "Could not find a free digital manual for this vehicle.",
+      };
     }
 
     return { ok: true, url };
   } catch {
-    return { ok: false, error: "Could not find a free digital manual." };
+    return {
+      ok: false,
+      code: "not_found",
+      error: "Manual search failed. Try again in a moment.",
+    };
   }
 }

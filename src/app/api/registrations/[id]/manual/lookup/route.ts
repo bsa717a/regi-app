@@ -86,6 +86,7 @@ export async function POST(request: Request, context: RouteContext) {
     {
       ok: false,
       error: result.error,
+      code: result.code,
       paidAvailable,
       ...(paidAvailable ? { feeCents: MANUAL_PAID_LOOKUP_FEE_CENTS } : {}),
     },
