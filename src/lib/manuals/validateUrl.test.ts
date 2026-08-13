@@ -15,6 +15,24 @@ describe("isValidFreeManualUrl", () => {
     ).toBe(true);
   });
 
+  it("accepts Rivian owner guide PDFs", () => {
+    expect(
+      isValidFreeManualUrl(
+        "https://assets.rivian.com/2md5qhoeajym/4Xt9HvcwTmmMP9aKpJNg4k/964db4f5ee1785fa303ec4fecadfe691/r1t-og-my25-en-us-20240722.pdf",
+        { make: "Rivian", model: "R1T" },
+      ),
+    ).toBe(true);
+  });
+
+  it("accepts Rivian support article pages", () => {
+    expect(
+      isValidFreeManualUrl("https://rivian.com/support/article/r1t-owners-guide", {
+        make: "Rivian",
+        model: "R1T",
+      }),
+    ).toBe(true);
+  });
+
   it("rejects non-https links", () => {
     expect(isValidFreeManualUrl("http://owners.honda.com/manual.pdf")).toBe(false);
   });
@@ -23,11 +41,9 @@ describe("isValidFreeManualUrl", () => {
     expect(isValidFreeManualUrl("https://example.com/manual.pdf")).toBe(false);
   });
 
-  it("rejects paid-provider CDN links", () => {
+  it("rejects search-engine result pages", () => {
     expect(
-      isValidFreeManualUrl(
-        "https://vhr.nyc3.cdn.digitaloceanspaces.com/owners-manual/acura/manual.pdf",
-      ),
+      isValidFreeManualUrl("https://www.google.com/search?q=rivian+r1t+manual+pdf"),
     ).toBe(false);
   });
 });
@@ -46,6 +62,14 @@ describe("readManualUrl", () => {
   it("returns null for invalid values", () => {
     expect(readManualUrl(null)).toBeNull();
     expect(readManualUrl("not-a-url")).toBeNull();
+  });
+
+  it("uses make context for newer OEM domains", () => {
+    expect(
+      readManualUrl("https://rivian.com/support/article/r1t-owners-guide", {
+        make: "Rivian",
+      }),
+    ).toBe("https://rivian.com/support/article/r1t-owners-guide");
   });
 });
 
