@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { PRIVACY_PATH, TERMS_PATH } from "@/lib/legal/constants";
+import { PRIVACY_PATH, SUPPORT_PATH, TERMS_PATH } from "@/lib/legal/constants";
 
 export function LegalPageShell({
   title,
@@ -8,7 +8,7 @@ export function LegalPageShell({
   children,
 }: {
   title: string;
-  updated: string;
+  updated?: string;
   children: ReactNode;
 }) {
   return (
@@ -24,9 +24,11 @@ export function LegalPageShell({
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
             {title}
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Last updated {updated}
-          </p>
+          {updated ? (
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Last updated {updated}
+            </p>
+          ) : null}
         </div>
       </header>
       <article className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] text-base leading-relaxed text-slate-700 dark:text-slate-300">
@@ -44,6 +46,13 @@ export function LegalPageShell({
             className="font-medium text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
           >
             Terms of Use
+          </Link>
+          {" · "}
+          <Link
+            href={SUPPORT_PATH}
+            className="font-medium text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
+          >
+            Support
           </Link>
         </p>
       </article>

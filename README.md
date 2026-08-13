@@ -194,6 +194,36 @@ Production examples: [Privacy](https://regi-90502049802.us-central1.run.app/priv
 
 Optional: `NEXT_PUBLIC_LEGAL_CONTACT_EMAIL` (defaults to `support@regi.app`).
 
+### Phase 5 — App Store Connect (listing only, not submission)
+
+Copy-paste values live in [`src/lib/legal/appStoreListing.ts`](src/lib/legal/appStoreListing.ts). Filling Connect **does not** put REGI on the App Store.
+
+| Field | Value |
+| ----- | ----- |
+| Bundle ID | `app.regi.ios` |
+| Name / subtitle | REGI / Never miss a registration |
+| Category | Lifestyle (secondary: Productivity) |
+| Privacy | https://regi-90502049802.us-central1.run.app/privacy |
+| Support | https://regi-90502049802.us-central1.run.app/support |
+| Terms | https://regi-90502049802.us-central1.run.app/terms |
+| Age rating | 4+ (see `APP_STORE_AGE_RATING`) |
+| Nutrition Labels | `src/lib/legal/appStorePrivacyLabels.ts` |
+| Encryption | HTTPS-only exemption (`ITSAppUsesNonExemptEncryption = false`) |
+| Devices | iPhone only (avoids iPad 13″ screenshot requirement) |
+| App icon | 1024×1024 PNG, no alpha (already in the iOS asset catalog) |
+
+**In Connect**
+
+1. Apps → **+** → iOS, bundle `app.regi.ios`, SKU `regi-ios`.
+2. Paste name, subtitle, description, keywords, What’s New, URLs from `appStoreListing.ts`.
+3. App Privacy → Nutrition Labels (not used for tracking; all purposes App Functionality).
+4. Age rating questionnaire.
+5. Screenshots: one **6.9″** portrait set from the Capacitor app (1320×2868 preferred). Shot list is in `APP_STORE_SCREENSHOTS`.
+6. App Review Information: your phone/email; demo account (create a **verified Firebase user** on production and populate a garage — do not use `demo@regi.app` from local seed; do not commit the password).
+7. Notes for Review: `APP_STORE_REVIEW_NOTES`.
+
+Do **not** click Submit for Review yet — that is Phase 6 (TestFlight + build upload).
+
 Do not commit secrets, `GoogleService-Info.plist`, or Xcode user state.
 
 ## Renewal reminders (daily cron)
