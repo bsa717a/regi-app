@@ -222,7 +222,9 @@ export function VehicleCard({
     } catch (err) {
       setManualError(
         err instanceof ApiError
-          ? err.message
+          ? err.status === 404
+            ? "Manual lookup is unavailable on this server. Pull the latest code, run database migrations, and restart the dev server."
+            : err.message
           : err instanceof Error
             ? err.message
             : "Could not find an owner’s manual.",

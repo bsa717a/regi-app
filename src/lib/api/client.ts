@@ -202,6 +202,7 @@ export async function lookupOwnerManualApi(
     {
       method: "POST",
       token,
+      body: {},
     },
   );
 }
@@ -234,6 +235,7 @@ export async function purchaseOwnerManualApi(
     {
       method: "POST",
       token,
+      body: {},
     },
   );
 }
