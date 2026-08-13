@@ -49,6 +49,9 @@ export type RegistrationDto = {
   countdown: string;
   /** Active maintenance tasks that are due soon or overdue. */
   maintenanceDueCount?: number;
+  /** Saved owner’s manual URL when found (free or paid). */
+  ownerManualUrl?: string | null;
+  ownerManualSource?: "free" | "paid" | null;
 };
 
 export type CreateRegistrationInput = {

@@ -59,5 +59,7 @@ export function serializeRegistration(
     status: status.status,
     daysUntilExpiration: status.daysUntilExpiration,
     countdown: status.countdown,
+    ownerManualUrl: registration.ownerManualUrl,
+    ownerManualSource: registration.ownerManualSource,
   };
 }
