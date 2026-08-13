@@ -1,56 +1,68 @@
-const OEM_HOST_PATTERNS = [
-  /owners\.(honda|acura)\.com/i,
-  /owner\.(ford|lincoln)\.com/i,
-  /my\.(gm|chevrolet|buick|gmc|cadillac)\.com/i,
-  /owners\.(toyota|lexus)\.com/i,
-  /owners\.(nissan|infiniti)\.com/i,
-  /owners\.(hyundai|genesis)\.com/i,
-  /owners\.kia\.com/i,
-  /owners\.(subaru|mazda|volkswagen|audi|bmw|mercedes-benz|stellantis)\.com/i,
-  /rivian\.com/i,
-  /assets\.rivian\.com/i,
-  /tesla\.com/i,
-  /lucidmotors\.com/i,
-  /polestar\.com/i,
-  /harley-davidson\.com/i,
-  /yamaha-motor\.com/i,
-  /yamaha-motor\.(com|eu)/i,
-  /polaris\.com/i,
-  /brp\.com/i,
-  /ski-doo\.com/i,
-  /sea-doo\.com/i,
-  /can-am\.com/i,
-  /winnebago\.com/i,
-  /forestriverinc\.com/i,
-  /jayco\.com/i,
-  /thorindustries\.com/i,
-  /fleetwoodrv\.com/i,
-  /newmar\.com/i,
-  /tiffinmotorhomes\.com/i,
-  /mercurymarine\.com/i,
-  /bostonwhaler\.com/i,
-  /mastercraft\.com/i,
-  /indianmotorcycle\.com/i,
-  /ktm\.com/i,
-  /kawasaki\.com/i,
-  /suzuki\.com/i,
-  /ducati\.com/i,
-  /triumphmotorcycles\.com/i,
+const OEM_DOMAIN_SUFFIXES = [
+  "owners.honda.com",
+  "owners.acura.com",
+  "owner.ford.com",
+  "owner.lincoln.com",
+  "my.gm.com",
+  "my.chevrolet.com",
+  "my.buick.com",
+  "my.gmc.com",
+  "my.cadillac.com",
+  "owners.toyota.com",
+  "owners.lexus.com",
+  "owners.nissan.com",
+  "owners.infiniti.com",
+  "owners.hyundai.com",
+  "owners.genesis.com",
+  "owners.kia.com",
+  "owners.subaru.com",
+  "owners.mazda.com",
+  "owners.volkswagen.com",
+  "owners.audi.com",
+  "owners.bmw.com",
+  "owners.mercedes-benz.com",
+  "owners.stellantis.com",
+  "rivian.com",
+  "assets.rivian.com",
+  "tesla.com",
+  "lucidmotors.com",
+  "polestar.com",
+  "harley-davidson.com",
+  "yamaha-motor.com",
+  "polaris.com",
+  "brp.com",
+  "ski-doo.com",
+  "sea-doo.com",
+  "can-am.com",
+  "winnebago.com",
+  "forestriverinc.com",
+  "jayco.com",
+  "thorindustries.com",
+  "fleetwoodrv.com",
+  "newmar.com",
+  "tiffinmotorhomes.com",
+  "mercurymarine.com",
+  "bostonwhaler.com",
+  "mastercraft.com",
+  "indianmotorcycle.com",
+  "ktm.com",
+  "kawasaki.com",
+  "suzuki.com",
+  "ducati.com",
+  "triumphmotorcycles.com",
 ];
 
-const PAID_PROVIDER_HOST_PATTERNS = [
-  /vhr\.nyc3\.cdn\.digitaloceanspaces\.com/i,
-];
+const PAID_PROVIDER_DOMAIN_SUFFIXES = ["vhr.nyc3.cdn.digitaloceanspaces.com"];
 
-const BLOCKED_HOST_PATTERNS = [
-  /(^|\.)google\./i,
-  /(^|\.)youtube\./i,
-  /(^|\.)reddit\./i,
-  /(^|\.)facebook\./i,
-  /(^|\.)wikipedia\./i,
-  /(^|\.)amazon\./i,
-  /(^|\.)ebay\./i,
-  /(^|\.)pinterest\./i,
+const BLOCKED_DOMAIN_SUFFIXES = [
+  "google.com",
+  "youtube.com",
+  "reddit.com",
+  "facebook.com",
+  "wikipedia.org",
+  "amazon.com",
+  "ebay.com",
+  "pinterest.com",
 ];
 
 const MANUAL_PATH_HINTS =
@@ -58,7 +70,7 @@ const MANUAL_PATH_HINTS =
 
 /** Map normalized make tokens to common manufacturer domain fragments. */
 const MAKE_HOST_ALIASES: Record<string, string[]> = {
-  harleydavidson: ["harley"],
+  harleydavidson: ["harleydavidson"],
   harley: ["harleydavidson"],
   indian: ["indianmotorcycle"],
   indianmotorcycle: ["indian"],
@@ -88,8 +100,17 @@ function parseHttpsUrl(raw: string): URL | null {
   }
 }
 
-function matchesHostPatterns(raw: string, patterns: RegExp[]): boolean {
-  return patterns.some((pattern) => pattern.test(raw));
+function normalizeHostname(hostname: string): string {
+  return hostname.toLowerCase().replace(/^www\./, "");
+}
+
+function hostMatchesDomainSuffix(hostname: string, domainSuffix: string): boolean {
+  const host = normalizeHostname(hostname);
+  return host === domainSuffix || host.endsWith(`.${domainSuffix}`);
+}
+
+function matchesAnyDomainSuffix(hostname: string, suffixes: string[]): boolean {
+  return suffixes.some((suffix) => hostMatchesDomainSuffix(hostname, suffix));
 }
 
 function normalizeToken(value: string): string {
@@ -102,7 +123,7 @@ function makeHostTokens(make: string): string[] {
   if (compact.length >= 3) tokens.add(compact);
 
   for (const part of make.toLowerCase().split(/[^a-z0-9]+/)) {
-    if (part.length >= 3) tokens.add(part);
+    if (part.length >= 4) tokens.add(part);
   }
 
   for (const token of [...tokens]) {
@@ -114,10 +135,30 @@ function makeHostTokens(make: string): string[] {
   return [...tokens].filter((token) => token.length >= 3);
 }
 
+function hostnameLabels(hostname: string): string[] {
+  return normalizeHostname(hostname).split(".").filter(Boolean);
+}
+
+function registrableDomainLabel(hostname: string): string | null {
+  const labels = hostnameLabels(hostname);
+  if (labels.length < 2) return labels[0] ?? null;
+  return normalizeToken(labels[labels.length - 2] ?? "");
+}
+
 function hostnameMatchesMake(hostname: string, make: string | null | undefined): boolean {
   if (!make?.trim()) return false;
-  const host = hostname.toLowerCase().replace(/^www\./, "");
-  return makeHostTokens(make).some((token) => host.includes(token));
+
+  const normalizedLabels = hostnameLabels(hostname).map((label) =>
+    normalizeToken(label),
+  );
+  const registrable = registrableDomainLabel(hostname);
+  const tokens = makeHostTokens(make);
+
+  return tokens.some(
+    (token) =>
+      normalizedLabels.includes(token) ||
+      (registrable !== null && registrable === token),
+  );
 }
 
 function looksLikeManualPath(pathAndQuery: string): boolean {
@@ -135,8 +176,8 @@ export function isValidFreeManualUrl(
 ): boolean {
   const parsed = parseHttpsUrl(raw);
   if (!parsed) return false;
-  if (matchesHostPatterns(parsed.hostname, BLOCKED_HOST_PATTERNS)) return false;
-  if (matchesHostPatterns(raw, OEM_HOST_PATTERNS)) return true;
+  if (matchesAnyDomainSuffix(parsed.hostname, BLOCKED_DOMAIN_SUFFIXES)) return false;
+  if (matchesAnyDomainSuffix(parsed.hostname, OEM_DOMAIN_SUFFIXES)) return true;
 
   const path = `${parsed.pathname}${parsed.search}`;
 
@@ -152,8 +193,10 @@ export function isValidFreeManualUrl(
 export function isValidPaidProviderManualUrl(raw: string): boolean {
   const parsed = parseHttpsUrl(raw);
   if (!parsed) return false;
-  if (matchesHostPatterns(raw, OEM_HOST_PATTERNS)) return true;
-  if (!matchesHostPatterns(raw, PAID_PROVIDER_HOST_PATTERNS)) return false;
+  if (matchesAnyDomainSuffix(parsed.hostname, OEM_DOMAIN_SUFFIXES)) return true;
+  if (!matchesAnyDomainSuffix(parsed.hostname, PAID_PROVIDER_DOMAIN_SUFFIXES)) {
+    return false;
+  }
   return /owners-manual/i.test(parsed.pathname);
 }
 

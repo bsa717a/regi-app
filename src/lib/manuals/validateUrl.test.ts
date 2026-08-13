@@ -75,6 +75,20 @@ describe("isValidFreeManualUrl", () => {
     expect(isValidFreeManualUrl("https://example.com/manual.pdf")).toBe(false);
   });
 
+  it("rejects impostor domains that substring-match OEM names", () => {
+    expect(
+      isValidFreeManualUrl("https://notrivian.com/support/article/r1t-owners-guide"),
+    ).toBe(false);
+    expect(
+      isValidFreeManualUrl("https://candy.com/owner-manual.pdf", {
+        make: "Can-Am",
+      }),
+    ).toBe(false);
+    expect(
+      isValidFreeManualUrl("https://stanford.edu/manual.pdf", { make: "Ford" }),
+    ).toBe(false);
+  });
+
   it("rejects search-engine result pages", () => {
     expect(
       isValidFreeManualUrl("https://www.google.com/search?q=rivian+r1t+manual+pdf"),
