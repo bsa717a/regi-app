@@ -1,6 +1,10 @@
 import { GoogleGenAI, type GenerateContentConfig } from "@google/genai";
 import type { RegistrationType } from "@prisma/client";
-import { readManualUrl } from "@/lib/manuals/validateUrl";
+import {
+  buildManualSearchQuery,
+  manualDocumentLabel,
+} from "@/lib/manuals/searchQuery";
+import { readManualUrl, type ManualUrlContext } from "@/lib/manuals/validateUrl";
 
 export type FreeManualLookupInput = {
   year: number | null;
@@ -14,7 +18,9 @@ export type FreeManualLookupResult =
   | { ok: true; url: string }
   | { ok: false; error: string };
 
-const FREE_MANUAL_PROMPT = `Find the official digital owner's manual for this vehicle.
+const FREE_MANUAL_PROMPT = `Find the official digital manual for this registered vehicle.
+
+Use web search with the suggested query below. Works for cars, trucks, RVs/motorhomes, motorcycles, snowmobiles, OHV/ATV/UTV, boats, and trailers.
 
 Return JSON only with this shape:
 {
@@ -23,9 +29,11 @@ Return JSON only with this shape:
 }
 
 Rules:
-- Prefer an official manufacturer PDF or owner portal link.
-- url must be a direct https link when possible.
-- Return null for url if you cannot find a trustworthy official manual link.
+- Prefer an official manufacturer PDF or owner/operator portal link from the search results.
+- Direct PDF links on manufacturer sites or CDNs are valid.
+- Support pages that host or link to the official manual are valid when no PDF is obvious.
+- url must be https.
+- Return null for url only if search finds no trustworthy official manual link.
 - Do not invent URLs.`;
 
 let cachedClient: GoogleGenAI | null = null;
@@ -57,7 +65,7 @@ function manualLookupConfig(): GenerateContentConfig {
   const config: GenerateContentConfig = {
     responseMimeType: "application/json",
     temperature: 0.2,
-    maxOutputTokens: 512,
+    maxOutputTokens: 768,
     thinkingConfig: { thinkingBudget: 0 },
   };
 
@@ -80,15 +88,28 @@ function parseModelJson(text: string): unknown {
 }
 
 function buildVehicleDescription(input: FreeManualLookupInput): string {
+  const searchQuery = buildManualSearchQuery({
+    type: input.registrationType,
+    year: input.year,
+    make: input.make,
+    model: input.model,
+  });
+
   const parts = [
     input.year ? `Year: ${input.year}` : null,
     input.make ? `Make: ${input.make}` : null,
     input.model ? `Model: ${input.model}` : null,
     input.vin ? `VIN: ${input.vin}` : null,
     `Registration type: ${input.registrationType}`,
+    `Manual type: ${manualDocumentLabel(input.registrationType)}`,
+    `Suggested search: ${searchQuery}`,
   ].filter(Boolean);
 
   return parts.join("\n");
+}
+
+function manualUrlContext(input: FreeManualLookupInput): ManualUrlContext {
+  return { make: input.make, model: input.model };
 }
 
 export async function lookupFreeOwnerManual(
@@ -109,6 +130,8 @@ export async function lookupFreeOwnerManual(
     };
   }
 
+  const urlContext = manualUrlContext(input);
+
   try {
     const response = await client.models.generateContent({
       model: getGeminiModel(),
@@ -126,7 +149,7 @@ export async function lookupFreeOwnerManual(
     }
 
     const parsed = parseModelJson(text) as { url?: unknown; confidence?: unknown };
-    const url = readManualUrl(parsed.url);
+    const url = readManualUrl(parsed.url, urlContext);
     if (!url) {
       return { ok: false, error: "Could not find a free digital manual." };
     }
