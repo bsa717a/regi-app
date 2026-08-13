@@ -10,7 +10,11 @@ import { loadAuthorizedRegistrationForManual } from "@/lib/manuals/access";
 import { MANUAL_PAID_LOOKUP_FEE_CENTS } from "@/lib/manuals/constants";
 import { lookupFreeOwnerManual } from "@/lib/manuals/lookupFree";
 import { registrationSupportsPaidManualLookup } from "@/lib/manuals/lookupPaid";
-import { saveOwnerManualOnRegistration } from "@/lib/manuals/saveManual";
+import {
+  clearOwnerManualOnRegistration,
+  saveOwnerManualOnRegistration,
+} from "@/lib/manuals/saveManual";
+import { readManualUrl } from "@/lib/manuals/validateUrl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,17 +48,27 @@ export async function POST(request: Request, context: RouteContext) {
 
   const registration = loaded.registration!;
   const paidAvailable = registrationSupportsPaidManualLookup(registration);
+  const manualContext = {
+    make: registration.make,
+    model: registration.model,
+    year: registration.year,
+  };
 
   if (registration.ownerManualUrl) {
-    return NextResponse.json(
-      {
-        ok: true,
-        url: registration.ownerManualUrl,
-        source: registration.ownerManualSource ?? "free",
-        cached: true,
-      },
-      { headers: rateLimitHeaders(limited) },
-    );
+    const cachedUrl = readManualUrl(registration.ownerManualUrl, manualContext);
+    if (cachedUrl) {
+      return NextResponse.json(
+        {
+          ok: true,
+          url: cachedUrl,
+          source: registration.ownerManualSource ?? "free",
+          cached: true,
+        },
+        { headers: rateLimitHeaders(limited) },
+      );
+    }
+
+    await clearOwnerManualOnRegistration(registration.id);
   }
 
   const result = await lookupFreeOwnerManual({

@@ -24,13 +24,21 @@ export function extractHttpsUrls(text: string): string[] {
   return urls;
 }
 
-function scoreManualUrl(url: string): number {
+function scoreManualUrl(url: string, context: ManualUrlContext): number {
   let score = 0;
   const lower = url.toLowerCase();
   if (lower.includes(".pdf")) score += 4;
-  if (/owner|manual|guide|handbook|operators|support\/article|support-documents/.test(lower)) {
+  if (/owner|manual|guide|handbook|operators|support\/article|support-documents|warranty-owners-manuals/.test(lower)) {
     score += 2;
   }
+  if (context.year && lower.includes(String(context.year))) score += 3;
+  if (context.model && lower.includes(context.model.trim().toLowerCase().replace(/[^a-z0-9]+/g, ""))) {
+    score += 2;
+  }
+  if (/\.com\.au|\.co\.uk|\.co\.nz|\.com\.mx|\.co\.jp|\.com\.br|toyota\.ca/.test(lower)) {
+    score -= 8;
+  }
+  if (/\/owners?\/manuals?\/?$/.test(lower)) score -= 6;
   if (/google\.|youtube\.|reddit\.|facebook\.|wikipedia\.|amazon\.|ebay\./.test(lower)) {
     score -= 10;
   }
@@ -48,7 +56,7 @@ export function pickBestManualUrl(
   if (validated.length === 0) return null;
 
   return [...validated].sort(
-    (left, right) => scoreManualUrl(right) - scoreManualUrl(left),
+    (left, right) => scoreManualUrl(right, context) - scoreManualUrl(left, context),
   )[0];
 }
 

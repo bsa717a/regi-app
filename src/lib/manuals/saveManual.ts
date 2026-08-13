@@ -15,3 +15,16 @@ export async function saveOwnerManualOnRegistration(input: {
     },
   });
 }
+
+export async function clearOwnerManualOnRegistration(
+  registrationId: string,
+): Promise<void> {
+  await prisma.registration.update({
+    where: { id: registrationId },
+    data: {
+      ownerManualUrl: null,
+      ownerManualSource: null,
+      ownerManualFoundAt: null,
+    },
+  });
+}

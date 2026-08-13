@@ -44,27 +44,48 @@ describe("isValidFreeManualUrl", () => {
 
   it("accepts snowmobile manuals on make-matched domains", () => {
     expect(
-      isValidFreeManualUrl("https://www.polaris.com/en-us/owner-resources/manuals/", {
-        make: "Polaris",
-      }),
+      isValidFreeManualUrl(
+        "https://www.polaris.com/en-us/owner-resources/manuals/2022-pro-rmk/",
+        { make: "Polaris", year: 2022 },
+      ),
     ).toBe(true);
   });
 
   it("accepts RV manuals on make-matched domains", () => {
     expect(
-      isValidFreeManualUrl("https://www.winnebago.com/Files/Files/Winnebago/Manuals/manual.pdf", {
-        make: "Winnebago",
-      }),
+      isValidFreeManualUrl(
+        "https://www.winnebago.com/Files/Files/Winnebago/Manuals/manual.pdf",
+        { make: "Winnebago" },
+      ),
     ).toBe(true);
   });
 
   it("accepts boat manuals on make-matched domains", () => {
     expect(
       isValidFreeManualUrl(
-        "https://www.bostonwhaler.com/ownership/owners-manuals",
-        { make: "Boston Whaler" },
+        "https://www.bostonwhaler.com/ownership/owners-manuals/2022-280-outrage",
+        { make: "Boston Whaler", year: 2022, model: "280 Outrage" },
       ),
     ).toBe(true);
+  });
+
+  it("accepts US Toyota vehicle manual pages", () => {
+    expect(
+      isValidFreeManualUrl(
+        "https://www.toyota.com/owners/warranty-owners-manuals/vehicle/rav4/2022/",
+        { make: "Toyota", model: "RAV4", year: 2022 },
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects generic regional manual index pages", () => {
+    expect(
+      isValidFreeManualUrl("https://www.toyota.com.au/owners/manuals", {
+        make: "Toyota",
+        model: "RAV4",
+        year: 2022,
+      }),
+    ).toBe(false);
   });
 
   it("rejects non-https links", () => {
