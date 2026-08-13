@@ -122,14 +122,8 @@ function makeHostTokens(make: string): string[] {
   const compact = normalizeToken(make);
   if (compact.length >= 3) tokens.add(compact);
 
-  for (const part of make.toLowerCase().split(/[^a-z0-9]+/)) {
-    if (part.length >= 4) tokens.add(part);
-  }
-
-  for (const token of [...tokens]) {
-    for (const alias of MAKE_HOST_ALIASES[token] ?? []) {
-      if (alias.length >= 3) tokens.add(alias);
-    }
+  for (const alias of MAKE_HOST_ALIASES[compact] ?? []) {
+    if (alias.length >= 3) tokens.add(alias);
   }
 
   return [...tokens].filter((token) => token.length >= 3);
@@ -148,17 +142,12 @@ function registrableDomainLabel(hostname: string): string | null {
 function hostnameMatchesMake(hostname: string, make: string | null | undefined): boolean {
   if (!make?.trim()) return false;
 
-  const normalizedLabels = hostnameLabels(hostname).map((label) =>
-    normalizeToken(label),
-  );
   const registrable = registrableDomainLabel(hostname);
+  if (registrable === null) return false;
+
   const tokens = makeHostTokens(make);
 
-  return tokens.some(
-    (token) =>
-      normalizedLabels.includes(token) ||
-      (registrable !== null && registrable === token),
-  );
+  return tokens.some((token) => registrable === token);
 }
 
 function looksLikeManualPath(pathAndQuery: string): boolean {
