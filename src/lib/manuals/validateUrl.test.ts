@@ -33,6 +33,40 @@ describe("isValidFreeManualUrl", () => {
     ).toBe(true);
   });
 
+  it("accepts motorcycle manuals on make-matched domains", () => {
+    expect(
+      isValidFreeManualUrl(
+        "https://www.harley-davidson.com/us/en/ownership/service-manual.html",
+        { make: "Harley-Davidson" },
+      ),
+    ).toBe(true);
+  });
+
+  it("accepts snowmobile manuals on make-matched domains", () => {
+    expect(
+      isValidFreeManualUrl("https://www.polaris.com/en-us/owner-resources/manuals/", {
+        make: "Polaris",
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts RV manuals on make-matched domains", () => {
+    expect(
+      isValidFreeManualUrl("https://www.winnebago.com/Files/Files/Winnebago/Manuals/manual.pdf", {
+        make: "Winnebago",
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts boat manuals on make-matched domains", () => {
+    expect(
+      isValidFreeManualUrl(
+        "https://www.bostonwhaler.com/ownership/owners-manuals",
+        { make: "Boston Whaler" },
+      ),
+    ).toBe(true);
+  });
+
   it("rejects non-https links", () => {
     expect(isValidFreeManualUrl("http://owners.honda.com/manual.pdf")).toBe(false);
   });

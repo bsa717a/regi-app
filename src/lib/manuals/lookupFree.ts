@@ -1,5 +1,9 @@
 import { GoogleGenAI, type GenerateContentConfig } from "@google/genai";
 import type { RegistrationType } from "@prisma/client";
+import {
+  buildManualSearchQuery,
+  manualDocumentLabel,
+} from "@/lib/manuals/searchQuery";
 import { readManualUrl, type ManualUrlContext } from "@/lib/manuals/validateUrl";
 
 export type FreeManualLookupInput = {
@@ -14,9 +18,9 @@ export type FreeManualLookupResult =
   | { ok: true; url: string }
   | { ok: false; error: string };
 
-const FREE_MANUAL_PROMPT = `Find the official digital owner's manual for this vehicle.
+const FREE_MANUAL_PROMPT = `Find the official digital manual for this registered vehicle.
 
-Use web search with a query like: "{year} {make} {model} owner manual pdf"
+Use web search with the suggested query below. Works for cars, trucks, RVs/motorhomes, motorcycles, snowmobiles, OHV/ATV/UTV, boats, and trailers.
 
 Return JSON only with this shape:
 {
@@ -25,9 +29,9 @@ Return JSON only with this shape:
 }
 
 Rules:
-- Prefer an official manufacturer PDF or owner portal link from the search results.
-- Direct PDF links on manufacturer CDNs (for example assets.rivian.com) are valid.
-- Support article pages that link to the owner's guide are valid when no PDF is obvious.
+- Prefer an official manufacturer PDF or owner/operator portal link from the search results.
+- Direct PDF links on manufacturer sites or CDNs are valid.
+- Support pages that host or link to the official manual are valid when no PDF is obvious.
 - url must be https.
 - Return null for url only if search finds no trustworthy official manual link.
 - Do not invent URLs.`;
@@ -84,9 +88,12 @@ function parseModelJson(text: string): unknown {
 }
 
 function buildVehicleDescription(input: FreeManualLookupInput): string {
-  const searchQuery = [input.year, input.make, input.model, "owner manual pdf"]
-    .filter(Boolean)
-    .join(" ");
+  const searchQuery = buildManualSearchQuery({
+    type: input.registrationType,
+    year: input.year,
+    make: input.make,
+    model: input.model,
+  });
 
   const parts = [
     input.year ? `Year: ${input.year}` : null,
@@ -94,6 +101,7 @@ function buildVehicleDescription(input: FreeManualLookupInput): string {
     input.model ? `Model: ${input.model}` : null,
     input.vin ? `VIN: ${input.vin}` : null,
     `Registration type: ${input.registrationType}`,
+    `Manual type: ${manualDocumentLabel(input.registrationType)}`,
     `Suggested search: ${searchQuery}`,
   ].filter(Boolean);
 
