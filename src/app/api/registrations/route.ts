@@ -29,6 +29,7 @@ import {
 import type { RegistrationDto, RegistrationPhotoDto } from "@/lib/registrations/types";
 import { parseCreateRegistrationBody } from "@/lib/registrations/validation";
 import { countDueMaintenanceByRegistration } from "@/lib/maintenance/dueCounts";
+import { countOpenRecallsByRegistration } from "@/lib/recalls/openCounts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -135,6 +136,7 @@ export async function GET(request: Request) {
   const dueCounts = await countDueMaintenanceByRegistration(
     registrations.map((registration) => registration.id),
   );
+  const recallCounts = await countOpenRecallsByRegistration(registrations);
 
   const dto = await Promise.all(
     withPhotos.map(async (registration) => {
@@ -148,6 +150,7 @@ export async function GET(request: Request) {
       return {
         ...base,
         maintenanceDueCount: dueCounts.get(registration.id) ?? 0,
+        openRecallCount: recallCounts.get(registration.id) ?? 0,
       };
     }),
   );
