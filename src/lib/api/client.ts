@@ -42,6 +42,11 @@ import type {
   ReceiptScanDto,
   UsageReadingDto,
 } from "@/lib/maintenance/types";
+import type {
+  PatchRecallInput,
+  RecallsOverviewDto,
+  RegistrationRecallDto,
+} from "@/lib/recalls/types";
 
 export class ApiError extends Error {
   status: number;
@@ -966,6 +971,44 @@ export async function confirmMaintenanceReceipt(
     { method: "POST", token, body: input },
   );
   return data.log;
+}
+
+export async function getRecallsOverview(
+  token: string,
+  registrationId: string,
+): Promise<RecallsOverviewDto> {
+  const data = await apiFetch<{ recalls: RecallsOverviewDto }>(
+    `/api/registrations/${registrationId}/recalls`,
+    { token },
+  );
+  return data.recalls;
+}
+
+export async function refreshRecalls(
+  token: string,
+  registrationId: string,
+): Promise<RecallsOverviewDto> {
+  const data = await apiFetch<{
+    recalls: RecallsOverviewDto;
+    sync: { inserted: number; updated: number; total: number };
+  }>(`/api/registrations/${registrationId}/recalls/refresh`, {
+    method: "POST",
+    token,
+  });
+  return data.recalls;
+}
+
+export async function updateRecall(
+  token: string,
+  registrationId: string,
+  recallId: string,
+  input: PatchRecallInput,
+): Promise<RegistrationRecallDto> {
+  const data = await apiFetch<{ recall: RegistrationRecallDto }>(
+    `/api/registrations/${registrationId}/recalls/${recallId}`,
+    { method: "PATCH", token, body: input },
+  );
+  return data.recall;
 }
 
 /** PUT file bytes directly to the private GCS signed URL. */

@@ -103,6 +103,14 @@ enum ManualLookupStatus {
   @@map("manual_lookup_status")
 }
 
+enum RecallStatus {
+  open
+  completed
+  not_applicable
+
+  @@map("recall_status")
+}
+
 enum PaymentStatus {
   pending
   requires_action
@@ -226,6 +234,7 @@ model Registration {
   ownerManualUrl        String?          @map("owner_manual_url")
   ownerManualSource     OwnerManualSource? @map("owner_manual_source")
   ownerManualFoundAt    DateTime?        @map("owner_manual_found_at")
+  recallsCheckedAt      DateTime?        @map("recalls_checked_at")
   createdBy             String           @map("created_by")
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
@@ -240,6 +249,7 @@ model Registration {
   maintenanceLogs  MaintenanceLog[]
   usageReadings    UsageReading[]
   manualLookups    ManualLookupRequest[]
+  recalls          RegistrationRecall[]
 
   @@index([householdId])
   @@index([createdBy])
@@ -314,6 +324,36 @@ model UsageReading {
   @@index([registrationId])
   @@index([registrationId, readingOn])
   @@map("usage_readings")
+}
+
+/// NHTSA safety recall campaign cached for a registration (year/make/model lookup).
+model RegistrationRecall {
+  id                   String       @id @default(cuid())
+  registrationId       String       @map("registration_id")
+  nhtsaCampaignNumber  String       @map("nhtsa_campaign_number")
+  manufacturer         String?
+  component            String?
+  summary              String?
+  consequence          String?
+  remedy               String?
+  notesFromNhtsa       String?      @map("notes_from_nhtsa")
+  reportReceivedDate   String?      @map("report_received_date")
+  parkIt               Boolean      @default(false) @map("park_it")
+  parkOutside          Boolean      @default(false) @map("park_outside")
+  overTheAirUpdate     Boolean      @default(false) @map("over_the_air_update")
+  status               RecallStatus @default(open)
+  userNotes            String?      @map("user_notes")
+  completedAt          DateTime?    @map("completed_at")
+  lastSeenAt           DateTime     @map("last_seen_at")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, nhtsaCampaignNumber])
+  @@index([registrationId])
+  @@index([registrationId, status])
+  @@map("registration_recalls")
 }
 
 model RegistrationPhoto {

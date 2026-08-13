@@ -49,6 +49,8 @@ export type RegistrationDto = {
   countdown: string;
   /** Active maintenance tasks that are due soon or overdue. */
   maintenanceDueCount?: number;
+  /** Open NHTSA recall campaigns not yet marked completed or not applicable. */
+  openRecallCount?: number;
   /** Saved owner’s manual URL when found (free or paid). */
   ownerManualUrl?: string | null;
   ownerManualSource?: "free" | "paid" | null;
