@@ -100,9 +100,18 @@ export function VehicleCard({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState("");
-  const [manualUrl, setManualUrl] = useState<string | null>(
-    vehicle.ownerManualUrl ?? null,
+  const [manualDocumentId, setManualDocumentId] = useState<string | null>(
+    vehicle.ownerManualDocumentId ?? null,
   );
+  const [manualFilename, setManualFilename] = useState<string | null>(
+    vehicle.ownerManualFilename ?? null,
+  );
+  const [manualPreviewOpen, setManualPreviewOpen] = useState(false);
+  const [manualPreviewLoading, setManualPreviewLoading] = useState(false);
+  const [manualPreviewError, setManualPreviewError] = useState<string | null>(
+    null,
+  );
+  const [manualPreviewUrl, setManualPreviewUrl] = useState<string | null>(null);
   const [manualLookupLoading, setManualLookupLoading] = useState(false);
   const [manualPurchaseLoading, setManualPurchaseLoading] = useState(false);
   const [manualMessage, setManualMessage] = useState<string | null>(null);
@@ -110,8 +119,9 @@ export function VehicleCard({
   const [manualPaidOffer, setManualPaidOffer] = useState(false);
 
   useEffect(() => {
-    setManualUrl(vehicle.ownerManualUrl ?? null);
-  }, [vehicle.ownerManualUrl]);
+    setManualDocumentId(vehicle.ownerManualDocumentId ?? null);
+    setManualFilename(vehicle.ownerManualFilename ?? null);
+  }, [vehicle.ownerManualDocumentId, vehicle.ownerManualFilename]);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,8 +194,39 @@ export function VehicleCard({
     setPreviewFilename("");
   }
 
-  function openManualUrl(url: string) {
-    window.open(url, "_blank", "noopener,noreferrer");
+  async function openOwnerManualPreview(documentId?: string, filename?: string | null) {
+    const targetDocumentId = documentId ?? manualDocumentId;
+    if (!targetDocumentId) return;
+
+    setManualPreviewOpen(true);
+    setManualPreviewLoading(true);
+    setManualPreviewError(null);
+    setManualPreviewUrl(null);
+    setManualFilename(filename ?? manualFilename);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+      const signed = await getDocumentDownloadUrl(token, targetDocumentId);
+      setManualPreviewUrl(signed.downloadUrl);
+      setManualFilename(signed.filename || filename || manualFilename || "owners-manual.pdf");
+    } catch (err) {
+      setManualPreviewError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load owner’s manual.",
+      );
+    } finally {
+      setManualPreviewLoading(false);
+    }
+  }
+
+  function closeOwnerManualPreview() {
+    setManualPreviewOpen(false);
+    setManualPreviewLoading(false);
+    setManualPreviewError(null);
+    setManualPreviewUrl(null);
   }
 
   async function handleFindManual() {
@@ -199,13 +240,14 @@ export function VehicleCard({
 
       const result = await lookupOwnerManualApi(token, vehicle.id);
       if (result.ok) {
-        setManualUrl(result.url);
+        setManualDocumentId(result.documentId);
+        setManualFilename(result.filename);
         setManualMessage(
           result.cached
             ? "Owner’s manual ready."
-            : "Found a free owner’s manual.",
+            : "Saved the owner’s manual PDF to this vehicle.",
         );
-        openManualUrl(result.url);
+        await openOwnerManualPreview(result.documentId, result.filename);
         return;
       }
 
@@ -249,10 +291,11 @@ export function VehicleCard({
 
       const result = await purchaseOwnerManualApi(token, vehicle.id);
       if (result.ok) {
-        setManualUrl(result.url);
+        setManualDocumentId(result.documentId);
+        setManualFilename(result.filename);
         setManualPaidOffer(false);
         setManualMessage("Payment successful. Opening your owner’s manual.");
-        openManualUrl(result.url);
+        await openOwnerManualPreview(result.documentId, result.filename);
         return;
       }
 
@@ -486,15 +529,14 @@ export function VehicleCard({
             ) : null}
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              {manualUrl ? (
-                <a
-                  href={manualUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {manualDocumentId ? (
+                <button
+                  type="button"
+                  onClick={() => void openOwnerManualPreview()}
                   className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
-                  Open owner&apos;s manual
-                </a>
+                  View owner&apos;s manual
+                </button>
               ) : (
                 <button
                   type="button"
@@ -542,6 +584,18 @@ export function VehicleCard({
           </div>
         </div>
       </div>
+
+      <DocumentPreviewModal
+        open={manualPreviewOpen}
+        onClose={closeOwnerManualPreview}
+        categoryLabel="Owner’s manual"
+        title={label}
+        filename={manualFilename || "owners-manual.pdf"}
+        downloadUrl={manualPreviewUrl}
+        loading={manualPreviewLoading}
+        error={manualPreviewError}
+        onRetry={() => void openOwnerManualPreview()}
+      />
 
       <DocumentPreviewModal
         open={previewOpen}

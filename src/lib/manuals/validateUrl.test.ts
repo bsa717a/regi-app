@@ -3,6 +3,7 @@ import {
   isValidFreeManualUrl,
   isValidPaidProviderManualUrl,
   readManualUrl,
+  readPdfManualUrl,
   readPaidProviderManualUrl,
 } from "@/lib/manuals/validateUrl";
 
@@ -76,6 +77,23 @@ describe("isValidFreeManualUrl", () => {
         { make: "Toyota", model: "RAV4", year: 2022 },
       ),
     ).toBe(true);
+  });
+
+  it("accepts only PDF manual links for pdf reader", () => {
+    expect(
+      readPdfManualUrl(
+        "https://www.ford.com/support/owner-manuals/2021-f-150-owners-manual.pdf",
+        { make: "Ford", model: "F-150", year: 2021 },
+      ),
+    ).toBe(
+      "https://www.ford.com/support/owner-manuals/2021-f-150-owners-manual.pdf",
+    );
+    expect(
+      readPdfManualUrl(
+        "https://www.toyota.com/owners/warranty-owners-manuals/vehicle/rav4/2022/",
+        { make: "Toyota", model: "RAV4", year: 2022 },
+      ),
+    ).toBeNull();
   });
 
   it("rejects generic regional manual index pages", () => {

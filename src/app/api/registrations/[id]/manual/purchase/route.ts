@@ -15,12 +15,15 @@ import {
   MANUAL_PAID_PROVIDER,
 } from "@/lib/manuals/constants";
 import {
+  fulfillOwnerManualPdf,
+  resolveStoredOwnerManual,
+} from "@/lib/manuals/fulfillOwnerManual";
+import {
   isRetryablePaidLookupError,
   lookupPaidOwnerManual,
   paidManualLookupPreflightError,
 } from "@/lib/manuals/lookupPaid";
 import { chargeManualLookup } from "@/lib/manuals/payment";
-import { saveOwnerManualOnRegistration } from "@/lib/manuals/saveManual";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,34 +36,43 @@ type RouteContext = { params: Promise<{ id: string }> };
 async function fulfillPaidLookup(input: {
   registration: Registration;
   lookupRequestId: string;
+  uploadedBy: string;
 }) {
   const paidResult = await lookupPaidOwnerManual(input.registration);
 
   if (paidResult.ok) {
-    await prisma.$transaction([
-      prisma.manualLookupRequest.update({
-        where: { id: input.lookupRequestId },
-        data: {
-          status: "fulfilled",
-          resultUrl: paidResult.url,
-          provider: paidResult.provider,
-        },
-      }),
-      prisma.registration.update({
-        where: { id: input.registration.id },
-        data: {
-          ownerManualUrl: paidResult.url,
-          ownerManualSource: "paid",
-          ownerManualFoundAt: new Date(),
-        },
-      }),
-    ]);
-
-    return NextResponse.json({
-      ok: true,
-      url: paidResult.url,
-      charged: true,
+    await prisma.manualLookupRequest.update({
+      where: { id: input.lookupRequestId },
+      data: {
+        status: "fulfilled",
+        resultUrl: paidResult.url,
+        provider: paidResult.provider,
+      },
     });
+
+    const fulfilled = await fulfillOwnerManualPdf({
+      registration: input.registration,
+      pdfUrl: paidResult.url,
+      source: "paid",
+      uploadedBy: input.uploadedBy,
+    });
+
+    if (fulfilled.ok) {
+      return NextResponse.json({
+        ...fulfilled,
+        charged: true,
+      });
+    }
+
+    return NextResponse.json(
+      {
+        ok: false,
+        charged: true,
+        pending: false,
+        error: fulfilled.error,
+      },
+      { status: 200 },
+    );
   }
 
   if (isRetryablePaidLookupError(paidResult.error)) {
@@ -131,13 +143,12 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  if (registration.ownerManualUrl) {
+  const stored = await resolveStoredOwnerManual({ registration });
+  if (stored) {
     return NextResponse.json(
       {
-        ok: true,
-        url: registration.ownerManualUrl,
+        ...stored,
         charged: false,
-        cached: true,
       },
       { headers: rateLimitHeaders(limited) },
     );
@@ -153,27 +164,28 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
   if (existingPaid?.resultUrl) {
-    await saveOwnerManualOnRegistration({
-      registrationId: registration.id,
-      url: existingPaid.resultUrl,
+    const fulfilled = await fulfillOwnerManualPdf({
+      registration,
+      pdfUrl: existingPaid.resultUrl,
       source: "paid",
+      uploadedBy: profile.id,
     });
-
-    return NextResponse.json(
-      {
-        ok: true,
-        url: existingPaid.resultUrl,
-        charged: true,
-        cached: true,
-      },
-      { headers: rateLimitHeaders(limited) },
-    );
+    if (fulfilled.ok) {
+      return NextResponse.json(
+        {
+          ...fulfilled,
+          charged: true,
+        },
+        { headers: rateLimitHeaders(limited) },
+      );
+    }
   }
 
   if (existingPaid) {
     const retryResponse = await fulfillPaidLookup({
       registration,
       lookupRequestId: existingPaid.id,
+      uploadedBy: profile.id,
     });
     return new NextResponse(retryResponse.body, {
       status: retryResponse.status,
@@ -204,6 +216,7 @@ export async function POST(request: Request, context: RouteContext) {
   const purchaseResponse = await fulfillPaidLookup({
     registration,
     lookupRequestId: lookupRequest.id,
+    uploadedBy: profile.id,
   });
 
   return new NextResponse(purchaseResponse.body, {

@@ -186,9 +186,11 @@ export async function decodeVinApi(
 
 export type ManualLookupApiSuccess = {
   ok: true;
-  url: string;
+  documentId: string;
+  filename: string;
   source: "free" | "paid";
   cached?: boolean;
+  archived?: boolean;
 };
 
 export type ManualLookupApiFailure = {
@@ -214,9 +216,12 @@ export async function lookupOwnerManualApi(
 
 export type ManualPurchaseApiSuccess = {
   ok: true;
-  url: string;
+  documentId: string;
+  filename: string;
   charged: boolean;
   cached?: boolean;
+  source?: "free" | "paid";
+  archived?: boolean;
 };
 
 export type ManualPurchaseApiPending = {

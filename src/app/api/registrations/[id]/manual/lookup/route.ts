@@ -8,13 +8,16 @@ import {
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { loadAuthorizedRegistrationForManual } from "@/lib/manuals/access";
 import { MANUAL_PAID_LOOKUP_FEE_CENTS } from "@/lib/manuals/constants";
+import {
+  fulfillOwnerManualPdf,
+  resolveStoredOwnerManual,
+} from "@/lib/manuals/fulfillOwnerManual";
 import { lookupFreeOwnerManual } from "@/lib/manuals/lookupFree";
 import { registrationSupportsPaidManualLookup } from "@/lib/manuals/lookupPaid";
 import {
   clearOwnerManualOnRegistration,
-  saveOwnerManualOnRegistration,
 } from "@/lib/manuals/saveManual";
-import { readManualUrl } from "@/lib/manuals/validateUrl";
+import { readPdfManualUrl } from "@/lib/manuals/validateUrl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,18 +57,26 @@ export async function POST(request: Request, context: RouteContext) {
     year: registration.year,
   };
 
+  const stored = await resolveStoredOwnerManual({ registration });
+  if (stored) {
+    return NextResponse.json(stored, { headers: rateLimitHeaders(limited) });
+  }
+
   if (registration.ownerManualUrl) {
-    const cachedUrl = readManualUrl(registration.ownerManualUrl, manualContext);
-    if (cachedUrl) {
-      return NextResponse.json(
-        {
-          ok: true,
-          url: cachedUrl,
-          source: registration.ownerManualSource ?? "free",
-          cached: true,
-        },
-        { headers: rateLimitHeaders(limited) },
-      );
+    const cachedPdfUrl = readPdfManualUrl(
+      registration.ownerManualUrl,
+      manualContext,
+    );
+    if (cachedPdfUrl) {
+      const fulfilled = await fulfillOwnerManualPdf({
+        registration,
+        pdfUrl: cachedPdfUrl,
+        source: registration.ownerManualSource ?? "free",
+        uploadedBy: profile.id,
+      });
+      if (fulfilled.ok) {
+        return NextResponse.json(fulfilled, { headers: rateLimitHeaders(limited) });
+      }
     }
 
     await clearOwnerManualOnRegistration(registration.id);
@@ -80,19 +91,26 @@ export async function POST(request: Request, context: RouteContext) {
   });
 
   if (result.ok) {
-    await saveOwnerManualOnRegistration({
-      registrationId: registration.id,
-      url: result.url,
+    const fulfilled = await fulfillOwnerManualPdf({
+      registration,
+      pdfUrl: result.url,
       source: "free",
+      uploadedBy: profile.id,
     });
+
+    if (fulfilled.ok) {
+      return NextResponse.json(fulfilled, { headers: rateLimitHeaders(limited) });
+    }
 
     return NextResponse.json(
       {
-        ok: true,
-        url: result.url,
-        source: "free",
+        ok: false,
+        error: fulfilled.error,
+        code: fulfilled.code,
+        paidAvailable,
+        ...(paidAvailable ? { feeCents: MANUAL_PAID_LOOKUP_FEE_CENTS } : {}),
       },
-      { headers: rateLimitHeaders(limited) },
+      { status: 200, headers: rateLimitHeaders(limited) },
     );
   }
 

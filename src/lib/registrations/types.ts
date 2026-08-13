@@ -54,6 +54,9 @@ export type RegistrationDto = {
   /** Saved owner’s manual URL when found (free or paid). */
   ownerManualUrl?: string | null;
   ownerManualSource?: "free" | "paid" | null;
+  /** Garage document id when the manual PDF is saved in REGI. */
+  ownerManualDocumentId?: string | null;
+  ownerManualFilename?: string | null;
 };
 
 export type CreateRegistrationInput = {

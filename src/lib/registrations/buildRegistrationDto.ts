@@ -5,6 +5,7 @@ import {
   loadRegistrationPhotos,
   serializeRegistrationPhotos,
 } from "@/lib/registrations/registrationPhotos";
+import { loadOwnerManualFilename } from "@/lib/manuals/serializeOwnerManual";
 import { serializeRegistration } from "@/lib/registrations/serialize";
 import type { RegistrationDto } from "@/lib/registrations/types";
 
@@ -19,6 +20,7 @@ export async function buildRegistrationDto(
   const photoRows = await loadRegistrationPhotos(registration.id);
   const photos = await serializeRegistrationPhotos(photoRows);
   const resolved = await resolvePhotoUrl(registration);
+  const ownerManualFilename = await loadOwnerManualFilename(registration);
 
   return serializeRegistration(
     resolved,
@@ -26,5 +28,6 @@ export async function buildRegistrationDto(
     asOf,
     householdRole,
     photos,
+    { ownerManualFilename },
   );
 }

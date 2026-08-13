@@ -30,6 +30,7 @@ import type { RegistrationDto, RegistrationPhotoDto } from "@/lib/registrations/
 import { parseCreateRegistrationBody } from "@/lib/registrations/validation";
 import { countDueMaintenanceByRegistration } from "@/lib/maintenance/dueCounts";
 import { countOpenRecallsByRegistration } from "@/lib/recalls/openCounts";
+import { loadOwnerManualFilenameMap } from "@/lib/manuals/serializeOwnerManual";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,6 +96,10 @@ function serializeWithoutRules(
     status: days < 0 ? "Expired" : "Current",
     daysUntilExpiration: days,
     countdown: formatExpirationCountdown(registration.registrationExpiresOn),
+    ownerManualUrl: registration.ownerManualUrl,
+    ownerManualSource: registration.ownerManualSource,
+    ownerManualDocumentId: registration.ownerManualDocumentId,
+    ownerManualFilename: null,
   };
 }
 
@@ -137,6 +142,7 @@ export async function GET(request: Request) {
     registrations.map((registration) => registration.id),
   );
   const recallCounts = await countOpenRecallsByRegistration(registrations);
+  const manualFilenames = await loadOwnerManualFilenameMap(registrations);
 
   const dto = await Promise.all(
     withPhotos.map(async (registration) => {
@@ -145,10 +151,14 @@ export async function GET(request: Request) {
       const photoRows = photoMap.get(registration.id) ?? [];
       const photos = await serializeRegistrationPhotos(photoRows);
       const base = config
-        ? serializeRegistration(registration, config, new Date(), role, photos)
+        ? serializeRegistration(registration, config, new Date(), role, photos, {
+            ownerManualFilename: manualFilenames.get(registration.id) ?? null,
+          })
         : serializeWithoutRules(registration, role, photos);
       return {
         ...base,
+        ownerManualFilename:
+          manualFilenames.get(registration.id) ?? base.ownerManualFilename ?? null,
         maintenanceDueCount: dueCounts.get(registration.id) ?? 0,
         openRecallCount: recallCounts.get(registration.id) ?? 0,
       };

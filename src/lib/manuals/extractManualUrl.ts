@@ -1,6 +1,6 @@
 import type { GenerateContentResponse } from "@google/genai";
 import type { ManualUrlContext } from "@/lib/manuals/validateUrl";
-import { readManualUrl } from "@/lib/manuals/validateUrl";
+import { readManualUrl, readPdfManualUrl } from "@/lib/manuals/validateUrl";
 
 const HTTPS_URL_PATTERN = /https:\/\/[^\s"'<>)\]]+/gi;
 
@@ -48,9 +48,11 @@ function scoreManualUrl(url: string, context: ManualUrlContext): number {
 export function pickBestManualUrl(
   candidates: string[],
   context: ManualUrlContext,
+  options?: { pdfOnly?: boolean },
 ): string | null {
+  const reader = options?.pdfOnly ? readPdfManualUrl : readManualUrl;
   const validated = candidates
-    .map((candidate) => readManualUrl(candidate, context))
+    .map((candidate) => reader(candidate, context))
     .filter((url): url is string => Boolean(url));
 
   if (validated.length === 0) return null;
@@ -63,6 +65,7 @@ export function pickBestManualUrl(
 export function extractManualUrlFromGeminiResponse(
   response: GenerateContentResponse,
   context: ManualUrlContext,
+  options?: { pdfOnly?: boolean },
 ): string | null {
   const text = response.text?.trim() ?? "";
   const candidates: string[] = [];
@@ -97,5 +100,5 @@ export function extractManualUrlFromGeminiResponse(
     }
   }
 
-  return pickBestManualUrl(candidates, context);
+  return pickBestManualUrl(candidates, context, options);
 }

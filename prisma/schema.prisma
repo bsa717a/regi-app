@@ -235,6 +235,7 @@ model Registration {
   ownerManualSource     OwnerManualSource? @map("owner_manual_source")
   ownerManualFoundAt    DateTime?        @map("owner_manual_found_at")
   recallsCheckedAt      DateTime?        @map("recalls_checked_at")
+  ownerManualDocumentId String?          @unique @map("owner_manual_document_id")
   createdBy             String           @map("created_by")
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
@@ -250,6 +251,7 @@ model Registration {
   usageReadings    UsageReading[]
   manualLookups    ManualLookupRequest[]
   recalls          RegistrationRecall[]
+  ownerManualDocument Document? @relation("RegistrationOwnerManual", fields: [ownerManualDocumentId], references: [id], onDelete: SetNull)
 
   @@index([householdId])
   @@index([createdBy])
@@ -446,6 +448,7 @@ model Document {
   registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   renewal      Renewal?     @relation(fields: [renewalId], references: [id], onDelete: SetNull)
   uploader     User         @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+  ownerManualRegistration Registration? @relation("RegistrationOwnerManual")
 
   @@index([registrationId])
   @@index([renewalId])

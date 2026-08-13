@@ -21,6 +21,9 @@ export function serializeRegistration(
   asOf: Date = new Date(),
   householdRole: MemberRole = "owner",
   photos: RegistrationPhotoDto[] = [],
+  extras?: {
+    ownerManualFilename?: string | null;
+  },
 ): RegistrationDto {
   const status = computeRegistrationStatus(
     registration.registrationExpiresOn,
@@ -61,5 +64,7 @@ export function serializeRegistration(
     countdown: status.countdown,
     ownerManualUrl: registration.ownerManualUrl,
     ownerManualSource: registration.ownerManualSource,
+    ownerManualDocumentId: registration.ownerManualDocumentId,
+    ownerManualFilename: extras?.ownerManualFilename ?? null,
   };
 }

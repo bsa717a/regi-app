@@ -276,6 +276,23 @@ export function readManualUrl(
   return isValidFreeManualUrl(trimmed, context) ? trimmed : null;
 }
 
+export function readPdfManualUrl(
+  value: unknown,
+  context?: ManualUrlContext,
+): string | null {
+  const url = readManualUrl(value, context);
+  if (!url) return null;
+
+  try {
+    const path = `${new URL(url).pathname}${new URL(url).search}`;
+    if (!isPdfPath(path)) return null;
+  } catch {
+    return null;
+  }
+
+  return url;
+}
+
 export function readPaidProviderManualUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
