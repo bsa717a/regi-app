@@ -221,13 +221,9 @@ export function VehicleCard({
       setManualError(result.error || "Could not find an owner’s manual.");
     } catch (err) {
       setManualError(
-        err instanceof ApiError
-          ? err.status === 404
-            ? "Manual lookup is unavailable on this server. Pull the latest code, run database migrations, and restart the dev server."
-            : err.message
-          : err instanceof Error
-            ? err.message
-            : "Could not find an owner’s manual.",
+        err instanceof ApiError || err instanceof Error
+          ? err.message
+          : "Could not find an owner’s manual.",
       );
     } finally {
       setManualLookupLoading(false);

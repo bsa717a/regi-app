@@ -5,7 +5,7 @@ import { readManualUrl } from "@/lib/manuals/validateUrl";
 const HTTPS_URL_PATTERN = /https:\/\/[^\s"'<>)\]]+/gi;
 
 function stripUrlTrailingPunctuation(url: string): string {
-  return url.replace(/[),.;:'"]+$/g, "");
+  return url.replace(/[),.;:'"*`]+$/g, "");
 }
 
 export function extractHttpsUrls(text: string): string[] {
@@ -52,6 +52,19 @@ export function pickBestManualUrl(
   )[0];
 }
 
+function extractDestinationFromRedirect(uri: string): string | null {
+  try {
+    const parsed = new URL(uri);
+    const dest = parsed.searchParams.get("url") ?? parsed.searchParams.get("q");
+    if (dest && dest.startsWith("https://")) {
+      return dest;
+    }
+  } catch {
+    // not a valid URL
+  }
+  return null;
+}
+
 export function extractManualUrlFromGeminiResponse(
   response: GenerateContentResponse,
   context: ManualUrlContext,
@@ -85,7 +98,15 @@ export function extractManualUrlFromGeminiResponse(
 
   if (groundingChunks) {
     for (const chunk of groundingChunks) {
-      if (chunk.web?.uri) candidates.push(chunk.web.uri);
+      if (chunk.web?.uri) {
+        const uri = chunk.web.uri;
+        const dest = extractDestinationFromRedirect(uri);
+        if (dest) {
+          candidates.push(dest);
+        } else {
+          candidates.push(uri);
+        }
+      }
     }
   }
 
