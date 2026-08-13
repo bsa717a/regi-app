@@ -8,7 +8,10 @@ import {
   ApiError,
   getDocumentDownloadUrl,
   listDocuments,
+  lookupOwnerManualApi,
+  purchaseOwnerManualApi,
 } from "@/lib/api/client";
+import { MANUAL_PAID_LOOKUP_FEE_LABEL } from "@/lib/manuals/constants";
 import type { DocumentDto } from "@/lib/documents/types";
 import type { RegistrationDto } from "@/lib/registrations/types";
 import {
@@ -97,6 +100,18 @@ export function VehicleCard({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState("");
+  const [manualUrl, setManualUrl] = useState<string | null>(
+    vehicle.ownerManualUrl ?? null,
+  );
+  const [manualLookupLoading, setManualLookupLoading] = useState(false);
+  const [manualPurchaseLoading, setManualPurchaseLoading] = useState(false);
+  const [manualMessage, setManualMessage] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [manualPaidOffer, setManualPaidOffer] = useState(false);
+
+  useEffect(() => {
+    setManualUrl(vehicle.ownerManualUrl ?? null);
+  }, [vehicle.ownerManualUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,6 +182,100 @@ export function VehicleCard({
     setPreviewError(null);
     setPreviewUrl(null);
     setPreviewFilename("");
+  }
+
+  function openManualUrl(url: string) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  async function handleFindManual() {
+    setManualLookupLoading(true);
+    setManualError(null);
+    setManualMessage(null);
+    setManualPaidOffer(false);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+
+      const result = await lookupOwnerManualApi(token, vehicle.id);
+      if (result.ok) {
+        setManualUrl(result.url);
+        setManualMessage(
+          result.cached
+            ? "Owner’s manual ready."
+            : "Found a free owner’s manual.",
+        );
+        openManualUrl(result.url);
+        return;
+      }
+
+      if (result.paidAvailable) {
+        setManualPaidOffer(true);
+        setManualMessage(
+          result.error ||
+            "We couldn’t find a free digital manual for this vehicle.",
+        );
+        return;
+      }
+
+      setManualError(result.error || "Could not find an owner’s manual.");
+    } catch (err) {
+      setManualError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not find an owner’s manual.",
+      );
+    } finally {
+      setManualLookupLoading(false);
+    }
+  }
+
+  async function handlePurchaseManual() {
+    const confirmed = window.confirm(
+      `You’ll be charged ${MANUAL_PAID_LOOKUP_FEE_LABEL} to look up this owner’s manual through our paid provider. Continue?`,
+    );
+    if (!confirmed) return;
+
+    setManualPurchaseLoading(true);
+    setManualError(null);
+    setManualMessage(null);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+
+      const result = await purchaseOwnerManualApi(token, vehicle.id);
+      if (result.ok) {
+        setManualUrl(result.url);
+        setManualPaidOffer(false);
+        setManualMessage("Payment successful. Opening your owner’s manual.");
+        openManualUrl(result.url);
+        return;
+      }
+
+      if ("pending" in result && result.pending) {
+        setManualPaidOffer(false);
+        setManualMessage(result.message);
+        return;
+      }
+
+      setManualError(
+        "error" in result
+          ? result.error
+          : "Could not complete the paid manual lookup.",
+      );
+    } catch (err) {
+      setManualError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not complete the paid manual lookup.",
+      );
+    } finally {
+      setManualPurchaseLoading(false);
+    }
   }
 
   return (
@@ -328,6 +437,41 @@ export function VehicleCard({
               </p>
             ) : null}
 
+            {manualMessage ? (
+              <p className="text-sm text-teal-800 dark:text-teal-200">{manualMessage}</p>
+            ) : null}
+
+            {manualError ? (
+              <p className="text-sm text-rose-700 dark:text-rose-300" role="alert">
+                {manualError}
+              </p>
+            ) : null}
+
+            {manualPaidOffer ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+                <p>
+                  We can look it up through a paid provider for{" "}
+                  <span className="font-semibold">{MANUAL_PAID_LOOKUP_FEE_LABEL}</span>.
+                </p>
+                {vehicle.canEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => void handlePurchaseManual()}
+                    disabled={manualPurchaseLoading}
+                    className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl bg-amber-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 disabled:opacity-60 dark:bg-amber-700 dark:hover:bg-amber-600"
+                  >
+                    {manualPurchaseLoading
+                      ? "Processing payment…"
+                      : `Pay ${MANUAL_PAID_LOOKUP_FEE_LABEL} and find manual`}
+                  </button>
+                ) : (
+                  <p className="mt-2 text-xs text-amber-900/80 dark:text-amber-100/80">
+                    Only the household owner can purchase a manual lookup.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
             {!vehicle.canEdit ? (
               <p className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 Shared with you · view only
@@ -335,6 +479,25 @@ export function VehicleCard({
             ) : null}
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {manualUrl ? (
+                <a
+                  href={manualUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  Open owner&apos;s manual
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleFindManual()}
+                  disabled={manualLookupLoading || manualPurchaseLoading}
+                  className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  {manualLookupLoading ? "Searching…" : "Find owner’s manual"}
+                </button>
+              )}
               <Link
                 href={`/garage/${encodeURIComponent(vehicle.id)}/maintenance`}
                 className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70"

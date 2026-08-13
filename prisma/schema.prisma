@@ -86,6 +86,23 @@ enum RegiChatRole {
   @@map("regi_chat_role")
 }
 
+enum OwnerManualSource {
+  free
+  paid
+
+  @@map("owner_manual_source")
+}
+
+enum ManualLookupStatus {
+  pending_payment
+  paid
+  fulfilled
+  cancelled
+  failed
+
+  @@map("manual_lookup_status")
+}
+
 enum PaymentStatus {
   pending
   requires_action
@@ -125,6 +142,7 @@ model User {
   payments              Payment[]
   pushTokens            PushToken[]
   regiChatMessages      RegiChatMessage[]
+  manualLookupRequests  ManualLookupRequest[] @relation("ManualLookupRequester")
 
   @@map("users")
 }
@@ -205,6 +223,9 @@ model Registration {
   /// Type-specific fields (HIN, OHV class, trailer weight, boat length/HP, etc.).
   details               Json             @default("{}")
   registrationExpiresOn DateTime         @db.Date @map("registration_expires_on")
+  ownerManualUrl        String?          @map("owner_manual_url")
+  ownerManualSource     OwnerManualSource? @map("owner_manual_source")
+  ownerManualFoundAt    DateTime?        @map("owner_manual_found_at")
   createdBy             String           @map("created_by")
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
@@ -218,6 +239,7 @@ model Registration {
   maintenanceTasks MaintenanceTask[]
   maintenanceLogs  MaintenanceLog[]
   usageReadings    UsageReading[]
+  manualLookups    ManualLookupRequest[]
 
   @@index([householdId])
   @@index([createdBy])
@@ -306,6 +328,28 @@ model RegistrationPhoto {
 
   @@index([registrationId])
   @@map("registration_photos")
+}
+
+/// Paid or free owner-manual lookup attempt for a registration.
+model ManualLookupRequest {
+  id                    String             @id @default(cuid())
+  registrationId        String             @map("registration_id")
+  requestedBy           String             @map("requested_by")
+  status                ManualLookupStatus @default(pending_payment)
+  feeCents              Int                @map("fee_cents")
+  provider              String?
+  resultUrl             String?            @map("result_url")
+  stripePaymentIntentId String?            @map("stripe_payment_intent_id")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  requester    User         @relation("ManualLookupRequester", fields: [requestedBy], references: [id], onDelete: Restrict)
+
+  @@index([registrationId])
+  @@index([requestedBy])
+  @@index([status])
+  @@map("manual_lookup_requests")
 }
 
 /// State Engine config lives in `config` jsonb. See src/lib/stateEngine/types.ts.

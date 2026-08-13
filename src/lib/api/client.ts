@@ -179,6 +179,65 @@ export async function decodeVinApi(
   );
 }
 
+export type ManualLookupApiSuccess = {
+  ok: true;
+  url: string;
+  source: "free" | "paid";
+  cached?: boolean;
+};
+
+export type ManualLookupApiFailure = {
+  ok: false;
+  error?: string;
+  paidAvailable?: boolean;
+  feeCents?: number;
+};
+
+export async function lookupOwnerManualApi(
+  token: string,
+  registrationId: string,
+): Promise<ManualLookupApiSuccess | ManualLookupApiFailure> {
+  return apiFetch<ManualLookupApiSuccess | ManualLookupApiFailure>(
+    `/api/registrations/${encodeURIComponent(registrationId)}/manual/lookup`,
+    {
+      method: "POST",
+      token,
+    },
+  );
+}
+
+export type ManualPurchaseApiSuccess = {
+  ok: true;
+  url: string;
+  charged: boolean;
+  cached?: boolean;
+};
+
+export type ManualPurchaseApiPending = {
+  ok: false;
+  charged: true;
+  pending: true;
+  message: string;
+  feeCents?: number;
+};
+
+export async function purchaseOwnerManualApi(
+  token: string,
+  registrationId: string,
+): Promise<
+  ManualPurchaseApiSuccess | ManualPurchaseApiPending | { ok: false; error: string }
+> {
+  return apiFetch<
+    ManualPurchaseApiSuccess | ManualPurchaseApiPending | { ok: false; error: string }
+  >(
+    `/api/registrations/${encodeURIComponent(registrationId)}/manual/purchase`,
+    {
+      method: "POST",
+      token,
+    },
+  );
+}
+
 export type RegistrationScanDto = {
   registrationType: RegistrationType | null;
   vin: string | null;
