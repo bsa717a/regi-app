@@ -9,6 +9,7 @@ const OEM_DOMAIN_SUFFIXES = [
   "my.gmc.com",
   "my.cadillac.com",
   "owners.toyota.com",
+  "toyota.com",
   "owners.lexus.com",
   "owners.nissan.com",
   "owners.infiniti.com",
@@ -65,6 +66,21 @@ const BLOCKED_DOMAIN_SUFFIXES = [
   "pinterest.com",
 ];
 
+/** Non-US regional sites often appear in search but are not the right manual for US registrations. */
+const NON_US_REGIONAL_DOMAIN_SUFFIXES = [
+  "com.au",
+  "co.uk",
+  "co.nz",
+  "com.mx",
+  "co.jp",
+  "com.br",
+  "toyota.ca",
+  "toyota.de",
+  "toyota.fr",
+  "toyota.co.uk",
+  "toyota.com.au",
+];
+
 const MANUAL_PATH_HINTS =
   /(\.pdf($|\?|#)|owner|manual|guide|handbook|operators|operator|literature|documentation|support\/article|support-documents|owners-guide|og-en|owners_guide|service-manual|rv-manual|snowmobile|motorcycle|motorhome|boat|trailer|download)/i;
 
@@ -87,6 +103,7 @@ const MAKE_HOST_ALIASES: Record<string, string[]> = {
 export type ManualUrlContext = {
   make?: string | null;
   model?: string | null;
+  year?: number | null;
 };
 
 function parseHttpsUrl(raw: string): URL | null {
@@ -169,6 +186,50 @@ function isPdfPath(pathAndQuery: string): boolean {
   return /\.pdf($|\?|#)/i.test(pathAndQuery);
 }
 
+function isNonUsRegionalHostname(hostname: string): boolean {
+  return matchesAnyDomainSuffix(hostname, NON_US_REGIONAL_DOMAIN_SUFFIXES);
+}
+
+function isGenericManualLandingPath(pathname: string): boolean {
+  const path = pathname.toLowerCase().replace(/\/+$/, "");
+  return (
+    /\/owners?\/manuals?$/.test(path) ||
+    /\/owner-resources\/manuals?$/.test(path) ||
+    path.endsWith("/manuals") ||
+    path.endsWith("/manual")
+  );
+}
+
+function normalizeModelToken(model: string): string {
+  return model.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function pathIncludesYear(pathAndQuery: string, year: number | null | undefined): boolean {
+  if (!year) return false;
+  return new RegExp(`/${year}(/|$|-)`, "i").test(pathAndQuery);
+}
+
+function pathIncludesModel(pathAndQuery: string, model: string | null | undefined): boolean {
+  if (!model?.trim()) return false;
+  const token = normalizeModelToken(model);
+  if (token.length < 2) return false;
+  return pathAndQuery.toLowerCase().includes(token);
+}
+
+function isSpecificManualUrl(
+  parsed: URL,
+  context?: ManualUrlContext,
+): boolean {
+  const path = `${parsed.pathname}${parsed.search}`;
+
+  if (isPdfPath(path)) return true;
+  if (pathIncludesYear(path, context?.year)) return true;
+  if (pathIncludesModel(path, context?.model)) return true;
+  if (!isGenericManualLandingPath(parsed.pathname)) return looksLikeManualPath(path);
+
+  return false;
+}
+
 /** Official OEM owner-manual links from free lookup. */
 export function isValidFreeManualUrl(
   raw: string,
@@ -177,13 +238,18 @@ export function isValidFreeManualUrl(
   const parsed = parseHttpsUrl(raw);
   if (!parsed) return false;
   if (matchesAnyDomainSuffix(parsed.hostname, BLOCKED_DOMAIN_SUFFIXES)) return false;
-  if (matchesAnyDomainSuffix(parsed.hostname, OEM_DOMAIN_SUFFIXES)) return true;
+  if (isNonUsRegionalHostname(parsed.hostname)) return false;
 
   const path = `${parsed.pathname}${parsed.search}`;
 
+  if (matchesAnyDomainSuffix(parsed.hostname, OEM_DOMAIN_SUFFIXES)) {
+    return isSpecificManualUrl(parsed, context);
+  }
+
   if (context?.make && hostnameMatchesMake(parsed.hostname, context.make)) {
     if (isPdfPath(path)) return true;
-    return looksLikeManualPath(path);
+    if (!looksLikeManualPath(path)) return false;
+    return isSpecificManualUrl(parsed, context);
   }
 
   return false;
@@ -208,6 +274,23 @@ export function readManualUrl(
   const trimmed = value.trim();
   if (!trimmed) return null;
   return isValidFreeManualUrl(trimmed, context) ? trimmed : null;
+}
+
+export function readPdfManualUrl(
+  value: unknown,
+  context?: ManualUrlContext,
+): string | null {
+  const url = readManualUrl(value, context);
+  if (!url) return null;
+
+  try {
+    const path = `${new URL(url).pathname}${new URL(url).search}`;
+    if (!isPdfPath(path)) return null;
+  } catch {
+    return null;
+  }
+
+  return url;
 }
 
 export function readPaidProviderManualUrl(value: unknown): string | null {

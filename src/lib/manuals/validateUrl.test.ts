@@ -3,6 +3,7 @@ import {
   isValidFreeManualUrl,
   isValidPaidProviderManualUrl,
   readManualUrl,
+  readPdfManualUrl,
   readPaidProviderManualUrl,
 } from "@/lib/manuals/validateUrl";
 
@@ -44,27 +45,65 @@ describe("isValidFreeManualUrl", () => {
 
   it("accepts snowmobile manuals on make-matched domains", () => {
     expect(
-      isValidFreeManualUrl("https://www.polaris.com/en-us/owner-resources/manuals/", {
-        make: "Polaris",
-      }),
+      isValidFreeManualUrl(
+        "https://www.polaris.com/en-us/owner-resources/manuals/2022-pro-rmk/",
+        { make: "Polaris", year: 2022 },
+      ),
     ).toBe(true);
   });
 
   it("accepts RV manuals on make-matched domains", () => {
     expect(
-      isValidFreeManualUrl("https://www.winnebago.com/Files/Files/Winnebago/Manuals/manual.pdf", {
-        make: "Winnebago",
-      }),
+      isValidFreeManualUrl(
+        "https://www.winnebago.com/Files/Files/Winnebago/Manuals/manual.pdf",
+        { make: "Winnebago" },
+      ),
     ).toBe(true);
   });
 
   it("accepts boat manuals on make-matched domains", () => {
     expect(
       isValidFreeManualUrl(
-        "https://www.bostonwhaler.com/ownership/owners-manuals",
-        { make: "Boston Whaler" },
+        "https://www.bostonwhaler.com/ownership/owners-manuals/2022-280-outrage",
+        { make: "Boston Whaler", year: 2022, model: "280 Outrage" },
       ),
     ).toBe(true);
+  });
+
+  it("accepts US Toyota vehicle manual pages", () => {
+    expect(
+      isValidFreeManualUrl(
+        "https://www.toyota.com/owners/warranty-owners-manuals/vehicle/rav4/2022/",
+        { make: "Toyota", model: "RAV4", year: 2022 },
+      ),
+    ).toBe(true);
+  });
+
+  it("accepts only PDF manual links for pdf reader", () => {
+    expect(
+      readPdfManualUrl(
+        "https://www.ford.com/support/owner-manuals/2021-f-150-owners-manual.pdf",
+        { make: "Ford", model: "F-150", year: 2021 },
+      ),
+    ).toBe(
+      "https://www.ford.com/support/owner-manuals/2021-f-150-owners-manual.pdf",
+    );
+    expect(
+      readPdfManualUrl(
+        "https://www.toyota.com/owners/warranty-owners-manuals/vehicle/rav4/2022/",
+        { make: "Toyota", model: "RAV4", year: 2022 },
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects generic regional manual index pages", () => {
+    expect(
+      isValidFreeManualUrl("https://www.toyota.com.au/owners/manuals", {
+        make: "Toyota",
+        model: "RAV4",
+        year: 2022,
+      }),
+    ).toBe(false);
   });
 
   it("rejects non-https links", () => {

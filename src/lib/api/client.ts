@@ -184,18 +184,41 @@ export async function decodeVinApi(
   );
 }
 
-export type ManualLookupApiSuccess = {
+export type ManualLookupApiSaved = {
   ok: true;
-  url: string;
+  kind: "saved";
+  documentId: string;
+  filename: string;
   source: "free" | "paid";
   cached?: boolean;
 };
 
+export type ManualLookupApiPdfCandidate = {
+  ok: true;
+  kind: "pdf";
+  previewUrl: string;
+  filename: string;
+  libraryUrl: string;
+  libraryLabel: string;
+};
+
+export type ManualLookupApiLibrary = {
+  ok: true;
+  kind: "library";
+  url: string;
+  label: string;
+  message: string;
+};
+
+export type ManualLookupApiSuccess =
+  | ManualLookupApiSaved
+  | ManualLookupApiPdfCandidate
+  | ManualLookupApiLibrary;
+
 export type ManualLookupApiFailure = {
   ok: false;
   error?: string;
-  paidAvailable?: boolean;
-  feeCents?: number;
+  code?: string;
 };
 
 export async function lookupOwnerManualApi(
@@ -212,12 +235,24 @@ export async function lookupOwnerManualApi(
   );
 }
 
-export type ManualPurchaseApiSuccess = {
-  ok: true;
-  url: string;
-  charged: boolean;
-  cached?: boolean;
-};
+export async function confirmOwnerManualApi(
+  token: string,
+  registrationId: string,
+  input: { pdfUrl: string; source?: "free" | "paid" },
+): Promise<ManualLookupApiSaved | ManualLookupApiFailure> {
+  return apiFetch<ManualLookupApiSaved | ManualLookupApiFailure>(
+    `/api/registrations/${encodeURIComponent(registrationId)}/manual/confirm`,
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+}
+
+export type ManualPurchaseApiSuccess =
+  | (ManualLookupApiSaved & { charged: boolean })
+  | (ManualLookupApiPdfCandidate & { charged: boolean });
 
 export type ManualPurchaseApiPending = {
   ok: false;

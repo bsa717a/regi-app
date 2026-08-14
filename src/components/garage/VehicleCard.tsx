@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import {
   ApiError,
+  confirmOwnerManualApi,
   getDocumentDownloadUrl,
   listDocuments,
   lookupOwnerManualApi,
@@ -100,8 +101,27 @@ export function VehicleCard({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState("");
-  const [manualUrl, setManualUrl] = useState<string | null>(
-    vehicle.ownerManualUrl ?? null,
+  const [manualDocumentId, setManualDocumentId] = useState<string | null>(
+    vehicle.ownerManualDocumentId ?? null,
+  );
+  const [manualFilename, setManualFilename] = useState<string | null>(
+    vehicle.ownerManualFilename ?? null,
+  );
+  const [manualPreviewOpen, setManualPreviewOpen] = useState(false);
+  const [manualPreviewLoading, setManualPreviewLoading] = useState(false);
+  const [manualPreviewError, setManualPreviewError] = useState<string | null>(
+    null,
+  );
+  const [manualPreviewUrl, setManualPreviewUrl] = useState<string | null>(null);
+  const [manualConfirmMode, setManualConfirmMode] = useState(false);
+  const [manualConfirmBusy, setManualConfirmBusy] = useState(false);
+  const [manualCandidateUrl, setManualCandidateUrl] = useState<string | null>(null);
+  const [manualCandidateSource, setManualCandidateSource] = useState<
+    "free" | "paid"
+  >("free");
+  const [manualLibraryUrl, setManualLibraryUrl] = useState<string | null>(null);
+  const [manualLibraryLabel, setManualLibraryLabel] = useState<string | null>(
+    null,
   );
   const [manualLookupLoading, setManualLookupLoading] = useState(false);
   const [manualPurchaseLoading, setManualPurchaseLoading] = useState(false);
@@ -109,9 +129,26 @@ export function VehicleCard({
   const [manualError, setManualError] = useState<string | null>(null);
   const [manualPaidOffer, setManualPaidOffer] = useState(false);
 
+  function closeOwnerManualPreview() {
+    setManualPreviewOpen(false);
+    setManualPreviewLoading(false);
+    setManualPreviewError(null);
+    setManualPreviewUrl(null);
+    setManualConfirmMode(false);
+    setManualConfirmBusy(false);
+    setManualCandidateUrl(null);
+  }
+
+  function resetManualLookupFlow() {
+    closeOwnerManualPreview();
+    setManualLibraryUrl(null);
+    setManualLibraryLabel(null);
+  }
+
   useEffect(() => {
-    setManualUrl(vehicle.ownerManualUrl ?? null);
-  }, [vehicle.ownerManualUrl]);
+    setManualDocumentId(vehicle.ownerManualDocumentId ?? null);
+    setManualFilename(vehicle.ownerManualFilename ?? null);
+  }, [vehicle.ownerManualDocumentId, vehicle.ownerManualFilename]);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,8 +221,107 @@ export function VehicleCard({
     setPreviewFilename("");
   }
 
-  function openManualUrl(url: string) {
-    window.open(url, "_blank", "noopener,noreferrer");
+  async function openOwnerManualPreview(documentId?: string, filename?: string | null) {
+    const targetDocumentId = documentId ?? manualDocumentId;
+    if (!targetDocumentId) return;
+
+    resetManualLookupFlow();
+    setManualPreviewOpen(true);
+    setManualPreviewLoading(true);
+    setManualPreviewError(null);
+    setManualPreviewUrl(null);
+    setManualFilename(filename ?? manualFilename);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+      const signed = await getDocumentDownloadUrl(token, targetDocumentId);
+      setManualPreviewUrl(signed.downloadUrl);
+      setManualFilename(signed.filename || filename || manualFilename || "owners-manual.pdf");
+    } catch (err) {
+      setManualPreviewError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load owner’s manual.",
+      );
+    } finally {
+      setManualPreviewLoading(false);
+    }
+  }
+
+  function openManualCandidatePreview(input: {
+    previewUrl: string;
+    filename: string;
+    libraryUrl: string;
+    libraryLabel: string;
+    source: "free" | "paid";
+  }) {
+    setManualCandidateUrl(input.previewUrl);
+    setManualCandidateSource(input.source);
+    setManualLibraryUrl(input.libraryUrl);
+    setManualLibraryLabel(input.libraryLabel);
+    setManualFilename(input.filename);
+    setManualPreviewOpen(true);
+    setManualPreviewLoading(false);
+    setManualPreviewError(null);
+    setManualPreviewUrl(input.previewUrl);
+    setManualConfirmMode(true);
+  }
+
+  async function handleConfirmManual() {
+    if (!manualCandidateUrl) return;
+
+    setManualConfirmBusy(true);
+    setManualError(null);
+    try {
+      const token = idToken ?? (await getIdToken());
+      if (!token) throw new Error("Please sign in again.");
+
+      const result = await confirmOwnerManualApi(token, vehicle.id, {
+        pdfUrl: manualCandidateUrl,
+        source: manualCandidateSource,
+      });
+
+      if (!result.ok) {
+        throw new Error(result.error || "Could not save the owner’s manual.");
+      }
+
+      setManualDocumentId(result.documentId);
+      setManualFilename(result.filename);
+      setManualMessage("Owner’s manual saved to this vehicle.");
+      setManualPaidOffer(false);
+      closeOwnerManualPreview();
+      await openOwnerManualPreview(result.documentId, result.filename);
+    } catch (err) {
+      setManualError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not save the owner’s manual.",
+      );
+    } finally {
+      setManualConfirmBusy(false);
+    }
+  }
+
+  function handleRejectManual() {
+    closeOwnerManualPreview();
+    if (vehicle.type === "passenger") {
+      setManualPaidOffer(true);
+    }
+    setManualMessage(
+      manualLibraryLabel
+        ? `That wasn’t the right manual. Try ${manualLibraryLabel} on the manufacturer site.`
+        : "That wasn’t the right manual. Try the manufacturer’s official manuals page.",
+    );
+  }
+
+  function openManufacturerLibrary(url?: string | null) {
+    const target = url ?? manualLibraryUrl;
+    if (!target) return;
+    window.open(target, "_blank", "noopener,noreferrer");
   }
 
   async function handleFindManual() {
@@ -193,32 +329,47 @@ export function VehicleCard({
     setManualError(null);
     setManualMessage(null);
     setManualPaidOffer(false);
+    resetManualLookupFlow();
     try {
       const token = idToken ?? (await getIdToken());
       if (!token) throw new Error("Please sign in again.");
 
       const result = await lookupOwnerManualApi(token, vehicle.id);
-      if (result.ok) {
-        setManualUrl(result.url);
+      if (!result.ok) {
+        setManualError(result.error || "Could not find an owner’s manual.");
+        return;
+      }
+
+      if (result.kind === "saved") {
+        setManualDocumentId(result.documentId);
+        setManualFilename(result.filename);
         setManualMessage(
           result.cached
             ? "Owner’s manual ready."
-            : "Found a free owner’s manual.",
+            : "Owner’s manual saved to this vehicle.",
         );
-        openManualUrl(result.url);
+        await openOwnerManualPreview(result.documentId, result.filename);
         return;
       }
 
-      if (result.paidAvailable) {
+      if (result.kind === "pdf") {
+        setManualMessage("Is this the right owner’s manual?");
+        openManualCandidatePreview({
+          previewUrl: result.previewUrl,
+          filename: result.filename,
+          libraryUrl: result.libraryUrl,
+          libraryLabel: result.libraryLabel,
+          source: "free",
+        });
+        return;
+      }
+
+      setManualLibraryUrl(result.url);
+      setManualLibraryLabel(result.label);
+      setManualMessage(result.message);
+      if (vehicle.type === "passenger") {
         setManualPaidOffer(true);
-        setManualMessage(
-          result.error ||
-            "We couldn’t find a free digital manual for this vehicle.",
-        );
-        return;
       }
-
-      setManualError(result.error || "Could not find an owner’s manual.");
     } catch (err) {
       setManualError(
         err instanceof ApiError
@@ -249,11 +400,27 @@ export function VehicleCard({
 
       const result = await purchaseOwnerManualApi(token, vehicle.id);
       if (result.ok) {
-        setManualUrl(result.url);
-        setManualPaidOffer(false);
-        setManualMessage("Payment successful. Opening your owner’s manual.");
-        openManualUrl(result.url);
-        return;
+        if (result.kind === "saved") {
+          setManualDocumentId(result.documentId);
+          setManualFilename(result.filename);
+          setManualPaidOffer(false);
+          setManualMessage("Payment successful. Owner’s manual saved to this vehicle.");
+          await openOwnerManualPreview(result.documentId, result.filename);
+          return;
+        }
+
+        if (result.kind === "pdf") {
+          setManualPaidOffer(false);
+          setManualMessage("Payment successful. Is this the right owner’s manual?");
+          openManualCandidatePreview({
+            previewUrl: result.previewUrl,
+            filename: result.filename,
+            libraryUrl: result.libraryUrl,
+            libraryLabel: result.libraryLabel,
+            source: "paid",
+          });
+          return;
+        }
       }
 
       if ("pending" in result && result.pending) {
@@ -454,7 +621,20 @@ export function VehicleCard({
               </p>
             ) : null}
 
-            {manualPaidOffer ? (
+            {manualLibraryUrl && manualLibraryLabel ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100">
+                <p className="font-medium">{manualLibraryLabel}</p>
+                <button
+                  type="button"
+                  onClick={() => openManufacturerLibrary()}
+                  className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  Open manufacturer manuals page
+                </button>
+              </div>
+            ) : null}
+
+            {manualPaidOffer && vehicle.type === "passenger" ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
                 <p>
                   We can look it up through a paid provider for{" "}
@@ -486,15 +666,14 @@ export function VehicleCard({
             ) : null}
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              {manualUrl ? (
-                <a
-                  href={manualUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              {manualDocumentId ? (
+                <button
+                  type="button"
+                  onClick={() => void openOwnerManualPreview()}
                   className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
-                  Open owner&apos;s manual
-                </a>
+                  View owner&apos;s manual
+                </button>
               ) : (
                 <button
                   type="button"
@@ -542,6 +721,34 @@ export function VehicleCard({
           </div>
         </div>
       </div>
+
+      <DocumentPreviewModal
+        open={manualPreviewOpen}
+        onClose={closeOwnerManualPreview}
+        categoryLabel="Owner’s manual"
+        title={label}
+        filename={manualFilename || "owners-manual.pdf"}
+        downloadUrl={manualPreviewUrl}
+        loading={manualPreviewLoading}
+        error={manualPreviewError}
+        onRetry={() =>
+          manualConfirmMode && manualCandidateUrl
+            ? openManualCandidatePreview({
+                previewUrl: manualCandidateUrl,
+                filename: manualFilename || "owners-manual.pdf",
+                libraryUrl: manualLibraryUrl || "",
+                libraryLabel: manualLibraryLabel || "Manufacturer manuals",
+                source: manualCandidateSource,
+              })
+            : void openOwnerManualPreview()
+        }
+        confirmMode={manualConfirmMode}
+        onConfirm={() => void handleConfirmManual()}
+        onReject={handleRejectManual}
+        confirmBusy={manualConfirmBusy}
+        confirmLabel="Yes, save this manual"
+        rejectLabel="No, that’s not it"
+      />
 
       <DocumentPreviewModal
         open={previewOpen}

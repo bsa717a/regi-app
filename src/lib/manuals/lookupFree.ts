@@ -19,7 +19,7 @@ export type FreeManualLookupResult =
   | { ok: true; url: string }
   | { ok: false; error: string; code?: "unconfigured" | "not_found" | "invalid" };
 
-const FREE_MANUAL_PROMPT = `Find the official digital manual for this registered vehicle.
+const FREE_MANUAL_PROMPT = `Find the official owner manual PDF file for this registered vehicle.
 
 Use web search with the suggested query below. Works for cars, trucks, RVs/motorhomes, motorcycles, snowmobiles, OHV/ATV/UTV, boats, and trailers.
 
@@ -30,12 +30,14 @@ Return JSON only with this shape:
 }
 
 Rules:
-- Prefer an official manufacturer PDF or owner/operator portal link from the search results.
-- Direct PDF links on manufacturer sites or CDNs are valid.
-- Support pages that host or link to the official manual are valid when no PDF is obvious.
-- url must be https.
-- Return null for url only if search finds no trustworthy official manual link.
-- Do not invent URLs.`;
+- Return only a direct https link to a PDF file (.pdf).
+- For US vehicles, use the US manufacturer site (for example ford.com, honda.com, toyota.com).
+- Prefer full owner manual PDFs over excerpts or brochures.
+- url must end in .pdf or clearly serve application/pdf.
+- Return null for url if search finds no trustworthy official PDF.
+- Do not invent URLs.
+- Do not return web portals, HTML pages, or generic manual index pages.
+- Do not return generic regional manual index pages (for example toyota.com.au/owners/manuals).`;
 
 let cachedClient: GoogleGenAI | null = null;
 
@@ -101,7 +103,7 @@ function buildVehicleDescription(input: FreeManualLookupInput): string {
 }
 
 function manualUrlContext(input: FreeManualLookupInput): ManualUrlContext {
-  return { make: input.make, model: input.model };
+  return { make: input.make, model: input.model, year: input.year };
 }
 
 export async function lookupFreeOwnerManual(
@@ -137,12 +139,15 @@ export async function lookupFreeOwnerManual(
       config: manualLookupConfig(),
     });
 
-    const url = extractManualUrlFromGeminiResponse(response, urlContext);
+    const url = extractManualUrlFromGeminiResponse(response, urlContext, {
+      pdfOnly: true,
+    });
     if (!url) {
       return {
         ok: false,
         code: "not_found",
-        error: "Could not find a free digital manual for this vehicle.",
+        error:
+          "Could not find a free PDF owner’s manual for this vehicle. Some brands only publish an interactive manual online.",
       };
     }
 

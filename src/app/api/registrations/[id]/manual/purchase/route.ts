@@ -14,13 +14,18 @@ import {
   MANUAL_PAID_LOOKUP_FEE_CENTS,
   MANUAL_PAID_PROVIDER,
 } from "@/lib/manuals/constants";
+import { resolveStoredOwnerManual } from "@/lib/manuals/fulfillOwnerManual";
+import { resolveOfficialManualLibrary } from "@/lib/manuals/libraries";
+import {
+  buildOwnerManualFilename,
+} from "@/lib/manuals/persistOwnerManual";
 import {
   isRetryablePaidLookupError,
   lookupPaidOwnerManual,
   paidManualLookupPreflightError,
 } from "@/lib/manuals/lookupPaid";
 import { chargeManualLookup } from "@/lib/manuals/payment";
-import { saveOwnerManualOnRegistration } from "@/lib/manuals/saveManual";
+import { readPaidProviderManualUrl } from "@/lib/manuals/validateUrl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +35,38 @@ const LIMIT = 10;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+function filenameFromPdfUrl(url: string): string | null {
+  try {
+    const pathname = new URL(url).pathname;
+    const last = pathname.split("/").pop();
+    if (!last?.toLowerCase().endsWith(".pdf")) return null;
+    return decodeURIComponent(last);
+  } catch {
+    return null;
+  }
+}
+
+function pdfCandidatePayload(registration: Registration, previewUrl: string) {
+  const library = resolveOfficialManualLibrary({
+    type: registration.type,
+    make: registration.make,
+    model: registration.model,
+    year: registration.year,
+  });
+
+  return {
+    ok: true as const,
+    kind: "pdf" as const,
+    previewUrl,
+    filename:
+      filenameFromPdfUrl(previewUrl) ??
+      buildOwnerManualFilename(registration),
+    libraryUrl: library.url,
+    libraryLabel: library.label,
+    charged: true as const,
+  };
+}
+
 async function fulfillPaidLookup(input: {
   registration: Registration;
   lookupRequestId: string;
@@ -37,30 +74,29 @@ async function fulfillPaidLookup(input: {
   const paidResult = await lookupPaidOwnerManual(input.registration);
 
   if (paidResult.ok) {
-    await prisma.$transaction([
-      prisma.manualLookupRequest.update({
-        where: { id: input.lookupRequestId },
-        data: {
-          status: "fulfilled",
-          resultUrl: paidResult.url,
-          provider: paidResult.provider,
-        },
-      }),
-      prisma.registration.update({
-        where: { id: input.registration.id },
-        data: {
-          ownerManualUrl: paidResult.url,
-          ownerManualSource: "paid",
-          ownerManualFoundAt: new Date(),
-        },
-      }),
-    ]);
-
-    return NextResponse.json({
-      ok: true,
-      url: paidResult.url,
-      charged: true,
+    await prisma.manualLookupRequest.update({
+      where: { id: input.lookupRequestId },
+      data: {
+        status: "fulfilled",
+        resultUrl: paidResult.url,
+        provider: paidResult.provider,
+      },
     });
+
+    const validated = readPaidProviderManualUrl(paidResult.url);
+    if (!validated) {
+      return NextResponse.json(
+        {
+          ok: false,
+          charged: true,
+          pending: false,
+          error: "Paid provider did not return a valid manual link.",
+        },
+        { status: 200 },
+      );
+    }
+
+    return NextResponse.json(pdfCandidatePayload(input.registration, validated));
   }
 
   if (isRetryablePaidLookupError(paidResult.error)) {
@@ -131,13 +167,12 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  if (registration.ownerManualUrl) {
+  const stored = await resolveStoredOwnerManual({ registration });
+  if (stored) {
     return NextResponse.json(
       {
-        ok: true,
-        url: registration.ownerManualUrl,
+        ...stored,
         charged: false,
-        cached: true,
       },
       { headers: rateLimitHeaders(limited) },
     );
@@ -153,21 +188,16 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
   if (existingPaid?.resultUrl) {
-    await saveOwnerManualOnRegistration({
-      registrationId: registration.id,
-      url: existingPaid.resultUrl,
-      source: "paid",
-    });
-
-    return NextResponse.json(
-      {
-        ok: true,
-        url: existingPaid.resultUrl,
-        charged: true,
-        cached: true,
-      },
-      { headers: rateLimitHeaders(limited) },
-    );
+    const validated = readPaidProviderManualUrl(existingPaid.resultUrl);
+    if (validated) {
+      return NextResponse.json(
+        {
+          ...pdfCandidatePayload(registration, validated),
+          charged: true,
+        },
+        { headers: rateLimitHeaders(limited) },
+      );
+    }
   }
 
   if (existingPaid) {
