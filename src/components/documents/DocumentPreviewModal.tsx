@@ -26,6 +26,12 @@ export function DocumentPreviewModal({
   onRetry,
   canRename = false,
   onRename,
+  confirmMode = false,
+  onConfirm,
+  onReject,
+  confirmLabel = "Yes, save this manual",
+  rejectLabel = "No, that’s not it",
+  confirmBusy = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -38,6 +44,12 @@ export function DocumentPreviewModal({
   onRetry: () => void;
   canRename?: boolean;
   onRename?: (filename: string) => Promise<void>;
+  confirmMode?: boolean;
+  onConfirm?: () => void | Promise<void>;
+  onReject?: () => void;
+  confirmLabel?: string;
+  rejectLabel?: string;
+  confirmBusy?: boolean;
 }) {
   const titleId = useId();
   const renameInputId = useId();
@@ -255,7 +267,26 @@ export function DocumentPreviewModal({
         </div>
 
         <div className="flex flex-col gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:justify-end">
-          {downloadUrl ? (
+          {confirmMode ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onReject?.()}
+                disabled={confirmBusy || loading}
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                {rejectLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => void onConfirm?.()}
+                disabled={confirmBusy || loading || !downloadUrl}
+                className={`${primaryButtonClassName} sm:w-auto`}
+              >
+                {confirmBusy ? "Saving…" : confirmLabel}
+              </button>
+            </>
+          ) : downloadUrl ? (
             <a
               href={downloadUrl}
               download={filename}

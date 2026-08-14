@@ -14,16 +14,18 @@ import {
   MANUAL_PAID_LOOKUP_FEE_CENTS,
   MANUAL_PAID_PROVIDER,
 } from "@/lib/manuals/constants";
+import { resolveStoredOwnerManual } from "@/lib/manuals/fulfillOwnerManual";
+import { resolveOfficialManualLibrary } from "@/lib/manuals/libraries";
 import {
-  fulfillOwnerManualPdf,
-  resolveStoredOwnerManual,
-} from "@/lib/manuals/fulfillOwnerManual";
+  buildOwnerManualFilename,
+} from "@/lib/manuals/persistOwnerManual";
 import {
   isRetryablePaidLookupError,
   lookupPaidOwnerManual,
   paidManualLookupPreflightError,
 } from "@/lib/manuals/lookupPaid";
 import { chargeManualLookup } from "@/lib/manuals/payment";
+import { readPaidProviderManualUrl } from "@/lib/manuals/validateUrl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,10 +35,41 @@ const LIMIT = 10;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+function filenameFromPdfUrl(url: string): string | null {
+  try {
+    const pathname = new URL(url).pathname;
+    const last = pathname.split("/").pop();
+    if (!last?.toLowerCase().endsWith(".pdf")) return null;
+    return decodeURIComponent(last);
+  } catch {
+    return null;
+  }
+}
+
+function pdfCandidatePayload(registration: Registration, previewUrl: string) {
+  const library = resolveOfficialManualLibrary({
+    type: registration.type,
+    make: registration.make,
+    model: registration.model,
+    year: registration.year,
+  });
+
+  return {
+    ok: true as const,
+    kind: "pdf" as const,
+    previewUrl,
+    filename:
+      filenameFromPdfUrl(previewUrl) ??
+      buildOwnerManualFilename(registration),
+    libraryUrl: library.url,
+    libraryLabel: library.label,
+    charged: true as const,
+  };
+}
+
 async function fulfillPaidLookup(input: {
   registration: Registration;
   lookupRequestId: string;
-  uploadedBy: string;
 }) {
   const paidResult = await lookupPaidOwnerManual(input.registration);
 
@@ -50,29 +83,20 @@ async function fulfillPaidLookup(input: {
       },
     });
 
-    const fulfilled = await fulfillOwnerManualPdf({
-      registration: input.registration,
-      pdfUrl: paidResult.url,
-      source: "paid",
-      uploadedBy: input.uploadedBy,
-    });
-
-    if (fulfilled.ok) {
-      return NextResponse.json({
-        ...fulfilled,
-        charged: true,
-      });
+    const validated = readPaidProviderManualUrl(paidResult.url);
+    if (!validated) {
+      return NextResponse.json(
+        {
+          ok: false,
+          charged: true,
+          pending: false,
+          error: "Paid provider did not return a valid manual link.",
+        },
+        { status: 200 },
+      );
     }
 
-    return NextResponse.json(
-      {
-        ok: false,
-        charged: true,
-        pending: false,
-        error: fulfilled.error,
-      },
-      { status: 200 },
-    );
+    return NextResponse.json(pdfCandidatePayload(input.registration, validated));
   }
 
   if (isRetryablePaidLookupError(paidResult.error)) {
@@ -164,16 +188,11 @@ export async function POST(request: Request, context: RouteContext) {
     });
 
   if (existingPaid?.resultUrl) {
-    const fulfilled = await fulfillOwnerManualPdf({
-      registration,
-      pdfUrl: existingPaid.resultUrl,
-      source: "paid",
-      uploadedBy: profile.id,
-    });
-    if (fulfilled.ok) {
+    const validated = readPaidProviderManualUrl(existingPaid.resultUrl);
+    if (validated) {
       return NextResponse.json(
         {
-          ...fulfilled,
+          ...pdfCandidatePayload(registration, validated),
           charged: true,
         },
         { headers: rateLimitHeaders(limited) },
@@ -185,7 +204,6 @@ export async function POST(request: Request, context: RouteContext) {
     const retryResponse = await fulfillPaidLookup({
       registration,
       lookupRequestId: existingPaid.id,
-      uploadedBy: profile.id,
     });
     return new NextResponse(retryResponse.body, {
       status: retryResponse.status,
@@ -216,7 +234,6 @@ export async function POST(request: Request, context: RouteContext) {
   const purchaseResponse = await fulfillPaidLookup({
     registration,
     lookupRequestId: lookupRequest.id,
-    uploadedBy: profile.id,
   });
 
   return new NextResponse(purchaseResponse.body, {

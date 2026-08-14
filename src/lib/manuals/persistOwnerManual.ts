@@ -183,7 +183,9 @@ export async function persistOwnerManualFromPdfUrl(input: {
 
   const previousDocumentId = input.registration.ownerManualDocumentId;
 
-  const document = await prisma.$transaction(async (tx) => {
+  let document;
+  try {
+    document = await prisma.$transaction(async (tx) => {
     const created = await tx.document.create({
       data: {
         registrationId: input.registration.id,
@@ -206,6 +208,14 @@ export async function persistOwnerManualFromPdfUrl(input: {
 
     return created;
   });
+  } catch {
+    await deleteObject(gcsPath).catch(() => undefined);
+    return {
+      ok: false,
+      code: "storage",
+      error: "Could not save the owner’s manual to your garage.",
+    };
+  }
 
   if (previousDocumentId && previousDocumentId !== document.id) {
     const previous = await prisma.document.findUnique({
@@ -234,6 +244,7 @@ export function ownerManualSuccessPayload(input: {
 }) {
   return {
     ok: true as const,
+    kind: "saved" as const,
     documentId: input.documentId,
     filename: input.filename,
     source: input.source,

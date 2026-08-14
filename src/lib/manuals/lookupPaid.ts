@@ -18,9 +18,12 @@ function getVehicleDatabasesApiKey(): string | null {
   return process.env.VEHICLE_DATABASES_API_KEY?.trim() || null;
 }
 
-export function isPaidManualLookupConfigured(): boolean {
+export function isVehicleDatabasesConfigured(): boolean {
   return Boolean(getVehicleDatabasesApiKey());
 }
+
+/** @deprecated Use isVehicleDatabasesConfigured */
+export const isPaidManualLookupConfigured = isVehicleDatabasesConfigured;
 
 export function registrationSupportsPaidManualLookup(
   registration: Pick<Registration, "vin" | "year" | "make" | "model">,
@@ -78,7 +81,7 @@ function buildLookupUrl(registration: Registration): string | null {
   return null;
 }
 
-export async function lookupPaidOwnerManual(
+export async function lookupVehicleDatabasesOwnerManual(
   registration: Registration,
 ): Promise<{ ok: true; url: string; provider: string } | { ok: false; error: string }> {
   const apiKey = getVehicleDatabasesApiKey();
@@ -141,3 +144,6 @@ export async function lookupPaidOwnerManual(
     clearTimeout(timeout);
   }
 }
+
+/** Used by purchase route; same Vehicle Databases lookup as the free passenger path. */
+export const lookupPaidOwnerManual = lookupVehicleDatabasesOwnerManual;
