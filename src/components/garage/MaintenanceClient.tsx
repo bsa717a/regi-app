@@ -69,6 +69,19 @@ function formatInterval(task: {
   return parts.join(" · ") || "No interval";
 }
 
+function parseIntervalNumber(
+  raw: string,
+  opts?: { min?: number; integer?: boolean },
+): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const num = Number(trimmed);
+  if (!Number.isFinite(num)) return null;
+  if (opts?.integer && !Number.isInteger(num)) return null;
+  if (opts?.min != null && num < opts.min) return null;
+  return num;
+}
+
 function StatusPill({ status }: { status: MaintenanceDueStatus }) {
   const styles =
     status === "overdue"
@@ -193,6 +206,22 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
     () => (overview?.tasks ?? []).filter((task) => !task.active),
     [overview],
   );
+  const customIntervalPreview = useMemo(() => {
+    const intervalMonths = parseIntervalNumber(customMonths, {
+      min: 1,
+      integer: true,
+    });
+    const intervalHours = parseIntervalNumber(customHours, { min: 0.1 });
+    const intervalMiles = parseIntervalNumber(customMiles, { min: 0.1 });
+    if (
+      intervalMonths == null &&
+      intervalHours == null &&
+      intervalMiles == null
+    ) {
+      return null;
+    }
+    return formatInterval({ intervalMonths, intervalHours, intervalMiles });
+  }, [customMonths, customHours, customMiles]);
 
   async function withToken<T>(fn: (token: string) => Promise<T>): Promise<T | null> {
     setBusy(true);
@@ -247,9 +276,12 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
     const result = await withToken((token) =>
       createMaintenanceTask(token, registrationId, {
         name: customName.trim(),
-        intervalMonths: customMonths.trim() ? Number(customMonths) : null,
-        intervalHours: customHours.trim() ? Number(customHours) : null,
-        intervalMiles: customMiles.trim() ? Number(customMiles) : null,
+        intervalMonths: parseIntervalNumber(customMonths, {
+          min: 1,
+          integer: true,
+        }),
+        intervalHours: parseIntervalNumber(customHours, { min: 0.1 }),
+        intervalMiles: parseIntervalNumber(customMiles, { min: 0.1 }),
         notes: customNotes.trim() || null,
         remindInDays: customRemindDays.trim()
           ? Number(customRemindDays)
@@ -891,48 +923,72 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                         placeholder="e.g. Grease hinges"
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className={labelClassName} htmlFor="custom-months">
-                          Months
-                        </label>
-                        <input
-                          id="custom-months"
-                          type="number"
-                          min="1"
-                          className={fieldClassName}
-                          value={customMonths}
-                          onChange={(e) => setCustomMonths(e.target.value)}
-                        />
+                    <fieldset className="space-y-2">
+                      <legend className={labelClassName}>Due every</legend>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label
+                            className={labelClassName}
+                            htmlFor="custom-months"
+                          >
+                            months
+                          </label>
+                          <input
+                            id="custom-months"
+                            type="number"
+                            min="1"
+                            className={fieldClassName}
+                            value={customMonths}
+                            onChange={(e) => setCustomMonths(e.target.value)}
+                            placeholder="6"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            className={labelClassName}
+                            htmlFor="custom-hours"
+                          >
+                            engine hours
+                          </label>
+                          <input
+                            id="custom-hours"
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            className={fieldClassName}
+                            value={customHours}
+                            onChange={(e) => setCustomHours(e.target.value)}
+                            placeholder="15"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            className={labelClassName}
+                            htmlFor="custom-miles"
+                          >
+                            miles
+                          </label>
+                          <input
+                            id="custom-miles"
+                            type="number"
+                            min="0.1"
+                            className={fieldClassName}
+                            value={customMiles}
+                            onChange={(e) => setCustomMiles(e.target.value)}
+                            placeholder="5000"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className={labelClassName} htmlFor="custom-hours">
-                          Hours
-                        </label>
-                        <input
-                          id="custom-hours"
-                          type="number"
-                          min="0.1"
-                          step="0.1"
-                          className={fieldClassName}
-                          value={customHours}
-                          onChange={(e) => setCustomHours(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClassName} htmlFor="custom-miles">
-                          Miles
-                        </label>
-                        <input
-                          id="custom-miles"
-                          type="number"
-                          min="0.1"
-                          className={fieldClassName}
-                          value={customMiles}
-                          onChange={(e) => setCustomMiles(e.target.value)}
-                        />
-                      </div>
-                    </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Leave blank if you don&apos;t use that interval.
+                        Whichever comes first wins.
+                      </p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300">
+                        {customIntervalPreview
+                          ? `This task will be due ${customIntervalPreview}.`
+                          : "Add at least one interval."}
+                      </p>
+                    </fieldset>
                     <div>
                       <label className={labelClassName} htmlFor="custom-notes">
                         Notes (optional)
