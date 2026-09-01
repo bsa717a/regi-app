@@ -42,6 +42,7 @@ type AuthContextValue = {
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
+  refreshEmailVerification: () => Promise<boolean>;
   refreshProfile: () => Promise<AuthUserProfile | null>;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
 };
@@ -70,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [authEpoch, setAuthEpoch] = useState(0);
 
   const syncProfile = useEffectEvent(async (firebaseUser: User | null) => {
     if (!firebaseUser) {
@@ -154,6 +156,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user || user.emailVerified) return;
+
+    async function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return;
+      const current = getFirebaseAuth().currentUser;
+      if (!current || current.emailVerified) return;
+      try {
+        await current.reload();
+        if (!current.emailVerified) return;
+        setUser(getFirebaseAuth().currentUser);
+        setAuthEpoch((epoch) => epoch + 1);
+        const token = await current.getIdToken(true);
+        setIdToken(token);
+      } catch {
+        // Keep the unverified session; the banner still offers a resend.
+      }
+    }
+
+    function onVisible() {
+      void refreshIfVisible();
+    }
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [user]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -207,6 +240,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         await sendEmailVerification(current);
       },
+      async refreshEmailVerification() {
+        const current = getFirebaseAuth().currentUser;
+        if (!current) return false;
+        try {
+          await current.reload();
+        } catch {
+          return current.emailVerified;
+        }
+        setUser(getFirebaseAuth().currentUser);
+        setAuthEpoch((epoch) => epoch + 1);
+        if (current.emailVerified) {
+          try {
+            const token = await current.getIdToken(true);
+            setIdToken(token);
+          } catch {
+            // emailVerified is still true even if the token refresh fails.
+          }
+        }
+        return current.emailVerified;
+      },
       async refreshProfile() {
         const current = getFirebaseAuth().currentUser;
         if (!current) {
@@ -226,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return token;
       },
     }),
-    [user, profile, idToken, loading, profileLoading],
+    [user, profile, idToken, loading, profileLoading, authEpoch],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
