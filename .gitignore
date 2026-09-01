@@ -48,6 +48,7 @@ yarn-error.log*
 # Misc
 .turbo
 .vercel
+.firebase/
 *.tsbuildinfo
 
 /src/generated/prisma

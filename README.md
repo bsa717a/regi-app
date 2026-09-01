@@ -304,7 +304,9 @@ API restrictions: Identity Toolkit / Token Service and only Firebase APIs this a
 
 Firebase email links also embed the project’s original Web API key. After that key was deleted in the August 2026 rotation, the hosted handler at `regi-app-v1.firebaseapp.com/__/auth/action` fails with **“Try verifying your email again — Your request to verify your email has expired or the link has already been used.”** The one-time `oobCode` is still valid; only the key in the URL is dead.
 
-After deploying the in-app handler at `/auth/action`, point Firebase email templates at it: Authentication → Templates → **Customize action URL** → `https://regi-90502049802.us-central1.run.app/auth/action` (Identity Platform `notification.sendEmail.callbackUri`). The REGI page applies the code with the live browser key. Until that URL is saved, new emails still open the broken hosted page.
+Firebase currently rejects saving a custom action URL (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), including Cloud Run. A Hosting redirect lives at `https://regi-app-v1.web.app/auth/action` if that lock is ever lifted.
+
+Signed-in users tap **Verify now** in the app. That generates a rewritten `/auth/action` link and does not depend on the Firebase email template.
 
 **Close GitHub secret scanning alert:** after the key is restricted or rotated and plaintext is gone from `main` → Security → Secret scanning alerts → mark the Google API Key alert as **Revoked**.
 

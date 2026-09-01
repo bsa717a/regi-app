@@ -31,6 +31,17 @@ export function parseEmailActionParams(input: {
   };
 }
 
+export function rewriteFirebaseEmailActionLink(
+  link: string,
+  handlerOrigin: string,
+): string {
+  const source = new URL(link);
+  const dest = new URL(EMAIL_ACTION_PATH, handlerOrigin);
+  dest.search = source.search;
+  dest.hash = source.hash;
+  return dest.toString();
+}
+
 export function allowedEmailActionOrigins(): string[] {
   const origins = new Set<string>([PRODUCTION_ORIGIN]);
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
