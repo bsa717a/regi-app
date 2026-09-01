@@ -20,7 +20,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { fetchMe, fetchVerificationLink } from "@/lib/api/client";
+import { fetchMe, requestVerificationEmail } from "@/lib/api/client";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
 
 type SignUpInput = {
@@ -40,7 +40,7 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  resendVerificationEmail: () => Promise<string>;
+  resendVerificationEmail: () => Promise<void>;
   refreshEmailVerification: () => Promise<boolean>;
   refreshProfile: () => Promise<AuthUserProfile | null>;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
@@ -208,6 +208,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phone: phone.trim(),
         });
         setProfile(nextProfile);
+        try {
+          await requestVerificationEmail(token);
+        } catch {
+          // Account exists; the banner can resend if this first email fails.
+        }
       },
       async signIn(email, password) {
         const auth = getFirebaseAuth();
@@ -237,7 +242,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error("You must be signed in to verify your email.");
         }
         const token = await current.getIdToken();
-        return fetchVerificationLink(token);
+        const result = await requestVerificationEmail(token);
+        if (result.alreadyVerified) {
+          await current.reload();
+          setUser(getFirebaseAuth().currentUser);
+        }
       },
       async refreshEmailVerification() {
         const current = getFirebaseAuth().currentUser;

@@ -92,7 +92,7 @@ public/                # static assets, manifest, service worker
 
 - Channels: `push` | `email` | `sms` (SMS modeled only — never sent in MVP)
 - `DefaultNotificationService` — templates + prefs-aware dispatch
-- `EmailProvider` + `MockEmailProvider` (default) / `SendGridEmailProvider` when `NOTIFICATION_EMAIL_PROVIDER=sendgrid`
+- `EmailProvider` + `MockEmailProvider` (default) / `AzureMailEmailProvider` when `NOTIFICATION_EMAIL_PROVIDER=azure` (Microsoft Graph, same app as 4StudentLives) / `SendGridEmailProvider` when `sendgrid`
 - `FcmPushProvider` — Admin SDK `sendEachForMulticast` to tokens in `push_tokens` (set `NOTIFICATION_PUSH_PROVIDER=noop` to force the no-op)
 - Editable copy in `src/lib/notifications/templates.ts` (`template_key` + `{{variables}}`)
 
@@ -306,7 +306,7 @@ Firebase email links also embed the project’s original Web API key. After that
 
 Firebase currently rejects saving a custom action URL (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), including Cloud Run. A Hosting redirect lives at `https://regi-app-v1.web.app/auth/action` if that lock is ever lifted.
 
-Signed-in users tap **Verify now** in the app. That generates a rewritten `/auth/action` link and does not depend on the Firebase email template.
+Verification emails are sent by REGI, not Firebase’s hosted template. The server generates an `oobCode`, rewrites the handler to `/auth/action` on `NEXT_PUBLIC_APP_URL`, and emails that link. The app never returns the link to the browser — the user must open it from their inbox. Production uses Microsoft Graph (`NOTIFICATION_EMAIL_PROVIDER=azure`) with the 4StudentLives mail app; messages come from `noreply@4studentlives.com`. Credentials live in Secret Manager `regi-azure-mail` (`AZURE_MAIL_JSON`).
 
 **Close GitHub secret scanning alert:** after the key is restricted or rotated and plaintext is gone from `main` → Security → Secret scanning alerts → mark the Google API Key alert as **Revoked**.
 
@@ -338,7 +338,7 @@ postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/regi-app-v1:us-centr
 | `CRON_SECRET` | Secures `POST /api/cron/reminders` |
 | `GEMINI_API_KEY` | Registration card scan (Secret Manager) |
 | `GEMINI_MODEL` | Gemini model id (default `gemini-2.5-flash`) |
-| `NOTIFICATION_EMAIL_PROVIDER` + SendGrid vars | When using real email |
+| `NOTIFICATION_EMAIL_PROVIDER` + Azure Mail / SendGrid vars | Real email (`azure` in production) |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin (invite links, etc.) |
 
 ### Cloud Scheduler

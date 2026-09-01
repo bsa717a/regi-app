@@ -140,6 +140,13 @@ const TEMPLATES: Record<string, NotificationTemplate> = {
     text: "{{inviterEmail}} invited you to view registrations in {{householdName}} on REGI. Accept here (sign in with this email): {{inviteUrl}}",
     html: "<p><strong>{{inviterEmail}}</strong> invited you to view registrations in <strong>{{householdName}}</strong> on REGI.</p><p><a href=\"{{inviteUrl}}\">Accept the invite</a> — sign in with this email address.</p><p>As a viewer you can see registrations, statuses, and documents, and you'll get reminders. You won't be able to edit or renew.</p>",
   },
+  verify_email: {
+    key: "verify_email",
+    tone: "friendly",
+    subject: "Confirm your email for REGI",
+    text: "Confirm this email address to finish setting up your REGI account. Open this link from your inbox (it expires after a short time): {{verifyUrl}}",
+    html: "<p>Confirm this email address to finish setting up your REGI account.</p><p><a href=\"{{verifyUrl}}\">Verify email</a></p><p>If you did not create a REGI account, you can ignore this message.</p>",
+  },
   maintenance_due: {
     key: "maintenance_due",
     tone: "nudge",

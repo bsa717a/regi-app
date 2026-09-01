@@ -6,24 +6,27 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export function EmailVerificationBanner() {
   const { user, resendVerificationEmail } = useAuth();
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!user || user.emailVerified) {
     return null;
   }
 
-  async function handleVerify() {
+  async function handleResend() {
     setSending(true);
     setError(null);
+    setSent(false);
     try {
-      const url = await resendVerificationEmail();
-      window.location.assign(url);
+      await resendVerificationEmail();
+      setSent(true);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Could not open the verification page.",
+          : "Could not send a verification email.",
       );
+    } finally {
       setSending(false);
     }
   }
@@ -35,18 +38,24 @@ export function EmailVerificationBanner() {
     >
       <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p>
-          Confirm your email to unlock renewals. You can keep browsing in the
-          meantime.
+          Confirm {user.email ?? "your email"} to unlock renewals. Use the
+          Verify link in your inbox — we can't confirm an address from this
+          page.
         </p>
         <button
           type="button"
-          onClick={() => void handleVerify()}
+          onClick={() => void handleResend()}
           disabled={sending}
           className="shrink-0 rounded-lg bg-amber-900 px-3 py-2 text-left text-sm font-medium text-amber-50 transition hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 disabled:opacity-60 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100 dark:focus-visible:outline-amber-200 sm:text-center"
         >
-          {sending ? "Opening…" : "Verify now"}
+          {sending ? "Sending…" : "Resend email"}
         </button>
       </div>
+      {sent ? (
+        <p className="mx-auto mt-2 max-w-3xl text-teal-800 dark:text-teal-300">
+          Verification email sent. Check your inbox and spam folder.
+        </p>
+      ) : null}
       {error ? (
         <p
           className="mx-auto mt-2 max-w-3xl text-red-700 dark:text-rose-300"
