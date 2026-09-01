@@ -5,6 +5,7 @@ import {
   isSafeContinueUrl,
   mapEmailActionError,
   parseEmailActionParams,
+  rewriteFirebaseEmailActionLink,
 } from "@/lib/auth/emailAction";
 
 describe("parseEmailActionParams", () => {
@@ -34,6 +35,18 @@ describe("parseEmailActionParams", () => {
       oobCode: "",
       continueUrl: null,
     });
+  });
+});
+
+describe("rewriteFirebaseEmailActionLink", () => {
+  it("moves the oob code onto the REGI handler origin", () => {
+    const rewritten = rewriteFirebaseEmailActionLink(
+      "https://regi-app-v1.firebaseapp.com/__/auth/action?mode=verifyEmail&oobCode=abc&apiKey=dead",
+      "https://regi-90502049802.us-central1.run.app",
+    );
+    expect(rewritten).toBe(
+      "https://regi-90502049802.us-central1.run.app/auth/action?mode=verifyEmail&oobCode=abc&apiKey=dead",
+    );
   });
 });
 

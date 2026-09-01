@@ -6,27 +6,24 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export function EmailVerificationBanner() {
   const { user, resendVerificationEmail } = useAuth();
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!user || user.emailVerified) {
     return null;
   }
 
-  async function handleResend() {
+  async function handleVerify() {
     setSending(true);
     setError(null);
-    setMessage(null);
     try {
-      await resendVerificationEmail();
-      setMessage("Verification email sent. Check your inbox.");
+      const url = await resendVerificationEmail();
+      window.location.assign(url);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Could not send verification email.",
+          : "Could not open the verification page.",
       );
-    } finally {
       setSending(false);
     }
   }
@@ -43,18 +40,13 @@ export function EmailVerificationBanner() {
         </p>
         <button
           type="button"
-          onClick={() => void handleResend()}
+          onClick={() => void handleVerify()}
           disabled={sending}
           className="shrink-0 rounded-lg bg-amber-900 px-3 py-2 text-left text-sm font-medium text-amber-50 transition hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 disabled:opacity-60 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100 dark:focus-visible:outline-amber-200 sm:text-center"
         >
-          {sending ? "Sending…" : "Resend email"}
+          {sending ? "Opening…" : "Verify now"}
         </button>
       </div>
-      {message ? (
-        <p className="mx-auto mt-2 max-w-3xl text-amber-900 dark:text-amber-100">
-          {message}
-        </p>
-      ) : null}
       {error ? (
         <p
           className="mx-auto mt-2 max-w-3xl text-red-700 dark:text-rose-300"

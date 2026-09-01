@@ -13,7 +13,6 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   onIdTokenChanged,
-  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -21,7 +20,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { fetchMe } from "@/lib/api/client";
+import { fetchMe, fetchVerificationLink } from "@/lib/api/client";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
 
 type SignUpInput = {
@@ -41,7 +40,7 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  resendVerificationEmail: () => Promise<void>;
+  resendVerificationEmail: () => Promise<string>;
   refreshEmailVerification: () => Promise<boolean>;
   refreshProfile: () => Promise<AuthUserProfile | null>;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
@@ -202,7 +201,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
         );
         await updateProfile(credential.user, { displayName: name.trim() });
-        await sendEmailVerification(credential.user);
         const token = await credential.user.getIdToken(true);
         setIdToken(token);
         const nextProfile = await fetchMe(token, {
@@ -238,7 +236,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!current) {
           throw new Error("You must be signed in to verify your email.");
         }
-        await sendEmailVerification(current);
+        const token = await current.getIdToken();
+        return fetchVerificationLink(token);
       },
       async refreshEmailVerification() {
         const current = getFirebaseAuth().currentUser;

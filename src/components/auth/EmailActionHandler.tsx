@@ -130,7 +130,8 @@ export function EmailActionHandler() {
     setResent(false);
     setError(null);
     try {
-      await resendVerificationEmail();
+      const url = await resendVerificationEmail();
+      window.location.assign(url);
       setResent(true);
     } catch (err) {
       setError(mapEmailActionError(err));
