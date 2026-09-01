@@ -93,12 +93,16 @@ export async function apiFetch<T>(
   return (await response.json()) as T;
 }
 
-export async function fetchVerificationLink(token: string): Promise<string> {
-  const data = await apiFetch<{ url: string }>("/api/auth/verification-link", {
-    method: "POST",
-    token,
-  });
-  return data.url;
+export async function requestVerificationEmail(token: string): Promise<{
+  alreadyVerified?: boolean;
+}> {
+  return apiFetch<{ sent: boolean; alreadyVerified?: boolean }>(
+    "/api/auth/verification-email",
+    {
+      method: "POST",
+      token,
+    },
+  );
 }
 
 export async function fetchMe(

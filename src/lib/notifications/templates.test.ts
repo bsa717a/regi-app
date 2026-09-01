@@ -77,3 +77,14 @@ describe("reminder templates", () => {
     expect(reminderTemplateKeyForDays(-6)).toBe("post_expiration");
   });
 });
+
+describe("verify_email", () => {
+  it("includes the rewritten verification URL", () => {
+    const rendered = renderNotificationTemplate("verify_email", {
+      verifyUrl: "https://example.com/auth/action?oobCode=abc",
+    });
+    expect(rendered.subject).toMatch(/confirm your email/i);
+    expect(rendered.text).toContain("https://example.com/auth/action?oobCode=abc");
+    expect(rendered.html).toContain("https://example.com/auth/action?oobCode=abc");
+  });
+});

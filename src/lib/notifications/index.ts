@@ -31,6 +31,10 @@ export {
   createEmailProviderFromEnv,
 } from "./SendGridEmailProvider";
 export {
+  AzureMailEmailProvider,
+  azureMailConfigFromEnv,
+} from "./AzureMailEmailProvider";
+export {
   formatTemplate,
   formatNotificationTitle,
 } from "./formatTemplate";

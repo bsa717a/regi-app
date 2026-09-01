@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
+import {
+  EmailDeliveryNotConfiguredError,
+  sendVerificationEmail,
+} from "@/lib/auth/sendVerificationEmail";
 import {
   clientKeyFromRequest,
   rateLimit,
   rateLimitHeaders,
 } from "@/lib/auth/rateLimit";
-import { rewriteFirebaseEmailActionLink } from "@/lib/auth/emailAction";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { resolveAppOrigin } from "@/lib/household/appOrigin";
+import { createEmailProviderFromEnv } from "@/lib/notifications/SendGridEmailProvider";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +20,7 @@ const LIMIT = 8;
 
 export async function POST(request: Request) {
   const limited = await rateLimit({
-    key: clientKeyFromRequest(request, "api:verification-link"),
+    key: clientKeyFromRequest(request, "api:verification-email"),
     limit: LIMIT,
     windowMs: WINDOW_MS,
   });
@@ -40,24 +43,22 @@ export async function POST(request: Request) {
   }
 
   if (auth.decoded.email_verified) {
-    return NextResponse.json({
-      url: `${resolveAppOrigin(request)}/garage`,
-      alreadyVerified: true,
-    });
+    return NextResponse.json({ sent: true, alreadyVerified: true });
   }
 
   try {
-    const firebaseLink =
-      await getFirebaseAdminAuth().generateEmailVerificationLink(email);
-    return NextResponse.json({
-      url: rewriteFirebaseEmailActionLink(
-        firebaseLink,
-        resolveAppOrigin(request),
-      ),
+    await sendVerificationEmail({
+      email,
+      appOrigin: resolveAppOrigin(request),
+      emailProvider: createEmailProviderFromEnv(),
     });
-  } catch {
+    return NextResponse.json({ sent: true });
+  } catch (err) {
+    if (err instanceof EmailDeliveryNotConfiguredError) {
+      return NextResponse.json({ error: err.message }, { status: 503 });
+    }
     return NextResponse.json(
-      { error: "Could not create a verification link. Please try again." },
+      { error: "Could not send a verification email. Please try again." },
       { status: 502 },
     );
   }
