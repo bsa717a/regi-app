@@ -101,6 +101,8 @@ function serializeWithoutRules(
     status: days < 0 ? "Expired" : "Current",
     daysUntilExpiration: days,
     countdown: formatExpirationCountdown(registration.registrationExpiresOn),
+    ownerManualUrl: registration.ownerManualUrl,
+    ownerManualSource: registration.ownerManualSource,
   };
 }
 

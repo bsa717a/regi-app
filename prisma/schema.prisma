@@ -86,6 +86,31 @@ enum RegiChatRole {
   @@map("regi_chat_role")
 }
 
+enum OwnerManualSource {
+  free
+  paid
+
+  @@map("owner_manual_source")
+}
+
+enum ManualLookupStatus {
+  pending_payment
+  paid
+  fulfilled
+  cancelled
+  failed
+
+  @@map("manual_lookup_status")
+}
+
+enum RecallStatus {
+  open
+  completed
+  not_applicable
+
+  @@map("recall_status")
+}
+
 enum PaymentStatus {
   pending
   requires_action
@@ -125,18 +150,28 @@ model User {
   payments              Payment[]
   pushTokens            PushToken[]
   regiChatMessages      RegiChatMessage[]
+  manualLookupRequests  ManualLookupRequest[] @relation("ManualLookupRequester")
 
   @@map("users")
 }
 
-/// FCM web-push device tokens for a user (one row per browser/device).
+enum PushPlatform {
+  web
+  ios
+  android
+
+  @@map("push_platform")
+}
+
+/// FCM device tokens for a user (one row per browser/device).
 model PushToken {
-  id         String   @id @default(cuid())
-  userId     String   @map("user_id")
-  token      String   @unique
-  userAgent  String?  @map("user_agent")
-  createdAt  DateTime @default(now()) @map("created_at")
-  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  id         String       @id @default(cuid())
+  userId     String       @map("user_id")
+  token      String       @unique
+  platform   PushPlatform @default(web)
+  userAgent  String?      @map("user_agent")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  lastSeenAt DateTime     @default(now()) @map("last_seen_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -196,6 +231,11 @@ model Registration {
   /// Type-specific fields (HIN, OHV class, trailer weight, boat length/HP, etc.).
   details               Json             @default("{}")
   registrationExpiresOn DateTime         @db.Date @map("registration_expires_on")
+  ownerManualUrl        String?          @map("owner_manual_url")
+  ownerManualSource     OwnerManualSource? @map("owner_manual_source")
+  ownerManualFoundAt    DateTime?        @map("owner_manual_found_at")
+  recallsCheckedAt      DateTime?        @map("recalls_checked_at")
+  ownerManualDocumentId String?          @unique @map("owner_manual_document_id")
   createdBy             String           @map("created_by")
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
@@ -209,6 +249,9 @@ model Registration {
   maintenanceTasks MaintenanceTask[]
   maintenanceLogs  MaintenanceLog[]
   usageReadings    UsageReading[]
+  manualLookups    ManualLookupRequest[]
+  recalls          RegistrationRecall[]
+  ownerManualDocument Document? @relation("RegistrationOwnerManual", fields: [ownerManualDocumentId], references: [id], onDelete: SetNull)
 
   @@index([householdId])
   @@index([createdBy])
@@ -285,6 +328,36 @@ model UsageReading {
   @@map("usage_readings")
 }
 
+/// NHTSA safety recall campaign cached for a registration (year/make/model lookup).
+model RegistrationRecall {
+  id                   String       @id @default(cuid())
+  registrationId       String       @map("registration_id")
+  nhtsaCampaignNumber  String       @map("nhtsa_campaign_number")
+  manufacturer         String?
+  component            String?
+  summary              String?
+  consequence          String?
+  remedy               String?
+  notesFromNhtsa       String?      @map("notes_from_nhtsa")
+  reportReceivedDate   String?      @map("report_received_date")
+  parkIt               Boolean      @default(false) @map("park_it")
+  parkOutside          Boolean      @default(false) @map("park_outside")
+  overTheAirUpdate     Boolean      @default(false) @map("over_the_air_update")
+  status               RecallStatus @default(open)
+  userNotes            String?      @map("user_notes")
+  completedAt          DateTime?    @map("completed_at")
+  lastSeenAt           DateTime     @map("last_seen_at")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, nhtsaCampaignNumber])
+  @@index([registrationId])
+  @@index([registrationId, status])
+  @@map("registration_recalls")
+}
+
 model RegistrationPhoto {
   id             String   @id @default(cuid())
   registrationId String   @map("registration_id")
@@ -297,6 +370,28 @@ model RegistrationPhoto {
 
   @@index([registrationId])
   @@map("registration_photos")
+}
+
+/// Paid or free owner-manual lookup attempt for a registration.
+model ManualLookupRequest {
+  id                    String             @id @default(cuid())
+  registrationId        String             @map("registration_id")
+  requestedBy           String             @map("requested_by")
+  status                ManualLookupStatus @default(pending_payment)
+  feeCents              Int                @map("fee_cents")
+  provider              String?
+  resultUrl             String?            @map("result_url")
+  stripePaymentIntentId String?            @map("stripe_payment_intent_id")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  requester    User         @relation("ManualLookupRequester", fields: [requestedBy], references: [id], onDelete: Restrict)
+
+  @@index([registrationId])
+  @@index([requestedBy])
+  @@index([status])
+  @@map("manual_lookup_requests")
 }
 
 /// State Engine config lives in `config` jsonb. See src/lib/stateEngine/types.ts.
@@ -353,6 +448,7 @@ model Document {
   registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   renewal      Renewal?     @relation(fields: [renewalId], references: [id], onDelete: SetNull)
   uploader     User         @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+  ownerManualRegistration Registration? @relation("RegistrationOwnerManual")
 
   @@index([registrationId])
   @@index([renewalId])

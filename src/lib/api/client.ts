@@ -8,6 +8,7 @@ import type {
   AdminStatsDto,
 } from "@/lib/admin/types";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
+import { DELETE_ACCOUNT_CONFIRMATION } from "@/lib/account/constants";
 import type { NotificationPrefs } from "@/lib/auth/notificationPrefs";
 import type {
   CreateDocumentRequest,
@@ -41,6 +42,11 @@ import type {
   ReceiptScanDto,
   UsageReadingDto,
 } from "@/lib/maintenance/types";
+import type {
+  PatchRecallInput,
+  RecallsOverviewDto,
+  RegistrationRecallDto,
+} from "@/lib/recalls/types";
 
 export class ApiError extends Error {
   status: number;
@@ -87,6 +93,18 @@ export async function apiFetch<T>(
   return (await response.json()) as T;
 }
 
+export async function requestVerificationEmail(token: string): Promise<{
+  alreadyVerified?: boolean;
+}> {
+  return apiFetch<{ sent: boolean; alreadyVerified?: boolean }>(
+    "/api/auth/verification-email",
+    {
+      method: "POST",
+      token,
+    },
+  );
+}
+
 export async function fetchMe(
   token: string,
   extras?: { name?: string; phone?: string },
@@ -116,14 +134,23 @@ export async function updateMe(
   return data.user;
 }
 
+export async function deleteMyAccount(token: string): Promise<void> {
+  await apiFetch<{ ok: true }>("/api/me", {
+    method: "DELETE",
+    token,
+    body: { confirm: DELETE_ACCOUNT_CONFIRMATION },
+  });
+}
+
 export async function registerPushDeviceToken(
   authToken: string,
   fcmToken: string,
-): Promise<{ ok: true; id: string; created: boolean }> {
+  platform: "web" | "ios" | "android" = "web",
+): Promise<{ ok: true; id: string; created: boolean; platform: string }> {
   return apiFetch("/api/push/register", {
     method: "POST",
     token: authToken,
-    body: { token: fcmToken },
+    body: { token: fcmToken, platform },
   });
 }
 
@@ -165,6 +192,102 @@ export async function decodeVinApi(
       method: "POST",
       token,
       body: { vin },
+    },
+  );
+}
+
+export type ManualLookupApiSaved = {
+  ok: true;
+  kind: "saved";
+  documentId: string;
+  filename: string;
+  source: "free" | "paid";
+  cached?: boolean;
+};
+
+export type ManualLookupApiPdfCandidate = {
+  ok: true;
+  kind: "pdf";
+  previewUrl: string;
+  filename: string;
+  libraryUrl: string;
+  libraryLabel: string;
+};
+
+export type ManualLookupApiLibrary = {
+  ok: true;
+  kind: "library";
+  url: string;
+  label: string;
+  message: string;
+};
+
+export type ManualLookupApiSuccess =
+  | ManualLookupApiSaved
+  | ManualLookupApiPdfCandidate
+  | ManualLookupApiLibrary;
+
+export type ManualLookupApiFailure = {
+  ok: false;
+  error?: string;
+  code?: string;
+};
+
+export async function lookupOwnerManualApi(
+  token: string,
+  registrationId: string,
+): Promise<ManualLookupApiSuccess | ManualLookupApiFailure> {
+  return apiFetch<ManualLookupApiSuccess | ManualLookupApiFailure>(
+    `/api/registrations/${encodeURIComponent(registrationId)}/manual/lookup`,
+    {
+      method: "POST",
+      token,
+      body: {},
+    },
+  );
+}
+
+export async function confirmOwnerManualApi(
+  token: string,
+  registrationId: string,
+  input: { pdfUrl: string; source?: "free" | "paid" },
+): Promise<ManualLookupApiSaved | ManualLookupApiFailure> {
+  return apiFetch<ManualLookupApiSaved | ManualLookupApiFailure>(
+    `/api/registrations/${encodeURIComponent(registrationId)}/manual/confirm`,
+    {
+      method: "POST",
+      token,
+      body: input,
+    },
+  );
+}
+
+export type ManualPurchaseApiSuccess =
+  | (ManualLookupApiSaved & { charged: boolean })
+  | (ManualLookupApiPdfCandidate & { charged: boolean });
+
+export type ManualPurchaseApiPending = {
+  ok: false;
+  charged: true;
+  pending: true;
+  message: string;
+  feeCents?: number;
+};
+
+export async function purchaseOwnerManualApi(
+  token: string,
+  registrationId: string,
+): Promise<
+  ManualPurchaseApiSuccess | ManualPurchaseApiPending | { ok: false; error: string }
+> {
+  return apiFetch<
+    ManualPurchaseApiSuccess | ManualPurchaseApiPending | { ok: false; error: string }
+  >(
+    `/api/registrations/${encodeURIComponent(registrationId)}/manual/purchase`,
+    {
+      method: "POST",
+      token,
+      body: {},
     },
   );
 }
@@ -895,6 +1018,44 @@ export async function confirmMaintenanceReceipt(
     { method: "POST", token, body: input },
   );
   return data.log;
+}
+
+export async function getRecallsOverview(
+  token: string,
+  registrationId: string,
+): Promise<RecallsOverviewDto> {
+  const data = await apiFetch<{ recalls: RecallsOverviewDto }>(
+    `/api/registrations/${registrationId}/recalls`,
+    { token },
+  );
+  return data.recalls;
+}
+
+export async function refreshRecalls(
+  token: string,
+  registrationId: string,
+): Promise<RecallsOverviewDto> {
+  const data = await apiFetch<{
+    recalls: RecallsOverviewDto;
+    sync: { inserted: number; updated: number; total: number };
+  }>(`/api/registrations/${registrationId}/recalls/refresh`, {
+    method: "POST",
+    token,
+  });
+  return data.recalls;
+}
+
+export async function updateRecall(
+  token: string,
+  registrationId: string,
+  recallId: string,
+  input: PatchRecallInput,
+): Promise<RegistrationRecallDto> {
+  const data = await apiFetch<{ recall: RegistrationRecallDto }>(
+    `/api/registrations/${registrationId}/recalls/${recallId}`,
+    { method: "PATCH", token, body: input },
+  );
+  return data.recall;
 }
 
 /** PUT file bytes directly to the private GCS signed URL. */

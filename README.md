@@ -92,7 +92,7 @@ public/                # static assets, manifest, service worker
 
 - Channels: `push` | `email` | `sms` (SMS modeled only — never sent in MVP)
 - `DefaultNotificationService` — templates + prefs-aware dispatch
-- `EmailProvider` + `MockEmailProvider` (default) / `SendGridEmailProvider` when `NOTIFICATION_EMAIL_PROVIDER=sendgrid`
+- `EmailProvider` + `MockEmailProvider` (default) / `AzureMailEmailProvider` when `NOTIFICATION_EMAIL_PROVIDER=azure` (Microsoft Graph, same app as 4StudentLives) / `SendGridEmailProvider` when `sendgrid`
 - `FcmPushProvider` — Admin SDK `sendEachForMulticast` to tokens in `push_tokens` (set `NOTIFICATION_PUSH_PROVIDER=noop` to force the no-op)
 - Editable copy in `src/lib/notifications/templates.ts` (`template_key` + `{{variables}}`)
 
@@ -156,12 +156,75 @@ To point back at production Cloud Run: `npm run cap:sync`.
 
 ### Phase 2 native features (4.2)
 
-- **Face ID / Touch ID unlock** — Settings → Security (simulator: Features → Face ID → Enrolled)
-- **Offline shell** — local `capacitor-www` page if `/api/health` fails; in-app overlay if the network drops later
-- **Usage strings** — camera, photos, Face ID in `ios/App/App/Info.plist`
-- **Push (APNs)** — plugin installed; token registration is the next phase (needs Firebase iOS app + APNs key)
+- **Face ID / Touch ID unlock** — Settings → Security (Device Hub: enable biometrics via `devicectl`)
+- **Offline / chrome** — in-app offline overlay; usage strings in `Info.plist`
 
-Do not commit secrets or Xcode user state.
+### Phase 3 — native push (APNs → FCM)
+
+Push on iOS uses `@capacitor-firebase/messaging` (not web VAPID). Tokens are stored in `push_tokens.platform` (`web` | `ios` | `android`).
+
+**One-time Apple / Firebase setup (required before push works on device):**
+
+1. Apple Developer → Identifiers → App ID `app.regi.ios` → enable **Push Notifications**
+2. Create an **APNs Auth Key** (`.p8`) and note Key ID + Team ID
+3. Firebase Console → Project settings → add an **iOS app** with bundle ID `app.regi.ios`
+4. Upload the APNs Auth Key under Cloud Messaging
+5. Download `GoogleService-Info.plist` into `ios/App/App/` (gitignored) and add it to the **App** target’s Copy Bundle Resources (missing this causes a black screen on launch — Firebase Messaging crashes without the plist in the app bundle)
+6. In Xcode: Signing & Capabilities → confirm **Push Notifications** (+ Background Modes → Remote notifications)
+7. `npm run cap:sync` (or `cap:sync:local` for localhost) then Stop → Run in Xcode
+
+APNs entitlement: Debug uses `App.entitlements` (`aps-environment` = `development`); Release/Archive uses `AppRelease.entitlements` (`production`) for TestFlight / App Store.
+
+**In-app:** Settings → Push toggle. Native path requests notification permission, fetches an FCM token, and `POST /api/push/register` with `platform: "ios"`.
+
+Simulator note: remote push often needs a **physical iPhone**; local permission/token flows can still be exercised.
+
+### Phase 4 — legal, privacy, account deletion
+
+Public HTTPS pages (required before App Review):
+
+- Privacy Policy: `https://YOUR_HOST/privacy`
+- Terms of Use: `https://YOUR_HOST/terms`
+
+Production examples: [Privacy](https://regi-90502049802.us-central1.run.app/privacy), [Terms](https://regi-90502049802.us-central1.run.app/terms).
+
+**In-app:** Settings → Legal links; Settings → Delete account (Guideline 5.1.1(v)). Signup requires agreeing to both documents.
+
+**iOS:** `Info.plist` usage strings (camera, photos, Face ID) and `PrivacyInfo.xcprivacy` in the App target. App Store Connect Nutrition Labels are listed in `src/lib/legal/appStorePrivacyLabels.ts` for Phase 5.
+
+Optional: `NEXT_PUBLIC_LEGAL_CONTACT_EMAIL` (defaults to `support@regi.app`).
+
+### Phase 5 — App Store Connect (listing only, not submission)
+
+Copy-paste values live in [`src/lib/legal/appStoreListing.ts`](src/lib/legal/appStoreListing.ts). Filling Connect **does not** put REGI on the App Store.
+
+| Field | Value |
+| ----- | ----- |
+| Bundle ID | `app.regi.ios` |
+| Name / subtitle | REGI / Never miss a registration |
+| Category | Lifestyle (secondary: Productivity) |
+| Privacy | https://regi-90502049802.us-central1.run.app/privacy |
+| Support | https://regi-90502049802.us-central1.run.app/support |
+| Terms | https://regi-90502049802.us-central1.run.app/terms |
+| Age rating | 4+ (see `APP_STORE_AGE_RATING`) |
+| Nutrition Labels | `src/lib/legal/appStorePrivacyLabels.ts` |
+| Encryption | HTTPS-only exemption (`ITSAppUsesNonExemptEncryption = false`) |
+| Devices | iPhone only (avoids iPad 13″ screenshot requirement) |
+| App icon | 1024×1024 PNG, no alpha (already in the iOS asset catalog) |
+
+**In Connect**
+
+1. Apps → **+** → iOS, bundle `app.regi.ios`, SKU `regi-ios`.
+2. Paste name, subtitle, description, keywords, What’s New, URLs from `appStoreListing.ts`.
+3. App Privacy → Nutrition Labels (not used for tracking; all purposes App Functionality).
+4. Age rating questionnaire.
+5. Screenshots: one **6.9″** portrait set from the Capacitor app (1320×2868 preferred). Shot list is in `APP_STORE_SCREENSHOTS`.
+6. App Review Information: your phone/email; demo account (create a **verified Firebase user** on production and populate a garage — do not use `demo@regi.app` from local seed; do not commit the password).
+7. Notes for Review: `APP_STORE_REVIEW_NOTES`.
+
+Do **not** click Submit for Review yet — that is Phase 6 (TestFlight + build upload).
+
+Do not commit secrets, `GoogleService-Info.plist`, or Xcode user state.
 
 ## Renewal reminders (daily cron)
 
@@ -230,7 +293,20 @@ gcloud secrets add-iam-policy-binding regi-firebase-web-api-key \
   --role="roles/secretmanager.secretAccessor"
 ```
 
-**Restrict / rotate the key (after a leak):** GCP Console → APIs & Services → Credentials → browser key for `regi-app-v1`. Prefer create a new key → store in Secret Manager → deploy → disable the old key. Application restrictions: HTTP referrers for `https://regi-90502049802.us-central1.run.app/*` (and localhost if needed). API restrictions: Identity Toolkit / Token Service and only Firebase APIs this app uses. Then check Metrics/Logs for unexpected usage.
+**Restrict / rotate the key (after a leak):** GCP Console → APIs & Services → Credentials → browser key for `regi-app-v1`. Prefer create a new key → store in Secret Manager → deploy → disable the old key. Application restrictions: HTTP referrers for:
+
+- `https://regi-90502049802.us-central1.run.app/*`
+- `https://regi-app-v1.firebaseapp.com/*` (required — Firebase email verification / password-reset links open here)
+- `https://regi-app-v1.web.app/*`
+- `http://localhost:8080/*` and `http://localhost:3000/*` if you sign in locally
+
+API restrictions: Identity Toolkit / Token Service and only Firebase APIs this app uses. Then check Metrics/Logs for unexpected usage.
+
+Firebase email links also embed the project’s original Web API key. After that key was deleted in the August 2026 rotation, the hosted handler at `regi-app-v1.firebaseapp.com/__/auth/action` fails with **“Try verifying your email again — Your request to verify your email has expired or the link has already been used.”** The one-time `oobCode` is still valid; only the key in the URL is dead.
+
+Firebase currently rejects saving a custom action URL (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), including Cloud Run. A Hosting redirect lives at `https://regi-app-v1.web.app/auth/action` if that lock is ever lifted.
+
+Verification emails are sent by REGI, not Firebase’s hosted template. The server generates an `oobCode`, rewrites the handler to `/auth/action` on `NEXT_PUBLIC_APP_URL`, and emails that link. The app never returns the link to the browser — the user must open it from their inbox. Production uses Microsoft Graph (`NOTIFICATION_EMAIL_PROVIDER=azure`) with the 4StudentLives mail app; messages come from `noreply@4studentlives.com`. Credentials live in Secret Manager `regi-azure-mail` (`AZURE_MAIL_JSON`).
 
 **Close GitHub secret scanning alert:** after the key is restricted or rotated and plaintext is gone from `main` → Security → Secret scanning alerts → mark the Google API Key alert as **Revoked**.
 
@@ -262,7 +338,7 @@ postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/regi-app-v1:us-centr
 | `CRON_SECRET` | Secures `POST /api/cron/reminders` |
 | `GEMINI_API_KEY` | Registration card scan (Secret Manager) |
 | `GEMINI_MODEL` | Gemini model id (default `gemini-2.5-flash`) |
-| `NOTIFICATION_EMAIL_PROVIDER` + SendGrid vars | When using real email |
+| `NOTIFICATION_EMAIL_PROVIDER` + Azure Mail / SendGrid vars | Real email (`azure` in production) |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin (invite links, etc.) |
 
 ### Cloud Scheduler

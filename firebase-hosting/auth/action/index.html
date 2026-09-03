@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>REGI email confirmation</title>
+    <script>
+      (function () {
+        var dest =
+          "https://regi-90502049802.us-central1.run.app/auth/action" +
+          window.location.search +
+          window.location.hash;
+        window.location.replace(dest);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>
+      <a
+        href="https://regi-90502049802.us-central1.run.app/auth/action"
+        id="continue"
+        >Continue to REGI</a
+      >
+    </p>
+    <script>
+      document.getElementById("continue").href =
+        "https://regi-90502049802.us-central1.run.app/auth/action" +
+        window.location.search +
+        window.location.hash;
+    </script>
+  </body>
+</html>

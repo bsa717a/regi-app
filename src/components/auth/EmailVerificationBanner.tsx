@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export function EmailVerificationBanner() {
   const { user, resendVerificationEmail } = useAuth();
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!user || user.emailVerified) {
@@ -16,15 +16,15 @@ export function EmailVerificationBanner() {
   async function handleResend() {
     setSending(true);
     setError(null);
-    setMessage(null);
+    setSent(false);
     try {
       await resendVerificationEmail();
-      setMessage("Verification email sent. Check your inbox.");
+      setSent(true);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Could not send verification email.",
+          : "Could not send a verification email.",
       );
     } finally {
       setSending(false);
@@ -38,8 +38,9 @@ export function EmailVerificationBanner() {
     >
       <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p>
-          Confirm your email to unlock renewals. You can keep browsing in the
-          meantime.
+          Confirm {user.email ?? "your email"} to unlock renewals. Use the
+          Verify link in your inbox — we can't confirm an address from this
+          page.
         </p>
         <button
           type="button"
@@ -50,9 +51,9 @@ export function EmailVerificationBanner() {
           {sending ? "Sending…" : "Resend email"}
         </button>
       </div>
-      {message ? (
-        <p className="mx-auto mt-2 max-w-3xl text-amber-900 dark:text-amber-100">
-          {message}
+      {sent ? (
+        <p className="mx-auto mt-2 max-w-3xl text-teal-800 dark:text-teal-300">
+          Verification email sent. Check your inbox and spam folder.
         </p>
       ) : null}
       {error ? (

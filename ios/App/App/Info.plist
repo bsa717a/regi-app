@@ -82,12 +82,18 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>REGI uses Face ID to unlock your garage and renewals on this device.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>REGI uses the camera to capture registration cards, receipts, and documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>REGI lets you choose existing photos of registration cards and receipts.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

@@ -10,6 +10,7 @@ import {
   buildUploadSignedUrlConfig,
   createDownloadSignedUrl,
   createUploadSignedUrl,
+  deletePrefix,
 } from "@/lib/storage/gcs";
 
 describe("signed URL option construction", () => {
@@ -93,5 +94,16 @@ describe("signed URL option construction", () => {
       responseDisposition: 'attachment; filename="a.pdf"',
     });
     expect(result.downloadUrl).toContain("signed-download");
+  });
+});
+
+describe("deletePrefix", () => {
+  it("refuses prefixes that are not a single household folder", async () => {
+    await expect(deletePrefix("other/")).rejects.toThrow(/household path/);
+    await expect(deletePrefix("households/")).rejects.toThrow(/household path/);
+    await expect(deletePrefix("households/hh")).rejects.toThrow(/household path/);
+    await expect(deletePrefix("households/../x/")).rejects.toThrow(
+      /household path/,
+    );
   });
 });

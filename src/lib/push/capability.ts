@@ -18,13 +18,19 @@ export type PushCapability =
       message: string;
     };
 
-/** Explain whether this browser can enable push (without prompting). */
+/** Explain whether this client can enable push (without prompting). */
 export function getPushCapability(options?: {
   vapidKey?: string | null;
   notificationPermission?: NotificationPermission | "unsupported";
   hasNotificationApi?: boolean;
   hasServiceWorker?: boolean;
+  /** Capacitor iOS/Android — uses native FCM, not web VAPID. */
+  isNativeApp?: boolean;
 }): PushCapability {
+  if (options?.isNativeApp) {
+    return { ok: true };
+  }
+
   const vapidOk = isVapidConfigured(options?.vapidKey);
   if (!vapidOk) {
     return {

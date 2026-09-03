@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isRegistrationDocumentGcsPath,
   isVehiclePhotoGcsPath,
+  householdGcsPrefix,
 } from "@/lib/storage/gcsPaths";
 
 describe("gcsPaths", () => {
@@ -31,5 +32,11 @@ describe("gcsPaths", () => {
         { householdId: "hh", registrationId: "reg_1" },
       ),
     ).toBe(false);
+  });
+
+  it("builds a trailing-slash household prefix and rejects unsafe ids", () => {
+    expect(householdGcsPrefix("hh_1")).toBe("households/hh_1/");
+    expect(() => householdGcsPrefix("../secret")).toThrow(/Invalid household id/);
+    expect(() => householdGcsPrefix("hh/other")).toThrow(/Invalid household id/);
   });
 });

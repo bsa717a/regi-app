@@ -12,7 +12,9 @@ import {
   linkClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { LegalLinks } from "@/components/legal/LegalLinks";
 import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
+import { PRIVACY_PATH, TERMS_PATH } from "@/lib/legal/constants";
 
 function mapAuthError(error: unknown): string {
   if (error instanceof FirebaseError) {
@@ -38,12 +40,17 @@ export function SignupForm() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    if (!agreed) {
+      setError("Please agree to the Terms of Use and Privacy Policy.");
+      return;
+    }
     setSubmitting(true);
     try {
       await signUp({ name, email, phone, password });
@@ -60,12 +67,15 @@ export function SignupForm() {
       title="Create your account"
       subtitle="One screen. Under a minute. Then never miss a registration again."
       footer={
-        <p>
-          Already have an account?{" "}
-          <Link href="/login" className={linkClassName}>
-            Sign in
-          </Link>
-        </p>
+        <>
+          <p>
+            Already have an account?{" "}
+            <Link href="/login" className={linkClassName}>
+              Sign in
+            </Link>
+          </p>
+          <LegalLinks className="mt-3" />
+        </>
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -134,6 +144,28 @@ export function SignupForm() {
           />
         </div>
 
+        <label className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-400">
+          <input
+            id="signup-agree"
+            type="checkbox"
+            required
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+          />
+          <span>
+            I agree to the{" "}
+            <Link href={TERMS_PATH} className={linkClassName}>
+              Terms of Use
+            </Link>{" "}
+            and{" "}
+            <Link href={PRIVACY_PATH} className={linkClassName}>
+              Privacy Policy
+            </Link>
+            .
+          </span>
+        </label>
+
         {error ? (
           <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
             {error}
@@ -143,7 +175,7 @@ export function SignupForm() {
         <button
           type="submit"
           className={primaryButtonClassName}
-          disabled={submitting}
+          disabled={submitting || !agreed}
         >
           {submitting ? "Creating account…" : "Create account"}
         </button>

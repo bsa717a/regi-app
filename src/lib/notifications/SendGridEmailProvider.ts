@@ -1,4 +1,8 @@
 import sgMail from "@sendgrid/mail";
+import {
+  AzureMailEmailProvider,
+  azureMailConfigFromEnv,
+} from "./AzureMailEmailProvider";
 import type { EmailMessage, EmailProvider } from "./EmailProvider";
 import { MockEmailProvider } from "./MockEmailProvider";
 
@@ -48,7 +52,7 @@ export class SendGridEmailProvider implements EmailProvider {
 }
 
 /**
- * Build the email provider for the process env.
+ * Build the email provider for the process env (mock | sendgrid | azure).
  * Never throws on misconfiguration — falls back to mock + warn.
  */
 export function createEmailProviderFromEnv(
@@ -82,6 +86,17 @@ export function createEmailProviderFromEnv(
       );
       return new MockEmailProvider();
     }
+  }
+
+  if (provider === "azure") {
+    const config = azureMailConfigFromEnv(env);
+    if (!config) {
+      console.warn(
+        "[notifications] NOTIFICATION_EMAIL_PROVIDER=azure but AZURE_MAIL_* / AZURE_MAIL_JSON missing — using mock",
+      );
+      return new MockEmailProvider();
+    }
+    return new AzureMailEmailProvider(config);
   }
 
   console.warn(
