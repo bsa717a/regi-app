@@ -1,5 +1,8 @@
 import { FirebaseError } from "firebase/app";
-import { PRODUCTION_ORIGIN } from "@/lib/legal/constants";
+import {
+  LEGACY_PRODUCTION_ORIGIN,
+  PRODUCTION_ORIGIN,
+} from "@/lib/legal/constants";
 
 export const EMAIL_ACTION_PATH = "/auth/action";
 
@@ -43,7 +46,12 @@ export function rewriteFirebaseEmailActionLink(
 }
 
 export function allowedEmailActionOrigins(): string[] {
-  const origins = new Set<string>([PRODUCTION_ORIGIN]);
+  const origins = new Set<string>([
+    PRODUCTION_ORIGIN,
+    LEGACY_PRODUCTION_ORIGIN,
+    "https://regireg.com",
+    "https://www.regireg.com",
+  ]);
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (fromEnv) {
     try {

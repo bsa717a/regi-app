@@ -2,6 +2,15 @@
   "hosting": {
     "public": "firebase-hosting",
     "ignore": ["firebase.json", "**/.*"],
-    "cleanUrls": true
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "regi",
+          "region": "us-central1"
+        }
+      }
+    ]
   }
 }
