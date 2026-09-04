@@ -3,7 +3,7 @@ export const TERMS_PATH = "/terms";
 export const SUPPORT_PATH = "/support";
 
 /** Displayed on the public legal pages. Update when the copy changes. */
-export const LEGAL_LAST_UPDATED = "August 12, 2026";
+export const LEGAL_LAST_UPDATED = "September 4, 2026";
 
 /** Canonical production origin for App Store Connect URLs. */
 export const PRODUCTION_ORIGIN = "https://app.regireg.com";

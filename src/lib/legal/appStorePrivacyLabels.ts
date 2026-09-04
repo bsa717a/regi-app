@@ -37,7 +37,7 @@ export const APP_STORE_PRIVACY_NUTRITION_LABELS: PrivacyCategory[] = [
         linkedToIdentity: true,
         usedForTracking: false,
         purposes: ["App Functionality"],
-        notes: "Firebase Auth sign-in, household invites, optional email reminders (SendGrid).",
+        notes: "Firebase Auth sign-in, household invites, optional email reminders (Resend).",
       },
       {
         type: "Phone Number",

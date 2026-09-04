@@ -5,6 +5,10 @@ import {
 } from "./AzureMailEmailProvider";
 import type { EmailMessage, EmailProvider } from "./EmailProvider";
 import { MockEmailProvider } from "./MockEmailProvider";
+import {
+  ResendEmailProvider,
+  resendMailConfigFromEnv,
+} from "./ResendEmailProvider";
 
 type SendGridClient = {
   setApiKey: (key: string) => void;
@@ -52,7 +56,7 @@ export class SendGridEmailProvider implements EmailProvider {
 }
 
 /**
- * Build the email provider for the process env (mock | sendgrid | azure).
+ * Build the email provider for the process env (mock | resend | azure | sendgrid).
  * Never throws on misconfiguration — falls back to mock + warn.
  */
 export function createEmailProviderFromEnv(
@@ -62,6 +66,17 @@ export function createEmailProviderFromEnv(
 
   if (provider === "mock") {
     return new MockEmailProvider();
+  }
+
+  if (provider === "resend") {
+    const config = resendMailConfigFromEnv(env);
+    if (!config) {
+      console.warn(
+        "[notifications] NOTIFICATION_EMAIL_PROVIDER=resend but RESEND_API_KEY missing — using mock",
+      );
+      return new MockEmailProvider();
+    }
+    return new ResendEmailProvider(config);
   }
 
   if (provider === "sendgrid") {

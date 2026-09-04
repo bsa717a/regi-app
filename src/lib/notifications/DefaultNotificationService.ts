@@ -26,7 +26,7 @@ export type DefaultNotificationServiceDeps = {
 
 /**
  * Production notification sender:
- * - email via EmailProvider (mock or SendGrid)
+ * - email via EmailProvider (mock, Resend, Azure Mail, or SendGrid)
  * - push via PushProvider (FCM web push / no-op when unconfigured)
  * - sms always skipped (Phase 2)
  * Respects per-account notification_prefs before sending.

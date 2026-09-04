@@ -99,7 +99,7 @@ export default function PrivacyPage() {
           <li>Firebase Authentication — sign-in.</li>
           <li>Google Cloud (Cloud Run, Cloud SQL, Cloud Storage) — app and files.</li>
           <li>Firebase Cloud Messaging and Apple Push Notification service — optional alerts.</li>
-          <li>SendGrid — optional email reminders when that channel is enabled.</li>
+          <li>Resend — optional email reminders and account messages when that channel is enabled.</li>
           <li>Google Gemini — optional document scan / enhance.</li>
         </ul>
         <p>
