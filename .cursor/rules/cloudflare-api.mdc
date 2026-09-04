@@ -1,0 +1,20 @@
+---
+description: Use the Cloudflare connector secret for DNS and API work
+alwaysApply: true
+---
+
+# Cloudflare API credentials
+
+For Cloudflare API calls (DNS records, zones, Custom Hostnames), read credentials from, in order:
+
+1. `/home/box/agent-data/connector-secrets/7ed437a1-d36f-46ac-984d-b38bc4c7f3b6/Cloudflare.json` (cloud agent)
+2. `/Users/derekfowler/Library/CloudStorage/OneDrive-4StudentLives/projects/Dina/notes.md` (local) — `Cloudflare` → `API token`
+
+- Never print, commit, or paste the token.
+- Never copy this file into the repo.
+- Use `https://api.cloudflare.com/client/v4` with the token from that JSON.
+- Canonical app host is `app.regireg.com`. Keep Firebase Hosting records **DNS only** (not proxied):
+  - `CNAME app → regi-app-v1.web.app`
+  - `A @ → 199.36.158.100` (apex redirect to app)
+  - `TXT @ → hosting-site=regi-app-v1`
+  - `CNAME www → regi-app-v1.web.app`

@@ -6,7 +6,10 @@ export const SUPPORT_PATH = "/support";
 export const LEGAL_LAST_UPDATED = "August 12, 2026";
 
 /** Canonical production origin for App Store Connect URLs. */
-export const PRODUCTION_ORIGIN =
+export const PRODUCTION_ORIGIN = "https://app.regireg.com";
+
+/** Previous Cloud Run URL — keep allowed for existing email / invite links. */
+export const LEGACY_PRODUCTION_ORIGIN =
   "https://regi-90502049802.us-central1.run.app";
 
 export function legalContactEmail(): string {
