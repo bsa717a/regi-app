@@ -35,6 +35,10 @@ export {
   azureMailConfigFromEnv,
 } from "./AzureMailEmailProvider";
 export {
+  ResendEmailProvider,
+  resendMailConfigFromEnv,
+} from "./ResendEmailProvider";
+export {
   formatTemplate,
   formatNotificationTitle,
 } from "./formatTemplate";
