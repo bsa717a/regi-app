@@ -37,7 +37,11 @@ function useIsClient(): boolean {
 
 function readDismissed(): boolean {
   if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(DISMISS_KEY) === "1";
+  try {
+    return window.localStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -85,12 +89,20 @@ export function PwaInstallPrompt() {
       // ignore
     }
     setDeferred(null);
-    window.localStorage.setItem(DISMISS_KEY, "1");
+    try {
+      window.localStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      // Private browsing may block storage; hiding for this session is enough.
+    }
     setDismissed(true);
   }
 
   function dismiss() {
-    window.localStorage.setItem(DISMISS_KEY, "1");
+    try {
+      window.localStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      // Private browsing may block storage; hiding for this session is enough.
+    }
     setDismissed(true);
   }
 
