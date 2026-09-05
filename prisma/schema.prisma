@@ -129,6 +129,13 @@ enum StaffRole {
   @@map("staff_role")
 }
 
+enum AppRole {
+  user
+  admin
+
+  @@map("app_role")
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
@@ -137,6 +144,12 @@ model User {
   name              String?
   email             String   @unique
   phone             String?
+  addressLine1      String?  @map("address_line1")
+  addressLine2      String?  @map("address_line2")
+  city              String?
+  addressState      String?  @map("address_state") @db.Char(2)
+  postalCode        String?  @map("postal_code")
+  role              AppRole  @default(user)
   notificationPrefs Json     @default("{}") @map("notification_prefs")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")

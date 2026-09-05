@@ -1,6 +1,7 @@
 import type { RenewalStatus, StaffRole } from "@prisma/client";
 import type { AdminSearchResult } from "./search";
 import type { AdminRenewalDetail, AdminRenewalListItem } from "./serialize";
+import type { AdminUserListItem, AdminUsersResponse } from "./users";
 
 export type AdminStaffDto = {
   id: string;
@@ -25,4 +26,10 @@ export type AdminRenewalDetailResponse = {
   renewal: AdminRenewalDetail;
 };
 
-export type { AdminSearchResult, AdminRenewalDetail, AdminRenewalListItem };
+export type {
+  AdminSearchResult,
+  AdminRenewalDetail,
+  AdminRenewalListItem,
+  AdminUserListItem,
+  AdminUsersResponse,
+};

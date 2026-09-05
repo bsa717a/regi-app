@@ -2,7 +2,7 @@
  * Idempotent seed for REGI local/dev.
  * Run: npx prisma db seed
  */
-import { PrismaClient, RenewalStatus, StaffRole } from "@prisma/client";
+import { AppRole, PrismaClient, RenewalStatus, StaffRole } from "@prisma/client";
 import type { StateRulesConfig } from "../src/lib/stateEngine/types";
 
 const prisma = new PrismaClient();
@@ -240,6 +240,11 @@ async function main() {
       email: DEMO_USER_EMAIL,
       name: "Alex Demo",
       phone: "+18015550100",
+      addressLine1: "123 State St",
+      city: "Salt Lake City",
+      addressState: "UT",
+      postalCode: "84111",
+      role: AppRole.admin,
       notificationPrefs: {
         push: true,
         email: true,
@@ -250,6 +255,11 @@ async function main() {
       email: DEMO_USER_EMAIL,
       name: "Alex Demo",
       phone: "+18015550100",
+      addressLine1: "123 State St",
+      city: "Salt Lake City",
+      addressState: "UT",
+      postalCode: "84111",
+      role: AppRole.admin,
       notificationPrefs: {
         push: true,
         email: true,

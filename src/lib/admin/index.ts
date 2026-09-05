@@ -7,6 +7,22 @@ export {
   type AdminSearchRegistrationHit,
 } from "./search";
 export {
+  adminUserListSelect,
+  buildAdminUserListWhere,
+  clampUserListLimit,
+  serializeAdminUserListItem,
+  type AdminUserListItem,
+  type AdminUsersResponse,
+} from "./users";
+export {
+  AdminUserError,
+  parseAdminUserPatch,
+  updateAdminUser,
+  type AdminUserPatch,
+  type AppRoleName,
+} from "./updateUser";
+export { deleteAdminUser } from "./deleteUser";
+export {
   ACTIVE_QUEUE_STATUSES,
   buildOverdueRenewalWhere,
   buildRenewalQueueWhere,

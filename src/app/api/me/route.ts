@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isDeleteConfirmation } from "@/lib/account/constants";
 import { deleteAccount } from "@/lib/account/deleteAccount";
 import { getOrCreateUser, toAuthUserProfile } from "@/lib/auth/getOrCreateUser";
+import { parseMailingAddressPatch } from "@/lib/account/mailingAddress";
 import {
   mergeNotificationPrefs,
   parseNotificationPrefs,
@@ -41,6 +42,11 @@ async function enforceRateLimit(request: Request) {
 type MeBody = {
   name?: unknown;
   phone?: unknown;
+  addressLine1?: unknown;
+  addressLine2?: unknown;
+  city?: unknown;
+  addressState?: unknown;
+  postalCode?: unknown;
   notificationPrefs?: unknown;
 };
 
@@ -119,16 +125,21 @@ export async function PATCH(request: Request) {
 
   const name = readOptionalString(body.name);
   const phone = readOptionalString(body.phone);
+  const address = parseMailingAddressPatch(body as Record<string, unknown>);
+  if (!address.ok) {
+    return NextResponse.json({ error: address.error }, { status: 400 });
+  }
   const prefsPatch = readPrefsPatch(body.notificationPrefs);
 
   if (
     name === undefined &&
     phone === undefined &&
+    Object.keys(address.patch).length === 0 &&
     prefsPatch === null &&
     body.notificationPrefs === undefined
   ) {
     return NextResponse.json(
-      { error: "Provide name, phone, and/or notificationPrefs to update" },
+      { error: "Provide name, phone, address, and/or notificationPrefs to update" },
       { status: 400 },
     );
   }
@@ -159,6 +170,7 @@ export async function PATCH(request: Request) {
     data: {
       ...(name !== undefined ? { name } : {}),
       ...(phone !== undefined ? { phone } : {}),
+      ...address.patch,
       ...(nextPrefs ? { notificationPrefs: nextPrefs } : {}),
     },
   });
