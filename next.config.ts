@@ -23,6 +23,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        // Documents only. Hashed `/_next/static/*` must stay immutable so
+        // browsers can cache them; HTML must not, or Firebase Hosting will
+        // keep serving a previous deploy's chunk list after Cloud Run rolls.
+        source: "/((?!_next/static|_next/image).*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "private, no-cache, no-store, max-age=0, must-revalidate",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

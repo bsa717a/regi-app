@@ -52,6 +52,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// HTML is an auth shell that references hashed `/_next/static` chunks. If the
+// document is CDN-cached (Next's default static `s-maxage=31536000`) across a
+// Cloud Run deploy, new sessions keep the old HTML, the old chunks 404, and
+// the app freezes on SSR "Starting up…".
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
