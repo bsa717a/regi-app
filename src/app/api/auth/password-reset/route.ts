@@ -72,6 +72,7 @@ export async function POST(request: Request) {
     if (err instanceof EmailDeliveryNotConfiguredError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
+    console.error("[password-reset] Failed to send:", err);
   }
 
   return NextResponse.json(
