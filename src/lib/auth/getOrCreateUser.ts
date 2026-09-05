@@ -13,6 +13,11 @@ export type AuthUserProfile = {
   email: string;
   name: string | null;
   phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  addressState: string | null;
+  postalCode: string | null;
   notificationPrefs: NotificationPrefs;
   createdAt: string;
   updatedAt: string;
@@ -124,6 +129,11 @@ export function toAuthUserProfile(
     email: user.email,
     name: user.name,
     phone: user.phone,
+    addressLine1: user.addressLine1 ?? null,
+    addressLine2: user.addressLine2 ?? null,
+    city: user.city ?? null,
+    addressState: user.addressState ?? null,
+    postalCode: user.postalCode ?? null,
     notificationPrefs: parseNotificationPrefs(user.notificationPrefs),
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),

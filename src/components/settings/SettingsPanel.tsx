@@ -16,6 +16,11 @@ import { NativeSecuritySection } from "@/components/settings/NativeSecuritySecti
 import { PushPrefToggle } from "@/components/settings/PushPrefToggle";
 import { DeleteAccountSection } from "@/components/settings/DeleteAccountSection";
 import { LegalLinks } from "@/components/legal/LegalLinks";
+import { StaffPortalLink } from "@/components/settings/StaffPortalLink";
+import {
+  MailingAddressFields,
+  mailingAddressFormValue,
+} from "@/components/account/MailingAddressFields";
 
 export function SettingsPanel() {
   const { user, profile, profileLoading, getIdToken, refreshProfile, logOut } =
@@ -65,6 +70,7 @@ function SettingsForm({
 }) {
   const [name, setName] = useState(profile.name ?? "");
   const [phone, setPhone] = useState(profile.phone ?? "");
+  const [address, setAddress] = useState(mailingAddressFormValue(profile));
   const [prefs, setPrefs] = useState<NotificationPrefs>(
     profile.notificationPrefs,
   );
@@ -81,7 +87,15 @@ function SettingsForm({
     try {
       const token = await getIdToken();
       if (!token) throw new Error("Session expired. Sign in again.");
-      await updateMe(token, { name, phone });
+      await updateMe(token, {
+        name,
+        phone,
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2,
+        city: address.city,
+        addressState: address.addressState,
+        postalCode: address.postalCode,
+      });
       await refreshProfile();
       setMessage("Profile updated.");
     } catch (err) {
@@ -160,6 +174,11 @@ function SettingsForm({
               autoComplete="tel"
             />
           </div>
+          <MailingAddressFields
+            idPrefix="settings"
+            value={address}
+            onChange={setAddress}
+          />
           <button
             type="submit"
             className={primaryButtonClassName}
@@ -225,6 +244,8 @@ function SettingsForm({
           {error}
         </p>
       ) : null}
+
+      <StaffPortalLink />
 
       <section className="border-t border-slate-200 pt-6 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">

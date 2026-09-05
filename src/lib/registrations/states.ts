@@ -58,6 +58,11 @@ export const US_STATES = [
 
 export type UsStateCode = (typeof US_STATES)[number]["code"];
 
+export function isUsStateCode(value: string): value is UsStateCode {
+  const code = value.trim().toUpperCase();
+  return US_STATES.some((s) => s.code === code);
+}
+
 export function stateName(code: string): string {
   const found = US_STATES.find((s) => s.code === code.toUpperCase());
   return found?.name ?? code.toUpperCase();

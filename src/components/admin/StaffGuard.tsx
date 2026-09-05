@@ -65,41 +65,62 @@ export function StaffGuard({ children }: { children: ReactNode }) {
 
   if (loading || !user) {
     return (
-      <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <p className="text-sm text-slate-600">
-          {loading ? "Checking staff access…" : "Redirecting to sign in…"}
-        </p>
+      <div
+        className="flex flex-1 items-center justify-center px-6 py-16"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-pulse rounded-full bg-teal-600/20" />
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+            {loading ? "Checking staff access…" : "Redirecting to sign in…"}
+          </p>
+        </div>
       </div>
     );
   }
 
   if (checking || (!staff && !forbidden)) {
     return (
-      <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <p className="text-sm text-slate-600">Checking staff access…</p>
+      <div
+        className="flex flex-1 items-center justify-center px-6 py-16"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-pulse rounded-full bg-teal-600/20" />
+          <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+            Checking staff access…
+          </p>
+        </div>
       </div>
     );
   }
 
   if (forbidden || !staff) {
     return (
-      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
-        <h1 className="text-xl font-semibold text-slate-900">Not authorized</h1>
-        <p className="mt-2 text-sm text-slate-600">
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-16">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-800 dark:text-teal-300">
+          REGI
+        </p>
+        <h1 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Not authorized
+        </h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           This account is not on the staff allowlist. Contact an admin if you
           need portal access.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-3">
           <Link
             href="/garage"
-            className="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-4 py-3 text-base font-semibold text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
           >
-            Back to app
+            Back to garage
           </Link>
           <button
             type="button"
             onClick={() => void logOut()}
-            className="rounded bg-slate-900 px-3 py-2 text-sm text-white"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           >
             Sign out
           </button>

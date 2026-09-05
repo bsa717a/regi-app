@@ -13,6 +13,19 @@ import {
 } from "@/lib/api/client";
 import type { AdminRenewalDetail } from "@/lib/admin/types";
 import { formatUsdCents } from "@/lib/renewals/formatMoney";
+import {
+  fieldClassName,
+  linkClassName,
+  primaryButtonClassName,
+} from "@/components/auth/AuthFormStyles";
+
+const cardClassName =
+  "rounded-3xl border border-slate-200/80 bg-white p-4 text-sm dark:border-slate-700/80 dark:bg-slate-900";
+const headingClassName =
+  "mb-2 font-semibold text-slate-900 dark:text-slate-100";
+const mutedClassName = "text-slate-600 dark:text-slate-400";
+const secondaryButtonClassName =
+  "inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100";
 
 export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   const { getIdToken } = useAuth();
@@ -105,33 +118,37 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   }
 
   return (
-    <AdminShell title="Renewal detail">
+    <AdminShell title="Renewal" activeTab="queue">
       <p className="mb-4 text-sm">
-        <Link href="/admin/renewals" className="text-teal-800 underline">
+        <Link href="/admin?tab=queue" className={linkClassName}>
           ← Queue
         </Link>
       </p>
 
       {loading ? (
-        <p className="text-sm text-slate-600">Loading…</p>
+        <div
+          className="h-28 animate-pulse rounded-3xl border border-slate-200/80 bg-white dark:border-slate-700/80 dark:bg-slate-900"
+          aria-busy
+          aria-label="Loading renewal"
+        />
       ) : null}
       {error ? (
-        <p className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </p>
       ) : null}
       {message ? (
-        <p className="mb-3 rounded border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p className="mb-3 rounded-xl bg-teal-50 px-3 py-2 text-sm text-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
           {message}
         </p>
       ) : null}
 
       {renewal ? (
-        <div className="space-y-6">
-          <section className="rounded border border-slate-300 bg-white p-4 text-sm">
+        <div className="space-y-4">
+          <section className={cardClassName}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-slate-900">
+                <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                   {[
                     renewal.registration.year,
                     renewal.registration.make,
@@ -143,42 +160,42 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                     ? ` — ${renewal.registration.nickname}`
                     : ""}
                 </h2>
-                <p className="text-slate-600">
+                <p className={mutedClassName}>
                   Plate {renewal.registration.plate || "—"} · VIN{" "}
                   {renewal.registration.vin || "—"} · {renewal.registration.state}
                 </p>
-                <p className="text-slate-600">
+                <p className={mutedClassName}>
                   Owner: {renewal.owner.name || "—"} ({renewal.owner.email})
                 </p>
-                <p className="text-slate-600">
+                <p className={mutedClassName}>
                   Registration expires{" "}
                   {renewal.registration.registrationExpiresOn}
                 </p>
               </div>
-              <span className="rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white">
-                {renewal.status}
+              <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-medium text-teal-800 dark:bg-teal-950/50 dark:text-teal-200">
+                {renewal.status.replace(/([a-z])([A-Z])/g, "$1 $2")}
               </span>
             </div>
           </section>
 
-          <section className="rounded border border-slate-300 bg-white p-4 text-sm">
-            <h3 className="mb-2 font-semibold text-slate-900">Actions</h3>
-            <div className="flex flex-wrap gap-2">
+          <section className={cardClassName}>
+            <h3 className={headingClassName}>Actions</h3>
+            <div className="flex flex-col gap-2">
               <button
                 type="button"
                 disabled={busy || !renewal.nextStatus}
                 onClick={() => void onAdvanceStatus()}
-                className="rounded bg-teal-800 px-3 py-2 text-white disabled:opacity-40"
+                className={primaryButtonClassName}
               >
                 {renewal.nextStatus
-                  ? `Advance to ${renewal.nextStatus}`
+                  ? `Advance to ${renewal.nextStatus.replace(/([a-z])([A-Z])/g, "$1 $2")}`
                   : "No further status"}
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void onResendEmail()}
-                className="rounded border border-slate-300 bg-white px-3 py-2 text-slate-800 disabled:opacity-40"
+                className={secondaryButtonClassName}
               >
                 Resend status email
               </button>
@@ -186,19 +203,19 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                 type="button"
                 disabled
                 title={renewal.refundNote}
-                className="cursor-not-allowed rounded border border-slate-200 bg-slate-50 px-3 py-2 text-slate-400"
+                className="cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-800"
               >
                 Trigger refund — n/a (MVP)
               </button>
             </div>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Payment status: {renewal.paymentStatus}
             </p>
           </section>
 
-          <section className="rounded border border-slate-300 bg-white p-4 text-sm">
-            <h3 className="mb-2 font-semibold text-slate-900">Fee breakdown</h3>
-            <ul className="space-y-1 text-slate-700">
+          <section className={cardClassName}>
+            <h3 className={headingClassName}>Fee breakdown</h3>
+            <ul className={`space-y-1 ${mutedClassName}`}>
               <li>
                 Registration:{" "}
                 {formatUsdCents(renewal.feeBreakdown.registrationFeeCents)}
@@ -210,45 +227,50 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
               <li>
                 Late fee: {formatUsdCents(renewal.feeBreakdown.lateFeeCents)}
               </li>
-              <li className="font-medium">
+              <li className="font-medium text-slate-900 dark:text-slate-100">
                 Total (estimate):{" "}
                 {formatUsdCents(renewal.feeBreakdown.totalCents)}
               </li>
             </ul>
           </section>
 
-          <section className="rounded border border-slate-300 bg-white p-4 text-sm">
-            <h3 className="mb-2 font-semibold text-slate-900">
-              Status history
-            </h3>
+          <section className={cardClassName}>
+            <h3 className={headingClassName}>Status history</h3>
             <ul className="space-y-1">
               {renewal.statusHistory.map((entry) => (
-                <li key={entry.status} className="flex justify-between gap-3">
-                  <span>{entry.status}</span>
-                  <span className="text-slate-500">
-                    {entry.at
-                      ? new Date(entry.at).toLocaleString()
-                      : "—"}
+                <li
+                  key={entry.status}
+                  className="flex justify-between gap-3 text-slate-700 dark:text-slate-300"
+                >
+                  <span>
+                    {entry.status.replace(/([a-z])([A-Z])/g, "$1 $2")}
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {entry.at ? new Date(entry.at).toLocaleString() : "—"}
                   </span>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section className="rounded border border-slate-300 bg-white p-4 text-sm">
-            <h3 className="mb-2 font-semibold text-slate-900">Documents</h3>
+          <section className={cardClassName}>
+            <h3 className={headingClassName}>Documents</h3>
             {renewal.documents.length === 0 ? (
-              <p className="text-slate-500">No documents uploaded.</p>
+              <p className="text-slate-500 dark:text-slate-400">
+                No documents uploaded.
+              </p>
             ) : (
-              <ul className="divide-y divide-slate-200">
+              <ul className="divide-y divide-slate-200 dark:divide-slate-700">
                 {renewal.documents.map((doc) => (
                   <li
                     key={doc.id}
                     className="flex flex-wrap items-center justify-between gap-2 py-2"
                   >
                     <div>
-                      <p className="font-medium">{doc.type}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                        {doc.type}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {doc.originalFilename} ·{" "}
                         {new Date(doc.createdAt).toLocaleString()}
                       </p>
@@ -258,7 +280,7 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                         href={doc.downloadUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded border border-slate-300 px-2 py-1 text-xs text-teal-900"
+                        className={linkClassName}
                       >
                         Download
                       </a>
@@ -273,23 +295,23 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
             )}
           </section>
 
-          <section className="rounded border border-slate-300 bg-white p-4 text-sm">
-            <h3 className="mb-2 font-semibold text-slate-900">Staff notes</h3>
-            <pre className="mb-3 whitespace-pre-wrap rounded bg-slate-50 p-3 text-xs text-slate-800">
+          <section className={cardClassName}>
+            <h3 className={headingClassName}>Staff notes</h3>
+            <pre className="mb-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs text-slate-800 dark:bg-slate-800 dark:text-slate-200">
               {renewal.staffNotes || "(none)"}
             </pre>
-            <form onSubmit={onAddNote} className="space-y-2">
+            <form onSubmit={onAddNote} className="space-y-3">
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
                 placeholder="Add a staff note…"
-                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                className={`${fieldClassName} mt-0`}
               />
               <button
                 type="submit"
                 disabled={busy || !note.trim()}
-                className="rounded bg-slate-900 px-3 py-2 text-white disabled:opacity-40"
+                className={primaryButtonClassName}
               >
                 Add note
               </button>

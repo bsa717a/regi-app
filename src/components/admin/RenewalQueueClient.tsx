@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminTable } from "@/components/admin/AdminTable";
+import { adminTabHref } from "@/components/admin/adminTabs";
 import { ApiError, adminListRenewals } from "@/lib/api/client";
 import type { AdminRenewalListItem } from "@/lib/admin/types";
 import { RENEWAL_STATUS_ORDER } from "@/lib/renewals/status";
+import { linkClassName } from "@/components/auth/AuthFormStyles";
 
 const FILTERS = [
   { value: "active", label: "Active" },
@@ -57,7 +59,7 @@ export function RenewalQueueClient() {
   }, [getIdToken, status]);
 
   return (
-    <AdminShell title="Renewal queue">
+    <div>
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <button
@@ -66,14 +68,14 @@ export function RenewalQueueClient() {
             onClick={() =>
               router.replace(
                 f.value === "active"
-                  ? "/admin/renewals"
-                  : `/admin/renewals?status=${f.value}`,
+                  ? adminTabHref("queue")
+                  : adminTabHref("queue", { status: f.value }),
               )
             }
             className={
               status === f.value
-                ? "rounded bg-slate-900 px-2.5 py-1 text-xs text-white"
-                : "rounded border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700"
+                ? "rounded-xl bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white dark:bg-teal-600"
+                : "rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             }
           >
             {f.label}
@@ -82,57 +84,64 @@ export function RenewalQueueClient() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-600">Loading queue…</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Loading queue…
+        </p>
       ) : null}
       {error ? (
-        <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </p>
       ) : null}
 
       {!loading && !error ? (
         renewals.length === 0 ? (
-          <p className="text-sm text-slate-500">No renewals in this filter.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            No renewals in this filter.
+          </p>
         ) : (
-          <ul className="divide-y divide-slate-200 rounded border border-slate-300 bg-white">
+          <AdminTable
+            headers={["Vehicle", "Status", "Owner", "Plate", "Expires", ""]}
+          >
             {renewals.map((r) => (
-              <li key={r.id}>
-                <Link
-                  href={`/admin/renewals/${r.id}`}
-                  className="block px-3 py-3 text-sm hover:bg-slate-50"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="font-medium text-slate-900">
-                      {[
-                        r.registration.year,
-                        r.registration.make,
-                        r.registration.model,
-                      ]
-                        .filter(Boolean)
-                        .join(" ") || "Registration"}
-                      {r.registration.nickname
-                        ? ` — ${r.registration.nickname}`
-                        : ""}
-                    </p>
-                    <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-800">
-                      {r.status}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-slate-600">
-                    {r.owner.name || r.owner.email} · plate{" "}
-                    {r.registration.plate || "—"} · expires{" "}
-                    {r.registration.registrationExpiresOn}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Payment: {r.paymentStatus} · updated{" "}
-                    {new Date(r.updatedAt).toLocaleString()}
-                  </p>
-                </Link>
-              </li>
+              <tr key={r.id}>
+                <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">
+                  {[
+                    r.registration.year,
+                    r.registration.make,
+                    r.registration.model,
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || "Registration"}
+                  {r.registration.nickname
+                    ? ` — ${r.registration.nickname}`
+                    : ""}
+                </td>
+                <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
+                  {r.status.replace(/([a-z])([A-Z])/g, "$1 $2")}
+                </td>
+                <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
+                  {r.owner.name || r.owner.email}
+                </td>
+                <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
+                  {r.registration.plate || "—"}
+                </td>
+                <td className="px-3 py-2 text-slate-600 dark:text-slate-400">
+                  {r.registration.registrationExpiresOn}
+                </td>
+                <td className="px-3 py-2">
+                  <Link
+                    href={`/admin/renewals/${r.id}`}
+                    className={linkClassName}
+                  >
+                    Open
+                  </Link>
+                </td>
+              </tr>
             ))}
-          </ul>
+          </AdminTable>
         )
       ) : null}
-    </AdminShell>
+    </div>
   );
 }

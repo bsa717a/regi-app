@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminTable } from "@/components/admin/AdminTable";
+import { adminTabHref } from "@/components/admin/adminTabs";
 import { ApiError, adminGetStats } from "@/lib/api/client";
 import type { AdminStatsDto } from "@/lib/admin/types";
 import { RENEWAL_STATUS_ORDER } from "@/lib/renewals/status";
+import { linkClassName } from "@/components/auth/AuthFormStyles";
 
 function friendlyStatus(status: string): string {
   return status.replace(/([a-z])([A-Z])/g, "$1 $2");
@@ -46,93 +48,71 @@ export function OpsDashboard() {
     };
   }, [getIdToken]);
 
-  return (
-    <AdminShell title="Ops dashboard">
-      {loading ? (
-        <p className="text-sm text-slate-600">Loading stats…</p>
-      ) : null}
-      {error ? (
-        <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </p>
-      ) : null}
-      {stats ? (
-        <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <StatBox label="Active queue" value={stats.activeQueueCount} />
-            <StatBox label="Overdue queue" value={stats.overdueCount} highlight />
-            <StatBox label="Total renewals" value={stats.total} />
-          </div>
-
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-slate-800">
-              Renewals by status
-            </h2>
-            <div className="overflow-hidden rounded border border-slate-300 bg-white">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-slate-600">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Count</th>
-                    <th className="px-3 py-2 font-medium">Queue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {RENEWAL_STATUS_ORDER.map((status) => (
-                    <tr key={status} className="border-t border-slate-200">
-                      <td className="px-3 py-2">{friendlyStatus(status)}</td>
-                      <td className="px-3 py-2 tabular-nums">
-                        {stats.byStatus[status]}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Link
-                          href={`/admin/renewals?status=${status}`}
-                          className="text-teal-800 underline"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <p className="text-sm text-slate-600">
-            Overdue = active renewals where the vehicle registration has already
-            expired.{" "}
-            <Link href="/admin/renewals" className="text-teal-800 underline">
-              Open active queue
-            </Link>
-          </p>
-        </div>
-      ) : null}
-    </AdminShell>
-  );
-}
-
-function StatBox({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: number;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={
-        highlight
-          ? "rounded border border-amber-400 bg-amber-50 px-3 py-3"
-          : "rounded border border-slate-300 bg-white px-3 py-3"
-      }
-    >
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
-        {value}
+  if (loading) {
+    return (
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Loading stats…
       </p>
+    );
+  }
+  if (error) {
+    return (
+      <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+        {error}
+      </p>
+    );
+  }
+  if (!stats) return null;
+
+  return (
+    <div className="space-y-4">
+      <AdminTable headers={["Metric", "Count"]}>
+        <tr>
+          <td className="px-3 py-2 text-slate-900 dark:text-slate-100">
+            Active queue
+          </td>
+          <td className="px-3 py-2 tabular-nums text-slate-700 dark:text-slate-300">
+            {stats.activeQueueCount}
+          </td>
+        </tr>
+        <tr>
+          <td className="px-3 py-2 text-slate-900 dark:text-slate-100">
+            Overdue queue
+          </td>
+          <td className="px-3 py-2 tabular-nums text-slate-700 dark:text-slate-300">
+            {stats.overdueCount}
+          </td>
+        </tr>
+        <tr>
+          <td className="px-3 py-2 text-slate-900 dark:text-slate-100">
+            Total renewals
+          </td>
+          <td className="px-3 py-2 tabular-nums text-slate-700 dark:text-slate-300">
+            {stats.total}
+          </td>
+        </tr>
+      </AdminTable>
+
+      <AdminTable headers={["Status", "Count", ""]}>
+        {RENEWAL_STATUS_ORDER.map((status) => (
+          <tr key={status}>
+            <td className="px-3 py-2 text-slate-900 dark:text-slate-100">
+              {friendlyStatus(status)}
+            </td>
+            <td className="px-3 py-2 tabular-nums text-slate-700 dark:text-slate-300">
+              {stats.byStatus[status]}
+            </td>
+            <td className="px-3 py-2">
+              <Link
+                href={adminTabHref("queue", { status })}
+                className={linkClassName}
+              >
+                View
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </AdminTable>
     </div>
   );
 }

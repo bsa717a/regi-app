@@ -6,6 +6,7 @@ import type {
   AdminSearchResult,
   AdminStaffDto,
   AdminStatsDto,
+  AdminUsersResponse,
 } from "@/lib/admin/types";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
 import { DELETE_ACCOUNT_CONFIRMATION } from "@/lib/account/constants";
@@ -123,6 +124,11 @@ export async function updateMe(
   patch: {
     name?: string | null;
     phone?: string | null;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    addressState?: string | null;
+    postalCode?: string | null;
     notificationPrefs?: Partial<NotificationPrefs>;
   },
 ): Promise<AuthUserProfile> {
@@ -830,6 +836,51 @@ export async function adminSearch(
 ): Promise<AdminSearchResult> {
   const params = new URLSearchParams({ q });
   return apiFetch<AdminSearchResult>(`/api/admin/search?${params}`, { token });
+}
+
+export async function adminListUsers(
+  token: string,
+  q?: string,
+): Promise<AdminUsersResponse> {
+  const params = new URLSearchParams();
+  if (q?.trim()) params.set("q", q.trim());
+  const qs = params.toString();
+  return apiFetch<AdminUsersResponse>(
+    `/api/admin/users${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+}
+
+export async function adminUpdateUser(
+  token: string,
+  userId: string,
+  patch: {
+    name?: string | null;
+    phone?: string | null;
+    role?: "user" | "admin";
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    addressState?: string | null;
+    postalCode?: string | null;
+  },
+): Promise<AdminUsersResponse["users"][number]> {
+  const data = await apiFetch<{ user: AdminUsersResponse["users"][number] }>(
+    `/api/admin/users/${userId}`,
+    { method: "PATCH", token, body: patch },
+  );
+  return data.user;
+}
+
+export async function adminDeleteUser(
+  token: string,
+  userId: string,
+): Promise<void> {
+  await apiFetch<{ ok: true }>(`/api/admin/users/${userId}`, {
+    method: "DELETE",
+    token,
+    body: { confirm: DELETE_ACCOUNT_CONFIRMATION },
+  });
 }
 
 export async function adminListRenewals(
