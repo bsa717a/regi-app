@@ -306,7 +306,7 @@ Firebase email links also embed the project’s original Web API key. After that
 
 Firebase currently rejects saving a custom action URL (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), including Cloud Run. A Hosting redirect lives at `https://regi-app-v1.web.app/auth/action` if that lock is ever lifted.
 
-Verification emails are sent by REGI, not Firebase’s hosted template. The server generates an `oobCode`, rewrites the handler to `/auth/action` on `NEXT_PUBLIC_APP_URL`, and emails that link. The app never returns the link to the browser — the user must open it from their inbox. Production uses Resend (`NOTIFICATION_EMAIL_PROVIDER=resend`) from `noreply@regireg.com`. The API key lives in Secret Manager `regi-resend-api-key` (`RESEND_API_KEY`).
+Verification and password-reset emails are sent by REGI, not Firebase’s hosted template. The server generates an `oobCode`, rewrites the handler to `/auth/action` on `NEXT_PUBLIC_APP_URL`, and emails that link from `noreply@regireg.com`. The app never returns the link to the browser — the user must open it from their inbox. Production uses Resend (`NOTIFICATION_EMAIL_PROVIDER=resend`). The API key lives in Secret Manager `regi-resend-api-key` (`RESEND_API_KEY`). Do not use Firebase Auth’s client `sendPasswordResetEmail` — that still sends from `noreply@regi-app-v1.firebaseapp.com` and lands in junk.
 
 **Close GitHub secret scanning alert:** after the key is restricted or rotated and plaintext is gone from `main` → Security → Secret scanning alerts → mark the Google API Key alert as **Revoked**.
 
