@@ -147,6 +147,13 @@ const TEMPLATES: Record<string, NotificationTemplate> = {
     text: "Confirm this email address to finish setting up your REGI account. Open this link from your inbox (it expires after a short time): {{verifyUrl}}",
     html: "<p>Confirm this email address to finish setting up your REGI account.</p><p><a href=\"{{verifyUrl}}\">Verify email</a></p><p>If you did not create a REGI account, you can ignore this message.</p>",
   },
+  reset_password: {
+    key: "reset_password",
+    tone: "nudge",
+    subject: "Reset your REGI password",
+    text: "Use this link to choose a new password for your REGI account. Open it from your inbox (it expires after a short time): {{resetUrl}}",
+    html: "<p>Use this link to choose a new password for your REGI account.</p><p><a href=\"{{resetUrl}}\">Reset password</a></p><p>If you did not request this, you can ignore this message.</p>",
+  },
   maintenance_due: {
     key: "maintenance_due",
     tone: "nudge",

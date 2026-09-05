@@ -13,14 +13,17 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   onIdTokenChanged,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { fetchMe, requestVerificationEmail } from "@/lib/api/client";
+import {
+  fetchMe,
+  requestPasswordReset,
+  requestVerificationEmail,
+} from "@/lib/api/client";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
 
 type SignUpInput = {
@@ -234,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIdToken(null);
       },
       async resetPassword(email) {
-        await sendPasswordResetEmail(getFirebaseAuth(), email.trim());
+        await requestPasswordReset(email.trim());
       },
       async resendVerificationEmail() {
         const current = getFirebaseAuth().currentUser;

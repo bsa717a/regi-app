@@ -106,6 +106,18 @@ export async function requestVerificationEmail(token: string): Promise<{
   );
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const response = await fetch("/api/auth/password-reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    throw new ApiError(await parseError(response), response.status);
+  }
+}
+
 export async function fetchMe(
   token: string,
   extras?: { name?: string; phone?: string },

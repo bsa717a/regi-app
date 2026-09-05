@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   AuthPageShell,
@@ -11,20 +10,16 @@ import {
   linkClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { ApiError } from "@/lib/api/client";
 
-function mapAuthError(error: unknown): string {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
-      case "auth/invalid-email":
-        return "Enter a valid email address.";
-      case "auth/user-not-found":
-        // Avoid account enumeration
-        return "If an account exists for that email, a reset link is on the way.";
-      default:
-        return "Could not send a reset email. Please try again.";
+function mapResetError(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 400 || error.status === 429 || error.status === 503) {
+      return error.message;
     }
+    return "Could not send a reset email. Please try again.";
   }
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error && error.message) return error.message;
   return "Could not send a reset email. Please try again.";
 }
 
@@ -43,15 +38,7 @@ export function ForgotPasswordForm() {
       await resetPassword(email);
       setSent(true);
     } catch (err) {
-      // Still show success for unknown user to reduce enumeration, except invalid email.
-      if (
-        err instanceof FirebaseError &&
-        err.code === "auth/user-not-found"
-      ) {
-        setSent(true);
-      } else {
-        setError(mapAuthError(err));
-      }
+      setError(mapResetError(err));
     } finally {
       setSubmitting(false);
     }

@@ -88,3 +88,18 @@ describe("verify_email", () => {
     expect(rendered.html).toContain("https://example.com/auth/action?oobCode=abc");
   });
 });
+
+describe("reset_password", () => {
+  it("includes the rewritten reset URL", () => {
+    const rendered = renderNotificationTemplate("reset_password", {
+      resetUrl: "https://example.com/auth/action?mode=resetPassword&oobCode=abc",
+    });
+    expect(rendered.subject).toMatch(/reset your regi password/i);
+    expect(rendered.text).toContain(
+      "https://example.com/auth/action?mode=resetPassword&oobCode=abc",
+    );
+    expect(rendered.html).toContain(
+      "https://example.com/auth/action?mode=resetPassword&oobCode=abc",
+    );
+  });
+});
