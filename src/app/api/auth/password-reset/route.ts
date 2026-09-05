@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { sendPasswordResetEmail } from "@/lib/auth/sendPasswordResetEmail";
-import { EmailDeliveryNotConfiguredError } from "@/lib/auth/transactionalEmail";
+import {
+  EmailDeliveryNotConfiguredError,
+  formatFirebaseErrorForLog,
+} from "@/lib/auth/transactionalEmail";
 import {
   clientKeyFromRequest,
   rateLimit,
@@ -72,7 +75,7 @@ export async function POST(request: Request) {
     if (err instanceof EmailDeliveryNotConfiguredError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
-    console.error("[password-reset] Failed to send:", err);
+    console.error(formatFirebaseErrorForLog("password-reset", err));
   }
 
   return NextResponse.json(

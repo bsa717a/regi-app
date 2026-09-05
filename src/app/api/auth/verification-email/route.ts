@@ -8,6 +8,10 @@ import {
   rateLimit,
   rateLimitHeaders,
 } from "@/lib/auth/rateLimit";
+import {
+  extractFirebaseErrorInfo,
+  formatFirebaseErrorForLog,
+} from "@/lib/auth/transactionalEmail";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { resolveAppOrigin } from "@/lib/household/appOrigin";
 import { createEmailProviderFromEnv } from "@/lib/notifications/SendGridEmailProvider";
@@ -57,7 +61,19 @@ export async function POST(request: Request) {
     if (err instanceof EmailDeliveryNotConfiguredError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
-    console.error("[verification-email] Failed to send:", err);
+
+    const errInfo = extractFirebaseErrorInfo(err);
+    console.error(formatFirebaseErrorForLog("verification-email", err));
+
+    if (errInfo.code === "auth/internal-error") {
+      console.error(
+        "[verification-email] auth/internal-error hints: check Identity Toolkit API is enabled, " +
+          "service account has firebaseauth.users.get permission, " +
+          "continue URL domain is in Firebase Auth authorized domains, " +
+          "and no duplicate users exist for this email.",
+      );
+    }
+
     return NextResponse.json(
       { error: "Could not send a verification email. Please try again." },
       { status: 502 },

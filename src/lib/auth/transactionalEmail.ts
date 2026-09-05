@@ -10,6 +10,62 @@ export class EmailDeliveryNotConfiguredError extends Error {
   }
 }
 
+export interface FirebaseErrorInfo {
+  code: string;
+  message: string;
+  errorInfo?: Record<string, unknown>;
+  rawError: unknown;
+}
+
+export function extractFirebaseErrorInfo(err: unknown): FirebaseErrorInfo {
+  const code = firebaseAuthErrorCode(err);
+  const message = err instanceof Error ? err.message : String(err);
+
+  let errorInfo: Record<string, unknown> | undefined;
+  if (err && typeof err === "object") {
+    if ("errorInfo" in err && typeof err.errorInfo === "object") {
+      errorInfo = err.errorInfo as Record<string, unknown>;
+    } else if ("codePrefix" in err || "customData" in err) {
+      const errObj = err as Record<string, unknown>;
+      const info: Record<string, unknown> = {};
+      if (errObj.codePrefix) {
+        info.codePrefix = errObj.codePrefix;
+      }
+      if (errObj.customData) {
+        info.customData = errObj.customData;
+      }
+      if (Object.keys(info).length > 0) {
+        errorInfo = info;
+      }
+    }
+  }
+
+  return { code, message, errorInfo, rawError: err };
+}
+
+export function formatFirebaseErrorForLog(
+  context: string,
+  err: unknown,
+): string {
+  const info = extractFirebaseErrorInfo(err);
+  const parts = [`[${context}] Firebase error`];
+
+  if (info.code) {
+    parts.push(`code=${info.code}`);
+  }
+  parts.push(`message=${info.message}`);
+
+  if (info.errorInfo) {
+    try {
+      parts.push(`errorInfo=${JSON.stringify(info.errorInfo)}`);
+    } catch {
+      parts.push("errorInfo=[non-serializable]");
+    }
+  }
+
+  return parts.join(" | ");
+}
+
 export function assertCanDeliverTransactionalEmail(
   provider: EmailProvider,
   nodeEnv: string | undefined = process.env.NODE_ENV,

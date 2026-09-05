@@ -1,3 +1,4 @@
+import { buildActionCodeSettings } from "@/lib/auth/actionCodeSettings";
 import { rewriteFirebaseEmailActionLink } from "@/lib/auth/emailAction";
 import { assertCanDeliverTransactionalEmail } from "@/lib/auth/transactionalEmail";
 import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
@@ -22,10 +23,10 @@ export async function sendVerificationEmail(deps: {
   const generate =
     deps.generateLink ??
     ((email, url) =>
-      getFirebaseAdminAuth().generateEmailVerificationLink(email, {
-        url,
-        handleCodeInApp: false,
-      }));
+      getFirebaseAdminAuth().generateEmailVerificationLink(
+        email,
+        buildActionCodeSettings(url),
+      ));
 
   const firebaseLink = await generate(deps.email, continueUrl);
   const verifyUrl = rewriteFirebaseEmailActionLink(

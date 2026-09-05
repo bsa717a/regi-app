@@ -1,3 +1,4 @@
+import { buildActionCodeSettings } from "@/lib/auth/actionCodeSettings";
 import { rewriteFirebaseEmailActionLink } from "@/lib/auth/emailAction";
 import {
   assertCanDeliverTransactionalEmail,
@@ -20,10 +21,10 @@ export async function sendPasswordResetEmail(deps: {
   const generate =
     deps.generateLink ??
     ((email, url) =>
-      getFirebaseAdminAuth().generatePasswordResetLink(email, {
-        url,
-        handleCodeInApp: false,
-      }));
+      getFirebaseAdminAuth().generatePasswordResetLink(
+        email,
+        buildActionCodeSettings(url),
+      ));
 
   let firebaseLink: string;
   try {
