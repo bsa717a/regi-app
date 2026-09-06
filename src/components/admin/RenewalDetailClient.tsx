@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import {
   ApiError,
   adminAddRenewalNote,
@@ -11,7 +12,7 @@ import {
   adminResendRenewalEmail,
   adminUpdateRenewalStatus,
 } from "@/lib/api/client";
-import type { AdminRenewalDetail } from "@/lib/admin/types";
+import type { AdminRenewalDetail, AdminDocumentWithUrl } from "@/lib/admin/types";
 import { formatUsdCents } from "@/lib/renewals/formatMoney";
 import {
   fieldClassName,
@@ -35,6 +36,7 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<AdminDocumentWithUrl | null>(null);
 
   const reload = useCallback(async () => {
     const token = await getIdToken();
@@ -275,20 +277,31 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                         {new Date(doc.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    {doc.downloadUrl ? (
-                      <a
-                        href={doc.downloadUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={linkClassName}
-                      >
-                        Download
-                      </a>
-                    ) : (
-                      <span className="text-xs text-slate-400">
-                        URL unavailable
-                      </span>
-                    )}
+                    <div className="flex gap-2">
+                      {doc.downloadUrl ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDoc(doc)}
+                            className="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/50"
+                          >
+                            View
+                          </button>
+                          <a
+                            href={doc.downloadUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={linkClassName}
+                          >
+                            Download
+                          </a>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-400">
+                          URL unavailable
+                        </span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -318,6 +331,24 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
             </form>
           </section>
         </div>
+      ) : null}
+
+      {previewDoc ? (
+        <DocumentPreviewModal
+          open
+          onClose={() => setPreviewDoc(null)}
+          categoryLabel={previewDoc.type}
+          title={previewDoc.originalFilename}
+          filename={previewDoc.originalFilename}
+          downloadUrl={previewDoc.downloadUrl}
+          loading={false}
+          error={
+            previewDoc.downloadUrl
+              ? null
+              : "Download URL is unavailable for this document."
+          }
+          onRetry={() => void reload()}
+        />
       ) : null}
     </AdminShell>
   );

@@ -1,6 +1,10 @@
 import type { RenewalStatus, StaffRole } from "@prisma/client";
 import type { AdminSearchResult } from "./search";
-import type { AdminRenewalDetail, AdminRenewalListItem } from "./serialize";
+import type {
+  AdminDocumentWithUrl,
+  AdminRenewalDetail,
+  AdminRenewalListItem,
+} from "./serialize";
 import type { AdminUserListItem, AdminUsersResponse } from "./users";
 
 export type AdminStaffDto = {
@@ -28,6 +32,7 @@ export type AdminRenewalDetailResponse = {
 
 export type {
   AdminSearchResult,
+  AdminDocumentWithUrl,
   AdminRenewalDetail,
   AdminRenewalListItem,
   AdminUserListItem,

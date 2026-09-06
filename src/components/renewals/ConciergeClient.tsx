@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { DocumentType } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -11,16 +11,19 @@ import {
 } from "@/components/auth/AuthFormStyles";
 import { ResendVerificationEmailButton } from "@/components/auth/ResendVerificationEmailButton";
 import { AppShell } from "@/components/shell/AppShell";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
 import { ProgressTracker } from "@/components/renewals/ProgressTracker";
 import {
   ApiError,
   createRenewal,
+  getDocumentDownloadUrl,
   getRenewal,
   submitRenewal,
 } from "@/lib/api/client";
-import { MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
+import { DOCUMENT_TYPE_LABELS, MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
+import type { DocumentDto } from "@/lib/documents/types";
 import type { RenewalDto, RequiredDocumentStatus } from "@/lib/renewals/types";
 import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
@@ -314,6 +317,51 @@ function DraftView({
   const missingCount = renewal.missingDocumentTypes.length;
   const county = renewal.feeBreakdown.county ?? "";
 
+  const [previewDoc, setPreviewDoc] = useState<DocumentDto | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const documentsById = useMemo(
+    () => new Map(renewal.documents.map((doc) => [doc.id, doc])),
+    [renewal.documents],
+  );
+
+  async function loadPreview(doc: DocumentDto) {
+    setPreviewDoc(doc);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewFilename(doc.originalFilename);
+
+    try {
+      const token = await getToken();
+      if (!token) throw new ApiError("Not signed in", 401);
+      const signed = await getDocumentDownloadUrl(token, doc.id);
+      setPreviewUrl(signed.downloadUrl);
+      setPreviewFilename(signed.filename || doc.originalFilename);
+    } catch (err) {
+      setPreviewError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load document preview.",
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closePreview() {
+    setPreviewDoc(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewFilename("");
+  }
+
   return (
     <div className="space-y-6">
       <section>
@@ -389,8 +437,12 @@ function DraftView({
               <DocumentUploadSlot
                 renewal={renewal}
                 requirement={doc}
+                uploadedDocuments={doc.documentIds
+                  .map((id) => documentsById.get(id))
+                  .filter((d): d is DocumentDto => Boolean(d))}
                 getToken={getToken}
                 onUploaded={onUploaded}
+                onView={loadPreview}
               />
             </li>
           ))}
@@ -440,6 +492,20 @@ function DraftView({
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         No charge today — fees above are estimates only.
       </p>
+
+      {previewDoc ? (
+        <DocumentPreviewModal
+          open
+          onClose={closePreview}
+          categoryLabel={DOCUMENT_TYPE_LABELS[previewDoc.type] ?? previewDoc.type}
+          title={previewFilename || previewDoc.originalFilename}
+          filename={previewFilename || previewDoc.originalFilename}
+          downloadUrl={previewUrl}
+          loading={previewLoading}
+          error={previewError}
+          onRetry={() => void loadPreview(previewDoc)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -529,13 +595,17 @@ function SubmitBlockingReasons({
 function DocumentUploadSlot({
   renewal,
   requirement,
+  uploadedDocuments,
   getToken,
   onUploaded,
+  onView,
 }: {
   renewal: RenewalDto;
   requirement: RequiredDocumentStatus;
+  uploadedDocuments: DocumentDto[];
   getToken: () => Promise<string | null>;
   onUploaded: () => Promise<void>;
+  onView: (doc: DocumentDto) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -610,6 +680,30 @@ function DocumentUploadSlot({
           {requirement.uploaded ? "Uploaded" : "Needed"}
         </span>
       </div>
+
+      {uploadedDocuments.length > 0 ? (
+        <div className="mt-3 space-y-2">
+          {uploadedDocuments.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50/60 px-3 py-2 dark:border-teal-800 dark:bg-teal-950/40"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {doc.originalFilename}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onView(doc)}
+                className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:hover:bg-teal-900/50"
+              >
+                View
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div
         className={`mt-4 rounded-2xl border-2 border-dashed px-3 py-4 text-center transition ${
