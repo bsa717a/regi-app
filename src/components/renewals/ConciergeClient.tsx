@@ -405,23 +405,15 @@ function DraftView({
 
       <FeeEstimate fees={renewal.feeBreakdown} />
 
-      {!emailVerified ? (
-        <div
-          role="status"
-          className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40"
-        >
-          <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
-            Confirm your email before submitting
-          </p>
-          <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
-            You can keep uploading documents in the meantime. Check your inbox
-            for a verification link, or request a new one below.
-          </p>
-          <div className="mt-3">
-            <ResendVerificationEmailButton variant="link" />
-          </div>
-        </div>
-      ) : null}
+      <SubmitBlockingReasons
+        emailVerified={emailVerified}
+        documentsComplete={renewal.documentsComplete}
+        needsCounty={renewal.needsCounty}
+        countySelected={Boolean(county)}
+        missingDocumentLabels={renewal.requiredDocuments
+          .filter((doc) => !doc.uploaded)
+          .map((doc) => doc.label)}
+      />
 
       {submitError ? (
         <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
@@ -438,6 +430,7 @@ function DraftView({
           !emailVerified ||
           (renewal.needsCounty && !county)
         }
+        aria-describedby="submit-blocking-reasons"
         onClick={() => {
           void onSubmit();
         }}
@@ -447,6 +440,88 @@ function DraftView({
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         No charge today — fees above are estimates only.
       </p>
+    </div>
+  );
+}
+
+function SubmitBlockingReasons({
+  emailVerified,
+  documentsComplete,
+  needsCounty,
+  countySelected,
+  missingDocumentLabels,
+}: {
+  emailVerified: boolean;
+  documentsComplete: boolean;
+  needsCounty: boolean;
+  countySelected: boolean;
+  missingDocumentLabels: string[];
+}) {
+  const reasons: Array<{ key: string; message: string }> = [];
+
+  if (!emailVerified) {
+    reasons.push({
+      key: "email",
+      message: "Verify your email first",
+    });
+  }
+
+  if (!documentsComplete && missingDocumentLabels.length > 0) {
+    if (missingDocumentLabels.length === 1) {
+      reasons.push({
+        key: "docs",
+        message: `Missing ${missingDocumentLabels[0]} document`,
+      });
+    } else {
+      reasons.push({
+        key: "docs",
+        message: `Missing documents: ${missingDocumentLabels.join(", ")}`,
+      });
+    }
+  }
+
+  if (needsCounty && !countySelected) {
+    reasons.push({
+      key: "county",
+      message: "Select a registration county",
+    });
+  }
+
+  if (reasons.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      id="submit-blocking-reasons"
+      className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40"
+      role="status"
+      aria-live="polite"
+    >
+      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+        Complete these items to submit:
+      </p>
+      <ul className="space-y-1.5" aria-label="Blocking reasons">
+        {reasons.map((reason) => (
+          <li
+            key={reason.key}
+            className="flex items-start gap-2 text-sm text-amber-950 dark:text-amber-100"
+          >
+            <span
+              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+              aria-hidden="true"
+            >
+              •
+            </span>
+            <span>{reason.message}</span>
+          </li>
+        ))}
+      </ul>
+      {!emailVerified ? (
+        <div className="pt-1">
+          <ResendVerificationEmailButton variant="link" />
+        </div>
+      ) : null}
     </div>
   );
 }
