@@ -135,6 +135,7 @@ export function GarageClient() {
             type="button"
             onClick={() => setView("adding")}
             className="rounded-xl bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            data-testid="add-vehicle-button"
           >
             Add
           </button>
@@ -213,6 +214,7 @@ export function GarageClient() {
               type="button"
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3.5 text-base font-semibold text-teal-900 transition hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               onClick={() => setView("adding")}
+              data-testid="add-first-registration-button"
             >
               Add a registration
             </button>
@@ -237,9 +239,9 @@ export function GarageClient() {
               </Link>
             </p>
           ) : null}
-          <ul className="space-y-4">
+          <ul className="space-y-4" data-testid="vehicle-list">
             {vehicles.map((vehicle) => (
-              <li key={vehicle.id}>
+              <li key={vehicle.id} data-testid={`vehicle-item-${vehicle.id}`}>
                 <VehicleCard
                   vehicle={vehicle}
                   expanded={expandedId === vehicle.id}

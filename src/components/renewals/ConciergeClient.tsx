@@ -434,6 +434,7 @@ function DraftView({
         onClick={() => {
           void onSubmit();
         }}
+        data-testid="submit-renewal-button"
       >
         {submitting ? "Submitting…" : "Submit renewal"}
       </button>
@@ -644,6 +645,7 @@ function DocumentUploadSlot({
             disabled={uploading}
             className="rounded-xl bg-teal-700 px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:bg-teal-600 dark:hover:bg-teal-500"
             onClick={() => inputRef.current?.click()}
+            data-testid={`upload-doc-${requirement.type}`}
           >
             {requirement.uploaded ? "Replace / add" : "Choose file"}
           </button>
@@ -652,6 +654,7 @@ function DocumentUploadSlot({
             disabled={uploading}
             className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
             onClick={() => cameraRef.current?.click()}
+            data-testid={`upload-doc-camera-${requirement.type}`}
           >
             Take photo
           </button>
@@ -666,6 +669,7 @@ function DocumentUploadSlot({
             void uploadFile(e.target.files?.[0]);
             e.target.value = "";
           }}
+          data-testid={`upload-doc-input-${requirement.type}`}
         />
         <input
           ref={cameraRef}
