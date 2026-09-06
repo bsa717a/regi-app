@@ -9,6 +9,7 @@ import {
   primaryButtonClassName,
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
+import { ResendVerificationEmailButton } from "@/components/auth/ResendVerificationEmailButton";
 import { AppShell } from "@/components/shell/AppShell";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
 import { ProgressTracker } from "@/components/renewals/ProgressTracker";
@@ -405,13 +406,21 @@ function DraftView({
       <FeeEstimate fees={renewal.feeBreakdown} />
 
       {!emailVerified ? (
-        <p
+        <div
           role="status"
-          className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950"
+          className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900 dark:bg-amber-950/40"
         >
-          Confirm your email before submitting. You can keep uploading documents
-          in the meantime.
-        </p>
+          <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+            Confirm your email before submitting
+          </p>
+          <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+            You can keep uploading documents in the meantime. Check your inbox
+            for a verification link, or request a new one below.
+          </p>
+          <div className="mt-3">
+            <ResendVerificationEmailButton variant="link" />
+          </div>
+        </div>
       ) : null}
 
       {submitError ? (
