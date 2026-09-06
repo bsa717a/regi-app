@@ -404,15 +404,15 @@ function DraftView({
 
       <FeeEstimate fees={renewal.feeBreakdown} />
 
-      {!emailVerified ? (
-        <p
-          role="status"
-          className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950"
-        >
-          Confirm your email before submitting. You can keep uploading documents
-          in the meantime.
-        </p>
-      ) : null}
+      <SubmitBlockingReasons
+        emailVerified={emailVerified}
+        documentsComplete={renewal.documentsComplete}
+        needsCounty={renewal.needsCounty}
+        countySelected={Boolean(county)}
+        missingDocumentLabels={renewal.requiredDocuments
+          .filter((doc) => !doc.uploaded)
+          .map((doc) => doc.label)}
+      />
 
       {submitError ? (
         <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
@@ -429,6 +429,7 @@ function DraftView({
           !emailVerified ||
           (renewal.needsCounty && !county)
         }
+        aria-describedby="submit-blocking-reasons"
         onClick={() => {
           void onSubmit();
         }}
@@ -438,6 +439,126 @@ function DraftView({
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         No charge today — fees above are estimates only.
       </p>
+    </div>
+  );
+}
+
+function SubmitBlockingReasons({
+  emailVerified,
+  documentsComplete,
+  needsCounty,
+  countySelected,
+  missingDocumentLabels,
+}: {
+  emailVerified: boolean;
+  documentsComplete: boolean;
+  needsCounty: boolean;
+  countySelected: boolean;
+  missingDocumentLabels: string[];
+}) {
+  const { resendVerificationEmail } = useAuth();
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+
+  const reasons: Array<{ key: string; message: string }> = [];
+
+  if (!emailVerified) {
+    reasons.push({
+      key: "email",
+      message: "Verify your email first",
+    });
+  }
+
+  if (!documentsComplete && missingDocumentLabels.length > 0) {
+    if (missingDocumentLabels.length === 1) {
+      reasons.push({
+        key: "docs",
+        message: `Missing ${missingDocumentLabels[0]} document`,
+      });
+    } else {
+      reasons.push({
+        key: "docs",
+        message: `Missing documents: ${missingDocumentLabels.join(", ")}`,
+      });
+    }
+  }
+
+  if (needsCounty && !countySelected) {
+    reasons.push({
+      key: "county",
+      message: "Select a registration county",
+    });
+  }
+
+  if (reasons.length === 0) {
+    return null;
+  }
+
+  async function handleResend() {
+    setSending(true);
+    setResendError(null);
+    setSent(false);
+    try {
+      await resendVerificationEmail();
+      setSent(true);
+    } catch (err) {
+      setResendError(
+        err instanceof Error
+          ? err.message
+          : "Could not send a verification email.",
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div
+      id="submit-blocking-reasons"
+      className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40"
+      role="status"
+      aria-live="polite"
+    >
+      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+        Complete these items to submit:
+      </p>
+      <ul className="space-y-1.5" aria-label="Blocking reasons">
+        {reasons.map((reason) => (
+          <li
+            key={reason.key}
+            className="flex items-start gap-2 text-sm text-amber-950 dark:text-amber-100"
+          >
+            <span
+              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
+              aria-hidden="true"
+            >
+              •
+            </span>
+            <span>{reason.message}</span>
+            {reason.key === "email" ? (
+              <button
+                type="button"
+                onClick={() => void handleResend()}
+                disabled={sending}
+                className="ml-auto shrink-0 rounded-lg bg-amber-900 px-2.5 py-1.5 text-xs font-medium text-amber-50 transition hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 disabled:opacity-60 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100 dark:focus-visible:outline-amber-200"
+              >
+                {sending ? "Sending…" : "Resend email"}
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {sent ? (
+        <p className="text-sm text-teal-800 dark:text-teal-300">
+          Verification email sent. Check your inbox and spam folder.
+        </p>
+      ) : null}
+      {resendError ? (
+        <p className="text-sm text-rose-700 dark:text-rose-300" role="alert">
+          {resendError}
+        </p>
+      ) : null}
     </div>
   );
 }
