@@ -197,47 +197,45 @@ export function DashboardClient() {
             >
               Quick actions
             </h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-2">
               <button
                 type="button"
-                className={primaryButtonClassName}
+                className={`${primaryButtonClassName} border border-transparent`}
                 onClick={() => setAdding(true)}
               >
                 Add Registration
               </button>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                  disabled={!groups.renewTarget}
-                  onClick={() => {
-                    if (!groups.renewTarget) return;
-                    router.push(
-                      `/renewals/new?registrationId=${encodeURIComponent(groups.renewTarget.id)}`,
-                    );
-                  }}
-                  aria-describedby={
-                    groups.renewTarget ? "renew-target-hint" : "renew-disabled-hint"
-                  }
+              <button
+                type="button"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                disabled={!groups.renewTarget}
+                onClick={() => {
+                  if (!groups.renewTarget) return;
+                  router.push(
+                    `/renewals/new?registrationId=${encodeURIComponent(groups.renewTarget.id)}`,
+                  );
+                }}
+                aria-describedby={
+                  groups.renewTarget ? "renew-target-hint" : "renew-disabled-hint"
+                }
+              >
+                Renew Now
+              </button>
+              {groups.renewTarget ? (
+                <p
+                  id="renew-target-hint"
+                  className="text-xs text-slate-500 dark:text-slate-400 sm:col-start-2"
                 >
-                  Renew Now
-                </button>
-                {groups.renewTarget ? (
-                  <p
-                    id="renew-target-hint"
-                    className="text-xs text-slate-500 dark:text-slate-400"
-                  >
-                    For {renewTargetLabel(groups.renewTarget)} · concierge
-                  </p>
-                ) : (
-                  <p
-                    id="renew-disabled-hint"
-                    className="text-xs text-slate-500 dark:text-slate-400"
-                  >
-                    No renewals due yet
-                  </p>
-                )}
-              </div>
+                  For {renewTargetLabel(groups.renewTarget)} · concierge
+                </p>
+              ) : (
+                <p
+                  id="renew-disabled-hint"
+                  className="text-xs text-slate-500 dark:text-slate-400 sm:col-start-2"
+                >
+                  No renewals due yet
+                </p>
+              )}
             </div>
           </section>
 
