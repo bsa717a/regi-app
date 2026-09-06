@@ -9,6 +9,7 @@ import {
   primaryButtonClassName,
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
+import { ResendVerificationEmailButton } from "@/components/auth/ResendVerificationEmailButton";
 import { AppShell } from "@/components/shell/AppShell";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
 import { ProgressTracker } from "@/components/renewals/ProgressTracker";
@@ -456,11 +457,6 @@ function SubmitBlockingReasons({
   countySelected: boolean;
   missingDocumentLabels: string[];
 }) {
-  const { resendVerificationEmail } = useAuth();
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [resendError, setResendError] = useState<string | null>(null);
-
   const reasons: Array<{ key: string; message: string }> = [];
 
   if (!emailVerified) {
@@ -495,28 +491,10 @@ function SubmitBlockingReasons({
     return null;
   }
 
-  async function handleResend() {
-    setSending(true);
-    setResendError(null);
-    setSent(false);
-    try {
-      await resendVerificationEmail();
-      setSent(true);
-    } catch (err) {
-      setResendError(
-        err instanceof Error
-          ? err.message
-          : "Could not send a verification email.",
-      );
-    } finally {
-      setSending(false);
-    }
-  }
-
   return (
     <div
       id="submit-blocking-reasons"
-      className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40"
+      className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40"
       role="status"
       aria-live="polite"
     >
@@ -536,28 +514,13 @@ function SubmitBlockingReasons({
               •
             </span>
             <span>{reason.message}</span>
-            {reason.key === "email" ? (
-              <button
-                type="button"
-                onClick={() => void handleResend()}
-                disabled={sending}
-                className="ml-auto shrink-0 rounded-lg bg-amber-900 px-2.5 py-1.5 text-xs font-medium text-amber-50 transition hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 disabled:opacity-60 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100 dark:focus-visible:outline-amber-200"
-              >
-                {sending ? "Sending…" : "Resend email"}
-              </button>
-            ) : null}
           </li>
         ))}
       </ul>
-      {sent ? (
-        <p className="text-sm text-teal-800 dark:text-teal-300">
-          Verification email sent. Check your inbox and spam folder.
-        </p>
-      ) : null}
-      {resendError ? (
-        <p className="text-sm text-rose-700 dark:text-rose-300" role="alert">
-          {resendError}
-        </p>
+      {!emailVerified ? (
+        <div className="pt-1">
+          <ResendVerificationEmailButton variant="link" />
+        </div>
       ) : null}
     </div>
   );
