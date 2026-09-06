@@ -10,6 +10,7 @@ import {
   labelClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { ResendVerificationEmailButton } from "@/components/auth/ResendVerificationEmailButton";
 import { ThemeSetting } from "@/components/settings/ThemeSetting";
 import { HouseholdPanel } from "@/components/settings/HouseholdPanel";
 import { NativeSecuritySection } from "@/components/settings/NativeSecuritySection";
@@ -47,6 +48,7 @@ export function SettingsPanel() {
     <SettingsForm
       key={profile.id}
       userEmail={user?.email ?? profile.email}
+      emailVerified={user?.emailVerified ?? false}
       profile={profile}
       getIdToken={getIdToken}
       refreshProfile={refreshProfile}
@@ -57,12 +59,14 @@ export function SettingsPanel() {
 
 function SettingsForm({
   userEmail,
+  emailVerified,
   profile,
   getIdToken,
   refreshProfile,
   logOut,
 }: {
   userEmail: string;
+  emailVerified: boolean;
   profile: AuthUserProfile;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
   refreshProfile: () => Promise<AuthUserProfile | null>;
@@ -147,7 +151,43 @@ function SettingsForm({
 
       <section>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Signed in as {userEmail}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Signed in as {userEmail}
+          </p>
+          {emailVerified ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800 dark:bg-teal-900/50 dark:text-teal-200">
+              <svg
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Verified
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+              Not verified
+            </span>
+          )}
+        </div>
+        {!emailVerified ? (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40">
+            <p className="text-sm text-amber-900 dark:text-amber-100">
+              Verify your email to unlock renewals. Check your inbox for a
+              verification link, or request a new one below.
+            </p>
+            <div className="mt-2">
+              <ResendVerificationEmailButton variant="link" />
+            </div>
+          </div>
+        ) : null}
         <form onSubmit={saveProfile} className="mt-4 space-y-4">
           <div>
             <label htmlFor="settings-name" className={labelClassName}>
