@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     if (err instanceof EmailDeliveryNotConfiguredError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
+    console.error("[verification-email] Failed to send:", err);
     return NextResponse.json(
       { error: "Could not send a verification email. Please try again." },
       { status: 502 },

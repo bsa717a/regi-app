@@ -174,15 +174,20 @@ export function GarageDoorLogin() {
                   </button>
                 </form>
 
-                <p className="mt-5 text-center text-sm text-neutral-300">
-                  New to REGI?{" "}
+                <div className="mt-6 pt-5 border-t border-white/10">
+                  <p className="text-center text-sm font-medium text-neutral-200">
+                    New to REGI?
+                  </p>
+                  <p className="mt-1 text-center text-xs text-neutral-400">
+                    Track your registrations in under a minute
+                  </p>
                   <Link
                     href="/signup"
-                    className={`${linkClassName} text-teal-200 hover:text-teal-100`}
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-xl border-2 border-teal-400/70 bg-teal-400/10 px-4 py-3 text-base font-semibold text-teal-200 transition hover:border-teal-300 hover:bg-teal-400/20 hover:text-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400"
                   >
-                    Create an account
+                    Create account
                   </Link>
-                </p>
+                </div>
                 <LegalLinks className="mt-3 text-center text-sm [&_a]:text-teal-200 [&_a]:hover:text-teal-100" />
               </div>
             </div>

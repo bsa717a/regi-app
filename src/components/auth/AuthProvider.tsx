@@ -213,8 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(nextProfile);
         try {
           await requestVerificationEmail(token);
-        } catch {
-          // Account exists; the banner can resend if this first email fails.
+        } catch (err) {
+          console.error("[signUp] Verification email failed:", err);
         }
       },
       async signIn(email, password) {
