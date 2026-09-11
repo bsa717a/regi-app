@@ -96,6 +96,7 @@ export function VehicleCard({
   const [registrationDocError, setRegistrationDocError] = useState<
     string | null
   >(null);
+  const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -591,6 +592,18 @@ export function VehicleCard({
               />
             </dl>
 
+            {vehicle.photoUrl ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoPreviewOpen(true);
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 sm:w-auto"
+              >
+                View garage photo
+              </button>
+            ) : null}
+
             {registrationDoc ? (
               <button
                 type="button"
@@ -748,6 +761,19 @@ export function VehicleCard({
         confirmBusy={manualConfirmBusy}
         confirmLabel="Yes, save this manual"
         rejectLabel="No, that’s not it"
+      />
+
+      <DocumentPreviewModal
+        open={photoPreviewOpen && Boolean(vehicle.photoUrl)}
+        onClose={() => setPhotoPreviewOpen(false)}
+        categoryLabel="Garage photo"
+        title={label}
+        filename="garage-photo.jpg"
+        downloadUrl={vehicle.photoUrl}
+        kind="image"
+        loading={false}
+        error={null}
+        onRetry={() => setPhotoPreviewOpen(true)}
       />
 
       <DocumentPreviewModal

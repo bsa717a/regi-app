@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import {
   ApiError,
   adminAddRenewalNote,
@@ -11,7 +12,7 @@ import {
   adminResendRenewalEmail,
   adminUpdateRenewalStatus,
 } from "@/lib/api/client";
-import type { AdminRenewalDetail } from "@/lib/admin/types";
+import type { AdminRenewalDetail, AdminDocumentWithUrl } from "@/lib/admin/types";
 import { formatUsdCents } from "@/lib/renewals/formatMoney";
 import {
   fieldClassName,
@@ -35,13 +36,56 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<AdminDocumentWithUrl | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const previewRequestId = useRef(0);
 
   const reload = useCallback(async () => {
     const token = await getIdToken();
     if (!token) throw new Error("Not signed in");
     const data = await adminGetRenewal(token, renewalId);
     setRenewal(data);
+    return data;
   }, [getIdToken, renewalId]);
+
+  async function loadPreview(doc: AdminDocumentWithUrl) {
+    const requestId = ++previewRequestId.current;
+    setPreviewDoc(doc);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const data = await reload();
+      if (requestId !== previewRequestId.current) return;
+      const fresh = data.documents.find((d) => d.id === doc.id);
+      if (!fresh?.downloadUrl) {
+        if (fresh) setPreviewDoc(fresh);
+        setPreviewError("Download URL is unavailable for this document.");
+        return;
+      }
+      setPreviewDoc(fresh);
+    } catch (err) {
+      if (requestId !== previewRequestId.current) return;
+      setPreviewError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load document preview.",
+      );
+    } finally {
+      if (requestId === previewRequestId.current) {
+        setPreviewLoading(false);
+      }
+    }
+  }
+
+  function closePreview() {
+    previewRequestId.current += 1;
+    setPreviewDoc(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -275,20 +319,29 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                         {new Date(doc.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    {doc.downloadUrl ? (
-                      <a
-                        href={doc.downloadUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={linkClassName}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void loadPreview(doc)}
+                        className="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/50"
                       >
-                        Download
-                      </a>
-                    ) : (
-                      <span className="text-xs text-slate-400">
-                        URL unavailable
-                      </span>
-                    )}
+                        View
+                      </button>
+                      {doc.downloadUrl ? (
+                        <a
+                          href={doc.downloadUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={linkClassName}
+                        >
+                          Download
+                        </a>
+                      ) : (
+                        <span className="text-xs text-slate-400">
+                          URL unavailable
+                        </span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -318,6 +371,20 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
             </form>
           </section>
         </div>
+      ) : null}
+
+      {previewDoc ? (
+        <DocumentPreviewModal
+          open
+          onClose={closePreview}
+          categoryLabel={previewDoc.type}
+          title={previewDoc.originalFilename}
+          filename={previewDoc.originalFilename}
+          downloadUrl={previewLoading ? null : previewDoc.downloadUrl}
+          loading={previewLoading}
+          error={previewError}
+          onRetry={() => void loadPreview(previewDoc)}
+        />
       ) : null}
     </AdminShell>
   );

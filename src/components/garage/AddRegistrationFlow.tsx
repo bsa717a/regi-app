@@ -18,6 +18,7 @@ import {
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
+import { TappableImagePreview } from "@/components/documents/TappableImagePreview";
 import { RegistrationPhotoPicker } from "@/components/garage/RegistrationPhotoPicker";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import { YearMakeModelPickers } from "@/components/garage/YearMakeModelPickers";
@@ -1523,12 +1524,29 @@ export function AddRegistrationFlow({
         <form onSubmit={onSave} className="mt-6 space-y-5">
           <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700/80 dark:bg-slate-900">
             <div className="h-28">
-              <VehicleIllustration
-                bodyClass={draft.bodyClass}
-                photoUrl={detailsPhotoUrl}
-                label={detailsHeadline || typeLabel}
-                registrationType={registrationType}
-              />
+              {detailsPhotoUrl ? (
+                <TappableImagePreview
+                  url={detailsPhotoUrl}
+                  filename={pendingPhotoFile?.name || "garage-photo.jpg"}
+                  title={detailsHeadline || typeLabel}
+                  categoryLabel="Garage photo"
+                  className="h-full w-full"
+                >
+                  <VehicleIllustration
+                    bodyClass={draft.bodyClass}
+                    photoUrl={detailsPhotoUrl}
+                    label={detailsHeadline || typeLabel}
+                    registrationType={registrationType}
+                  />
+                </TappableImagePreview>
+              ) : (
+                <VehicleIllustration
+                  bodyClass={draft.bodyClass}
+                  photoUrl={detailsPhotoUrl}
+                  label={detailsHeadline || typeLabel}
+                  registrationType={registrationType}
+                />
+              )}
             </div>
             <div className="rounded-b-3xl bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
               {detailsHeadline || typeLabel}

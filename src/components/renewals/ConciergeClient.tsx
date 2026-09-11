@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { DocumentType } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/auth/AuthFormStyles";
 import { ResendVerificationEmailButton } from "@/components/auth/ResendVerificationEmailButton";
 import { AppShell } from "@/components/shell/AppShell";
+import { useVaultDocumentPreview } from "@/components/documents/useVaultDocumentPreview";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
 import { ProgressTracker } from "@/components/renewals/ProgressTracker";
 import {
@@ -19,8 +20,9 @@ import {
   getRenewal,
   submitRenewal,
 } from "@/lib/api/client";
-import { MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
+import { DOCUMENT_TYPE_LABELS, MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
+import type { DocumentDto } from "@/lib/documents/types";
 import type { RenewalDto, RequiredDocumentStatus } from "@/lib/renewals/types";
 import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
@@ -50,6 +52,8 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [countySaving, setCountySaving] = useState(false);
+  const getToken = async () => idToken ?? (await getIdToken());
+  const documentPreview = useVaultDocumentPreview(getToken);
 
   useEffect(() => {
     if (authLoading) return;
@@ -199,6 +203,10 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
               Refresh status
             </button>
           </section>
+          <UploadedDocumentsSection
+            documents={renewal.documents}
+            onView={documentPreview.open}
+          />
           <section aria-labelledby="viewer-progress-heading">
             <h2
               id="viewer-progress-heading"
@@ -219,7 +227,11 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
 
       {!loading && renewal && renewal.registration.canEdit ? (
         isPostSubmit(renewal.status) ? (
-          <SubmittedView renewal={renewal} onRefresh={refresh} />
+          <SubmittedView
+            renewal={renewal}
+            onRefresh={refresh}
+            onView={documentPreview.open}
+          />
         ) : (
           <DraftView
             renewal={renewal}
@@ -232,20 +244,69 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
               await refresh();
             }}
             onSubmit={handleSubmit}
-            getToken={async () => idToken ?? (await getIdToken())}
+            getToken={getToken}
+            onView={documentPreview.open}
           />
         )
       ) : null}
+      {documentPreview.modal}
     </AppShell>
+  );
+}
+
+function UploadedDocumentsSection({
+  documents,
+  onView,
+}: {
+  documents: DocumentDto[];
+  onView: (doc: DocumentDto) => void;
+}) {
+  if (documents.length === 0) return null;
+
+  return (
+    <section aria-labelledby="uploaded-docs-heading">
+      <h2
+        id="uploaded-docs-heading"
+        className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+      >
+        Uploaded documents
+      </h2>
+      <ul className="mt-3 space-y-2">
+        {documents.map((doc) => (
+          <li
+            key={doc.id}
+            className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
+          >
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800 dark:text-teal-300">
+                {DOCUMENT_TYPE_LABELS[doc.type] ?? doc.type}
+              </p>
+              <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                {doc.originalFilename}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onView(doc)}
+              className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:hover:bg-teal-950/50"
+            >
+              View
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
 function SubmittedView({
   renewal,
   onRefresh,
+  onView,
 }: {
   renewal: RenewalDto;
   onRefresh: () => void;
+  onView: (doc: DocumentDto) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -285,6 +346,8 @@ function SubmittedView({
         </div>
       </section>
 
+      <UploadedDocumentsSection documents={renewal.documents} onView={onView} />
+
       <FeeEstimate fees={renewal.feeBreakdown} />
     </div>
   );
@@ -300,6 +363,7 @@ function DraftView({
   onUploaded,
   onSubmit,
   getToken,
+  onView,
 }: {
   renewal: RenewalDto;
   emailVerified: boolean;
@@ -310,9 +374,15 @@ function DraftView({
   onUploaded: () => Promise<void>;
   onSubmit: () => Promise<void>;
   getToken: () => Promise<string | null>;
+  onView: (doc: DocumentDto) => void;
 }) {
   const missingCount = renewal.missingDocumentTypes.length;
   const county = renewal.feeBreakdown.county ?? "";
+
+  const documentsById = useMemo(
+    () => new Map(renewal.documents.map((doc) => [doc.id, doc])),
+    [renewal.documents],
+  );
 
   return (
     <div className="space-y-6">
@@ -389,8 +459,12 @@ function DraftView({
               <DocumentUploadSlot
                 renewal={renewal}
                 requirement={doc}
+                uploadedDocuments={doc.documentIds
+                  .map((id) => documentsById.get(id))
+                  .filter((d): d is DocumentDto => Boolean(d))}
                 getToken={getToken}
                 onUploaded={onUploaded}
+                onView={onView}
               />
             </li>
           ))}
@@ -529,13 +603,17 @@ function SubmitBlockingReasons({
 function DocumentUploadSlot({
   renewal,
   requirement,
+  uploadedDocuments,
   getToken,
   onUploaded,
+  onView,
 }: {
   renewal: RenewalDto;
   requirement: RequiredDocumentStatus;
+  uploadedDocuments: DocumentDto[];
   getToken: () => Promise<string | null>;
   onUploaded: () => Promise<void>;
+  onView: (doc: DocumentDto) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -610,6 +688,30 @@ function DocumentUploadSlot({
           {requirement.uploaded ? "Uploaded" : "Needed"}
         </span>
       </div>
+
+      {uploadedDocuments.length > 0 ? (
+        <div className="mt-3 space-y-2">
+          {uploadedDocuments.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50/60 px-3 py-2 dark:border-teal-800 dark:bg-teal-950/40"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                  {doc.originalFilename}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onView(doc)}
+                className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300 dark:hover:bg-teal-900/50"
+              >
+                View
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div
         className={`mt-4 rounded-2xl border-2 border-dashed px-3 py-4 text-center transition ${
