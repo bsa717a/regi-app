@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import {
   fieldClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import {
+  inferPreviewKind,
+  type PreviewKind,
+} from "@/lib/documents/previewKind";
 
-function isPdfFilename(filename: string): boolean {
-  return filename.trim().toLowerCase().endsWith(".pdf");
-}
-
-function isImageFilename(filename: string): boolean {
-  return /\.(jpe?g|png|webp|heic|heif)$/i.test(filename.trim());
-}
+const secondaryDownloadClassName =
+  "inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800";
 
 export function DocumentPreviewModal({
   open,
@@ -24,6 +23,9 @@ export function DocumentPreviewModal({
   loading,
   error,
   onRetry,
+  kind,
+  extraActions,
+  closeDisabled = false,
   canRename = false,
   onRename,
   confirmMode = false,
@@ -42,6 +44,9 @@ export function DocumentPreviewModal({
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  kind?: PreviewKind;
+  extraActions?: ReactNode;
+  closeDisabled?: boolean;
   canRename?: boolean;
   onRename?: (filename: string) => Promise<void>;
   confirmMode?: boolean;
@@ -62,12 +67,14 @@ export function DocumentPreviewModal({
     if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !renameBusy && !loading) onClose();
+      if (event.key === "Escape" && !renameBusy && !loading && !closeDisabled) {
+        onClose();
+      }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose, renameBusy, loading]);
+  }, [open, onClose, renameBusy, loading, closeDisabled]);
 
   useEffect(() => {
     if (!open) {
@@ -86,9 +93,14 @@ export function DocumentPreviewModal({
 
   if (!open) return null;
 
-  const pdf = isPdfFilename(filename);
-  const image = !pdf && isImageFilename(filename);
+  const previewKind = inferPreviewKind({ filename, url: downloadUrl, kind });
+  const pdf = previewKind === "pdf";
+  const image = previewKind === "image";
   const showRename = canRename && Boolean(onRename);
+  const closeBlocked = renameBusy || loading || closeDisabled;
+  const downloadClassName = extraActions
+    ? `${secondaryDownloadClassName} sm:w-auto`
+    : `${primaryButtonClassName} sm:w-auto`;
 
   async function handleRenameSave() {
     if (!onRename) return;
@@ -119,16 +131,12 @@ export function DocumentPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       onClick={(event) => {
-        if (
-          event.target === event.currentTarget &&
-          !loading &&
-          !renameBusy
-        ) {
+        if (event.target === event.currentTarget && !closeBlocked) {
           onClose();
         }
       }}
@@ -209,7 +217,7 @@ export function DocumentPreviewModal({
           <button
             type="button"
             onClick={onClose}
-            disabled={renameBusy}
+            disabled={closeBlocked}
             className="shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
           >
             Close
@@ -266,21 +274,22 @@ export function DocumentPreviewModal({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-2 border-t border-slate-100 px-5 py-4 sm:flex-row sm:flex-wrap sm:justify-end">
+          {extraActions}
           {confirmMode ? (
             <>
               <button
                 type="button"
                 onClick={() => onReject?.()}
-                disabled={confirmBusy || loading}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                disabled={confirmBusy || loading || closeDisabled}
+                className={secondaryDownloadClassName}
               >
                 {rejectLabel}
               </button>
               <button
                 type="button"
                 onClick={() => void onConfirm?.()}
-                disabled={confirmBusy || loading || !downloadUrl}
+                disabled={confirmBusy || loading || !downloadUrl || closeDisabled}
                 className={`${primaryButtonClassName} sm:w-auto`}
               >
                 {confirmBusy ? "Saving…" : confirmLabel}
@@ -290,7 +299,7 @@ export function DocumentPreviewModal({
             <a
               href={downloadUrl}
               download={filename}
-              className={`${primaryButtonClassName} sm:w-auto`}
+              className={downloadClassName}
             >
               Download
             </a>
@@ -298,7 +307,7 @@ export function DocumentPreviewModal({
             <button
               type="button"
               disabled
-              className={`${primaryButtonClassName} sm:w-auto`}
+              className={downloadClassName}
             >
               Download
             </button>

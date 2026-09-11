@@ -647,9 +647,20 @@ function UploadSheet({
   const [enhanceEnhanced, setEnhanceEnhanced] =
     useState<PreparedScanImage | null>(null);
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
+  const [filePreviewOpen, setFilePreviewOpen] = useState(false);
 
   const vehicle = vehicles.find((row) => row.id === vehicleId) ?? vehicles[0];
   const previewBlocking = enhancing || showEnhancePreview;
+  const filePreviewUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+    };
+  }, [filePreviewUrl]);
 
   function isPdf(next: File): boolean {
     return (
@@ -885,6 +896,15 @@ function UploadSheet({
                   ? file.name
                   : "Photo or PDF"}
             </p>
+            {file && filePreviewUrl ? (
+              <button
+                type="button"
+                onClick={() => setFilePreviewOpen(true)}
+                className="mt-2 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline"
+              >
+                View selected file
+              </button>
+            ) : null}
             <p className="mt-1 text-sm text-slate-500">
               JPEG, PNG, WebP, HEIC, or PDF · up to {maxMb} MB. Photos are
               auto-enhanced into a clean scan.
@@ -950,6 +970,20 @@ function UploadSheet({
           </button>
         </form>
       </div>
+
+      {file && filePreviewUrl ? (
+        <DocumentPreviewModal
+          open={filePreviewOpen}
+          onClose={() => setFilePreviewOpen(false)}
+          categoryLabel={DOCUMENT_TYPE_LABELS[type]}
+          title={file.name}
+          filename={file.name}
+          downloadUrl={filePreviewUrl}
+          loading={false}
+          error={null}
+          onRetry={() => setFilePreviewOpen(true)}
+        />
+      ) : null}
     </div>
   );
 }

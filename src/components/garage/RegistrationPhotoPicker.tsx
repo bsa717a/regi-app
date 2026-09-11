@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { labelClassName } from "@/components/auth/AuthFormStyles";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { inferImageContentType } from "@/lib/images/compress";
 import { isAllowedPhotoContentType } from "@/lib/registrations/photoTypes";
 
@@ -18,6 +19,7 @@ export function RegistrationPhotoPicker({
 }) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const previewUrl = useMemo(() => {
     if (!pendingFile) return null;
@@ -66,25 +68,27 @@ export function RegistrationPhotoPicker({
 
       {hasPhoto ? (
         <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-          <div className="aspect-[16/10] w-full overflow-hidden bg-slate-100">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="aspect-[16/10] w-full overflow-hidden bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            aria-label="View garage photo"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element -- preview blob or signed URL */}
             <img
               src={displayUrl!}
               alt="Vehicle photo preview"
               className="h-full w-full object-cover"
             />
-          </div>
+          </button>
           <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
-            {currentPhotoUrl && !pendingFile ? (
-              <a
-                href={currentPhotoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline"
-              >
-                View photo
-              </a>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            >
+              View photo
+            </button>
             <button
               type="button"
               disabled={disabled}
@@ -146,6 +150,19 @@ export function RegistrationPhotoPicker({
           acceptFile(e.target.files?.[0]);
           e.target.value = "";
         }}
+      />
+
+      <DocumentPreviewModal
+        open={previewOpen && Boolean(displayUrl)}
+        onClose={() => setPreviewOpen(false)}
+        categoryLabel="Garage photo"
+        title="Garage photo"
+        filename={pendingFile?.name || "garage-photo.jpg"}
+        downloadUrl={displayUrl}
+        kind="image"
+        loading={false}
+        error={null}
+        onRetry={() => setPreviewOpen(true)}
       />
     </div>
   );

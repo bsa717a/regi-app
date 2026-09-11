@@ -27,6 +27,7 @@ import {
   scanMaintenanceReceipt,
   updateMaintenanceTask,
 } from "@/lib/api/client";
+import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { DocumentEnhancePreview } from "@/components/images/DocumentEnhancePreview";
 import type { PreparedScanImage } from "@/lib/images/compress";
 import { prepareAndEnhanceDocument } from "@/lib/images/enhancePipeline";
@@ -154,6 +155,11 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [pendingEnhanceTask, setPendingEnhanceTask] =
     useState<MaintenanceTaskDto | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<{
+    url: string;
+    filename: string;
+    title: string;
+  } | null>(null);
 
   const reload = useCallback(async () => {
     const token = idToken ?? (await getIdToken());
@@ -1081,17 +1087,25 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
                             </p>
                           ) : null}
                           {log.receiptUrl ? (
-                            <a
-                              href={log.receiptUrl}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setReceiptPreview({
+                                  url: log.receiptUrl!,
+                                  filename:
+                                    log.receiptFilename || "receipt.jpg",
+                                  title: log.taskName
+                                    ? `${log.taskName} receipt`
+                                    : "Service receipt",
+                                })
+                              }
                               className="mt-1 inline-flex text-sm font-semibold text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
                             >
                               View receipt
                               {log.receiptFilename
                                 ? ` (${log.receiptFilename})`
                                 : ""}
-                            </a>
+                            </button>
                           ) : null}
                         </div>
                         {overview.canEdit ? (
@@ -1132,16 +1146,43 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
               </h3>
               {receiptPreviewUrl ? (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={receiptPreviewUrl}
-                    alt="Receipt preview"
-                    className="max-h-40 w-full object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setReceiptPreview({
+                        url: receiptPreviewUrl,
+                        filename: receiptFile?.name || "receipt.jpg",
+                        title: markDoneTask
+                          ? `${markDoneTask.name} receipt`
+                          : "Receipt",
+                      })
+                    }
+                    className="block w-full"
+                    aria-label="View attached receipt"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={receiptPreviewUrl}
+                      alt="Receipt preview"
+                      className="max-h-40 w-full object-cover"
+                    />
+                  </button>
                   <div className="flex items-center justify-between gap-2 px-3 py-2">
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      Receipt attached
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setReceiptPreview({
+                          url: receiptPreviewUrl,
+                          filename: receiptFile?.name || "receipt.jpg",
+                          title: markDoneTask
+                            ? `${markDoneTask.name} receipt`
+                            : "Receipt",
+                        })
+                      }
+                      className="text-xs font-semibold text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
+                    >
+                      View receipt
+                    </button>
                     <button
                       type="button"
                       onClick={() => clearReceiptAttachment()}
@@ -1343,6 +1384,21 @@ export function MaintenanceClient({ registrationId }: { registrationId: string }
           </div>
         ) : null}
       </section>
+
+      {receiptPreview ? (
+        <DocumentPreviewModal
+          open
+          onClose={() => setReceiptPreview(null)}
+          categoryLabel="Receipt"
+          title={receiptPreview.title}
+          filename={receiptPreview.filename}
+          downloadUrl={receiptPreview.url}
+          kind="image"
+          loading={false}
+          error={null}
+          onRetry={() => undefined}
+        />
+      ) : null}
     </AppShell>
   );
 }

@@ -313,24 +313,22 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                       </p>
                     </div>
                     <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void loadPreview(doc)}
+                        className="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/50"
+                      >
+                        View
+                      </button>
                       {doc.downloadUrl ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => void loadPreview(doc)}
-                            className="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/50"
-                          >
-                            View
-                          </button>
-                          <a
-                            href={doc.downloadUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={linkClassName}
-                          >
-                            Download
-                          </a>
-                        </>
+                        <a
+                          href={doc.downloadUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={linkClassName}
+                        >
+                          Download
+                        </a>
                       ) : (
                         <span className="text-xs text-slate-400">
                           URL unavailable

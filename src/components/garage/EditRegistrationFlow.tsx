@@ -7,6 +7,7 @@ import {
   primaryButtonClassName,
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
+import { TappableImagePreview } from "@/components/documents/TappableImagePreview";
 import { ExpirationPicker } from "@/components/garage/ExpirationPicker";
 import { RegistrationPhotoGallery } from "@/components/garage/RegistrationPhotoGallery";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
@@ -282,12 +283,29 @@ export function EditRegistrationFlow({
 
       <div className="mt-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
         <div className="h-24">
-          <VehicleIllustration
-            bodyClass={registration.bodyClass}
-            photoUrl={coverPreviewUrl}
-            label={registration.nickname || typeLabel}
-            registrationType={registration.type}
-          />
+          {coverPreviewUrl ? (
+            <TappableImagePreview
+              url={coverPreviewUrl}
+              filename="garage-photo.jpg"
+              title={registration.nickname || typeLabel}
+              categoryLabel="Garage photo"
+              className="h-full w-full"
+            >
+              <VehicleIllustration
+                bodyClass={registration.bodyClass}
+                photoUrl={coverPreviewUrl}
+                label={registration.nickname || typeLabel}
+                registrationType={registration.type}
+              />
+            </TappableImagePreview>
+          ) : (
+            <VehicleIllustration
+              bodyClass={registration.bodyClass}
+              photoUrl={coverPreviewUrl}
+              label={registration.nickname || typeLabel}
+              registrationType={registration.type}
+            />
+          )}
         </div>
         <div className="px-4 py-3">
           <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200/80">

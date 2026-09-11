@@ -224,6 +224,11 @@ export function RegistrationPhotoGallery({
         open={previewItem != null}
         onClose={() => setPreviewKey(null)}
         imageUrl={previewItem?.url ?? ""}
+        filename={
+          previewItem?.pendingIndex != null
+            ? pendingAdds[previewItem.pendingIndex]?.name || "garage-photo.jpg"
+            : "garage-photo.jpg"
+        }
         isCover={previewItem?.isCover ?? false}
         disabled={disabled}
         onSetCover={() => {
