@@ -37,13 +37,48 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [previewDoc, setPreviewDoc] = useState<AdminDocumentWithUrl | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     const token = await getIdToken();
     if (!token) throw new Error("Not signed in");
     const data = await adminGetRenewal(token, renewalId);
     setRenewal(data);
+    return data;
   }, [getIdToken, renewalId]);
+
+  async function loadPreview(doc: AdminDocumentWithUrl) {
+    setPreviewDoc(doc);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const data = await reload();
+      const fresh = data.documents.find((d) => d.id === doc.id);
+      if (!fresh?.downloadUrl) {
+        if (fresh) setPreviewDoc(fresh);
+        setPreviewError("Download URL is unavailable for this document.");
+        return;
+      }
+      setPreviewDoc(fresh);
+    } catch (err) {
+      setPreviewError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Could not load document preview.",
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closePreview() {
+    setPreviewDoc(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -282,7 +317,7 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
                         <>
                           <button
                             type="button"
-                            onClick={() => setPreviewDoc(doc)}
+                            onClick={() => void loadPreview(doc)}
                             className="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/50"
                           >
                             View
@@ -336,18 +371,14 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
       {previewDoc ? (
         <DocumentPreviewModal
           open
-          onClose={() => setPreviewDoc(null)}
+          onClose={closePreview}
           categoryLabel={previewDoc.type}
           title={previewDoc.originalFilename}
           filename={previewDoc.originalFilename}
-          downloadUrl={previewDoc.downloadUrl}
-          loading={false}
-          error={
-            previewDoc.downloadUrl
-              ? null
-              : "Download URL is unavailable for this document."
-          }
-          onRetry={() => void reload()}
+          downloadUrl={previewLoading ? null : previewDoc.downloadUrl}
+          loading={previewLoading}
+          error={previewError}
+          onRetry={() => void loadPreview(previewDoc)}
         />
       ) : null}
     </AdminShell>
