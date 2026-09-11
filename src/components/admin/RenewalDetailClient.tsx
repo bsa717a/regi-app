@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -39,6 +39,7 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   const [previewDoc, setPreviewDoc] = useState<AdminDocumentWithUrl | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const previewRequestId = useRef(0);
 
   const reload = useCallback(async () => {
     const token = await getIdToken();
@@ -49,11 +50,13 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
   }, [getIdToken, renewalId]);
 
   async function loadPreview(doc: AdminDocumentWithUrl) {
+    const requestId = ++previewRequestId.current;
     setPreviewDoc(doc);
     setPreviewLoading(true);
     setPreviewError(null);
     try {
       const data = await reload();
+      if (requestId !== previewRequestId.current) return;
       const fresh = data.documents.find((d) => d.id === doc.id);
       if (!fresh?.downloadUrl) {
         if (fresh) setPreviewDoc(fresh);
@@ -62,6 +65,7 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
       }
       setPreviewDoc(fresh);
     } catch (err) {
+      if (requestId !== previewRequestId.current) return;
       setPreviewError(
         err instanceof ApiError
           ? err.message
@@ -70,11 +74,14 @@ export function RenewalDetailClient({ renewalId }: { renewalId: string }) {
             : "Could not load document preview.",
       );
     } finally {
-      setPreviewLoading(false);
+      if (requestId === previewRequestId.current) {
+        setPreviewLoading(false);
+      }
     }
   }
 
   function closePreview() {
+    previewRequestId.current += 1;
     setPreviewDoc(null);
     setPreviewLoading(false);
     setPreviewError(null);
