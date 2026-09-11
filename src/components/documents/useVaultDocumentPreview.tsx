@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import { ApiError, getDocumentDownloadUrl } from "@/lib/api/client";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/documents/constants";
@@ -14,8 +14,10 @@ export function useVaultDocumentPreview(
   const [previewFilename, setPreviewFilename] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const previewRequestId = useRef(0);
 
   async function open(doc: DocumentDto) {
+    const requestId = ++previewRequestId.current;
     setPreviewDoc(doc);
     setPreviewLoading(true);
     setPreviewError(null);
@@ -26,9 +28,11 @@ export function useVaultDocumentPreview(
       const token = await getToken();
       if (!token) throw new ApiError("Not signed in", 401);
       const signed = await getDocumentDownloadUrl(token, doc.id);
+      if (requestId !== previewRequestId.current) return;
       setPreviewUrl(signed.downloadUrl);
       setPreviewFilename(signed.filename || doc.originalFilename);
     } catch (err) {
+      if (requestId !== previewRequestId.current) return;
       setPreviewError(
         err instanceof ApiError
           ? err.message
@@ -37,11 +41,14 @@ export function useVaultDocumentPreview(
             : "Could not load document preview.",
       );
     } finally {
-      setPreviewLoading(false);
+      if (requestId === previewRequestId.current) {
+        setPreviewLoading(false);
+      }
     }
   }
 
   function close() {
+    previewRequestId.current += 1;
     setPreviewDoc(null);
     setPreviewLoading(false);
     setPreviewError(null);

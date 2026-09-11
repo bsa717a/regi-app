@@ -67,14 +67,14 @@ export function DocumentPreviewModal({
     if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !renameBusy && !loading && !closeDisabled) {
+      if (event.key === "Escape" && !renameBusy && !closeDisabled) {
         onClose();
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose, renameBusy, loading, closeDisabled]);
+  }, [open, onClose, renameBusy, closeDisabled]);
 
   useEffect(() => {
     if (!open) {
@@ -97,7 +97,7 @@ export function DocumentPreviewModal({
   const pdf = previewKind === "pdf";
   const image = previewKind === "image";
   const showRename = canRename && Boolean(onRename);
-  const closeBlocked = renameBusy || loading || closeDisabled;
+  const closeBlocked = renameBusy || closeDisabled;
   const downloadClassName = extraActions
     ? `${secondaryDownloadClassName} sm:w-auto`
     : `${primaryButtonClassName} sm:w-auto`;
