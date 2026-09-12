@@ -7,3 +7,7 @@ initSentry(Sentry, {
   environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
   nodeEnv: process.env.NODE_ENV,
 });
+
+// Required by @sentry/nextjs for App Router navigations. No traces are sent
+// while tracesSampleRate is 0 (perf tracing is out of MVP).
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
