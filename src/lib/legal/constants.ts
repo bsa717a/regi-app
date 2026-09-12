@@ -12,6 +12,10 @@ export const PRODUCTION_ORIGIN = "https://app.regireg.com";
 export const LEGACY_PRODUCTION_ORIGIN =
   "https://regi-90502049802.us-central1.run.app";
 
+/** Durable staging Cloud Run origin for pre-merge walks. See docs/preview.md. */
+export const STAGING_ORIGIN =
+  "https://regi-staging-90502049802.us-central1.run.app";
+
 export function legalContactEmail(): string {
   return (
     process.env.NEXT_PUBLIC_LEGAL_CONTACT_EMAIL?.trim() || "support@regi.app"

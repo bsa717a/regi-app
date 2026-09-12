@@ -2,6 +2,7 @@ import { FirebaseError } from "firebase/app";
 import {
   LEGACY_PRODUCTION_ORIGIN,
   PRODUCTION_ORIGIN,
+  STAGING_ORIGIN,
 } from "@/lib/legal/constants";
 
 export const EMAIL_ACTION_PATH = "/auth/action";
@@ -49,6 +50,7 @@ export function allowedEmailActionOrigins(): string[] {
   const origins = new Set<string>([
     PRODUCTION_ORIGIN,
     LEGACY_PRODUCTION_ORIGIN,
+    STAGING_ORIGIN,
     "https://regireg.com",
     "https://www.regireg.com",
   ]);

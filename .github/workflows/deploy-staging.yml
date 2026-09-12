@@ -1,0 +1,81 @@
+# Deploy REGI to the durable staging Cloud Run service.
+# Does not share concurrency with Deploy main and never targets service `regi`.
+#
+# Approach A (this workflow): service `regi-staging`, image tags `staging-<sha>`
+# and `staging` — never `:latest`.
+# Approach B hook: workflow_dispatch can pass service `regi-pr-<n>` + tag
+# prefix `pr-<n>` against the same isolated staging DB / bucket / Firebase.
+name: Deploy staging
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+    inputs:
+      service_name:
+        description: "Cloud Run service (regi-staging or regi-pr-<n>)"
+        required: false
+        default: regi-staging
+        type: string
+      image_tag_prefix:
+        description: "Image tag prefix (staging or pr-<n>)"
+        required: false
+        default: staging
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging-${{ github.event.inputs.service_name || 'regi-staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, migrate, deploy staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build isolated Cloud Build substitutions
+        id: target
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          SERVICE_NAME="${{ github.event.inputs.service_name || 'regi-staging' }}"
+          IMAGE_TAG_PREFIX="${{ github.event.inputs.image_tag_prefix || 'staging' }}"
+          {
+            echo -n "substitutions="
+            node scripts/cloudbuild-target.mjs substitutions \
+              --service="${SERVICE_NAME}" \
+              --image-tag-prefix="${IMAGE_TAG_PREFIX}" \
+              --commit-sha="${SHORT_SHA}" \
+              --firebase-app-id="${{ vars.STAGING_FIREBASE_APP_ID }}" \
+              --firebase-messaging-sender-id="${{ vars.STAGING_FIREBASE_MESSAGING_SENDER_ID }}" \
+              --firebase-vapid-key="${{ vars.STAGING_FIREBASE_VAPID_KEY }}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: regi-app-v1
+
+      - name: Submit Cloud Build
+        run: |
+          gcloud builds submit \
+            --project=regi-app-v1 \
+            --config=cloudbuild.yaml \
+            --substitutions="${{ steps.target.outputs.substitutions }}"

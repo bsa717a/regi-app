@@ -1,7 +1,16 @@
 # REGI — Cloud Build: image → migrate → Cloud Run
 # Image: us-central1-docker.pkg.dev/regi-app-v1/regi/app:<sha>
 #
-# Triggered by GitHub Actions on push to main (see .github/workflows/deploy-main.yml).
+# Production: GitHub Actions on push to main (see .github/workflows/deploy-main.yml).
+#   deploy-main.yml only passes `_COMMIT_SHA`. Every other value below is a
+#   prod default — do not change defaults without updating
+#   scripts/cloudbuild-target.mjs `prodSubstitutionDefaults()`.
+#
+# Staging / Approach B hook: .github/workflows/deploy-staging.yml passes
+#   isolated substitutions (service, image tag, secrets, bucket, Firebase
+#   project regi-app-staging). Guard steps refuse any mix that would touch
+#   prod data, prod Firebase, or overwrite `:latest`.
+#
 # NEXT_PUBLIC_* are public client values inlined at build time.
 # Firebase web API key comes from Secret Manager (never commit it).
 
@@ -14,6 +23,7 @@ substitutions:
   _CLOUD_SQL_INSTANCE: regi-app-v1:us-central1:regi-db
   _RUNTIME_SA: regi-admin@regi-app-v1.iam.gserviceaccount.com
   _COMMIT_SHA: latest
+  _FIREBASE_PROJECT_ID: regi-app-v1
   _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: regi-app-v1.firebaseapp.com
   _NEXT_PUBLIC_FIREBASE_PROJECT_ID: regi-app-v1
   _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: regi-app-v1.firebasestorage.app
@@ -25,6 +35,18 @@ substitutions:
   # exists — Sentry init is a no-op without a DSN. See docs/sentry.md.
   _NEXT_PUBLIC_SENTRY_DSN: ""
   _NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+  # Parameterized so staging / per-PR preview can reuse this file.
+  # Defaults match today's prod deploy-main path exactly.
+  _STABLE_TAG: latest
+  _PURGE_HOSTING: "true"
+  _SECRET_DATABASE_URL: regi-database-url
+  _SECRET_CRON: regi-cron-secret
+  _SECRET_GEMINI: regi-gemini-api-key
+  _SECRET_FIREBASE_WEB_API_KEY: regi-firebase-web-api-key
+  _SECRET_RESEND: regi-resend-api-key
+  _GCS_BUCKET: regi-app-v1-documents
+  _NOTIFICATION_EMAIL_PROVIDER: resend
+  _MAX_INSTANCES: "5"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -32,12 +54,36 @@ options:
 
 availableSecrets:
   secretManager:
-    - versionName: projects/${_PROJECT_ID}/secrets/regi-database-url/versions/latest
+    - versionName: projects/${_PROJECT_ID}/secrets/${_SECRET_DATABASE_URL}/versions/latest
       env: DATABASE_URL_SECRET
-    - versionName: projects/${_PROJECT_ID}/secrets/regi-firebase-web-api-key/versions/latest
+    - versionName: projects/${_PROJECT_ID}/secrets/${_SECRET_FIREBASE_WEB_API_KEY}/versions/latest
       env: FIREBASE_WEB_API_KEY
 
 steps:
+  - name: node:22
+    id: Guard
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        node scripts/cloudbuild-target.mjs guard \
+          --service="${_SERVICE}" \
+          --database-secret="${_SECRET_DATABASE_URL}" \
+          --cron-secret="${_SECRET_CRON}" \
+          --gcs-bucket="${_GCS_BUCKET}" \
+          --stable-tag="${_STABLE_TAG}" \
+          --app-url="${_NEXT_PUBLIC_APP_URL}" \
+          --sentry-environment="${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}" \
+          --purge-hosting="${_PURGE_HOSTING}" \
+          --email-provider="${_NOTIFICATION_EMAIL_PROVIDER}" \
+          --firebase-project-id="${_FIREBASE_PROJECT_ID}" \
+          --firebase-auth-domain="${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}" \
+          --firebase-storage-bucket="${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}" \
+          --firebase-messaging-sender-id="${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}" \
+          --firebase-app-id="${_NEXT_PUBLIC_FIREBASE_APP_ID}" \
+          --firebase-api-key-secret="${_SECRET_FIREBASE_WEB_API_KEY}"
+
   - name: gcr.io/cloud-builders/docker
     id: Build
     entrypoint: bash
@@ -58,7 +104,7 @@ steps:
           --build-arg NEXT_PUBLIC_SENTRY_DSN="${_NEXT_PUBLIC_SENTRY_DSN}" \
           --build-arg NEXT_PUBLIC_SENTRY_ENVIRONMENT="${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}" \
           -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}" \
-          -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest" \
+          -t "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_STABLE_TAG}" \
           .
 
   - name: gcr.io/cloud-builders/docker
@@ -68,10 +114,10 @@ steps:
       - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}
 
   - name: gcr.io/cloud-builders/docker
-    id: Push latest
+    id: Push stable tag
     args:
       - push
-      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_STABLE_TAG}
 
   # Prisma migrate against Cloud SQL (no seed).
   - name: node:22
@@ -92,6 +138,9 @@ steps:
         # Secret is Cloud Run unix-socket form; rewrite to TCP for the proxy.
         RAW="$$DATABASE_URL_SECRET"
         export DATABASE_URL="$$(printf '%s' "$$RAW" | sed -E 's#@localhost/#@127.0.0.1:5432/#; s#\?host=/cloudsql/[^&]+##; s#&host=/cloudsql/[^&]+##')"
+        node scripts/cloudbuild-target.mjs migrate-guard \
+          --service="${_SERVICE}" \
+          --database-url="$$DATABASE_URL"
         npm ci --ignore-scripts
         npx prisma generate
         npx prisma migrate deploy
@@ -113,18 +162,24 @@ steps:
       - --memory=1Gi
       - --cpu=1
       - --min-instances=0
-      - --max-instances=5
+      - --max-instances=${_MAX_INSTANCES}
       - --timeout=300
-      - --set-secrets=DATABASE_URL=regi-database-url:latest,CRON_SECRET=regi-cron-secret:latest,GEMINI_API_KEY=regi-gemini-api-key:latest,NEXT_PUBLIC_FIREBASE_API_KEY=regi-firebase-web-api-key:latest,RESEND_API_KEY=regi-resend-api-key:latest
-      - --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=${_PROJECT_ID},GCS_BUCKET=regi-app-v1-documents,FIREBASE_PROJECT_ID=${_PROJECT_ID},GOOGLE_CLOUD_PROJECT=${_PROJECT_ID},NOTIFICATION_EMAIL_PROVIDER=resend,RESEND_FROM_EMAIL=noreply@regireg.com,RESEND_FROM_NAME=REGI,NOTIFICATION_PUSH_PROVIDER=fcm,GEMINI_MODEL=gemini-2.5-flash,NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL},NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN},NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID},NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET},NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID},NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID},NEXT_PUBLIC_FIREBASE_VAPID_KEY=${_NEXT_PUBLIC_FIREBASE_VAPID_KEY},SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT},NEXT_PUBLIC_SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}
+      - --set-secrets=DATABASE_URL=${_SECRET_DATABASE_URL}:latest,CRON_SECRET=${_SECRET_CRON}:latest,GEMINI_API_KEY=${_SECRET_GEMINI}:latest,NEXT_PUBLIC_FIREBASE_API_KEY=${_SECRET_FIREBASE_WEB_API_KEY}:latest,RESEND_API_KEY=${_SECRET_RESEND}:latest
+      - --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=${_PROJECT_ID},GCS_BUCKET=${_GCS_BUCKET},FIREBASE_PROJECT_ID=${_FIREBASE_PROJECT_ID},GOOGLE_CLOUD_PROJECT=${_PROJECT_ID},NOTIFICATION_EMAIL_PROVIDER=${_NOTIFICATION_EMAIL_PROVIDER},RESEND_FROM_EMAIL=noreply@regireg.com,RESEND_FROM_NAME=REGI,NOTIFICATION_PUSH_PROVIDER=fcm,GEMINI_MODEL=gemini-2.5-flash,NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL},NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN},NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID},NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET},NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID},NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID},NEXT_PUBLIC_FIREBASE_VAPID_KEY=${_NEXT_PUBLIC_FIREBASE_VAPID_KEY},SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT},NEXT_PUBLIC_SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}
 
   - name: gcr.io/cloud-builders/gcloud
     id: Purge-Hosting-CDN
     entrypoint: bash
     args:
       - -c
-      - bash scripts/purge-firebase-hosting-cache.sh
+      - |
+        set -euo pipefail
+        if [ "${_PURGE_HOSTING}" = "true" ] && [ "${_SERVICE}" = "regi" ]; then
+          bash scripts/purge-firebase-hosting-cache.sh
+        else
+          echo "Skipping Firebase Hosting CDN purge (service=${_SERVICE} purge=${_PURGE_HOSTING})"
+        fi
 
 images:
   - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_COMMIT_SHA}
-  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:latest
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_STABLE_TAG}
