@@ -7,7 +7,7 @@ export function formatMvpEntryCard(draft: UtahPlateDraft): string {
   const lines = [
     "Enter this in Utah MVP",
     "",
-    `Plate type: ${plateType.label}`,
+    `Plate type: ${draft.plateDesignLabel?.trim() || plateType.label}`,
     ...draft.combos.map(
       (combo, index) => `Choice ${index + 1}: ${combo}`,
     ),

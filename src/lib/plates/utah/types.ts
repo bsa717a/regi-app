@@ -41,6 +41,8 @@ export type UtahPlateFeeEstimate = {
 
 export type UtahPlateDraft = {
   plateTypeId: UtahPlateTypeId;
+  /** Specific design name when a type has more than one catalog preview. */
+  plateDesignLabel?: string | null;
   combos: string[];
   meaning: string;
   vehicleLabel?: string | null;

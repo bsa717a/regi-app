@@ -2,6 +2,10 @@
 export const UTAH_PERSONALIZED_PLATES_INFO_URL =
   "https://dmv.utah.gov/plates/personalized/";
 
+/** Official catalog of standard and specialty plate designs. */
+export const UTAH_PLATE_CATALOG_URL =
+  "https://dmv.utah.gov/plates/license-plates/";
+
 /** Utah Motor Vehicle Portal — customer enters the request themselves. */
 export const UTAH_MVP_URL = "https://mvp.tax.utah.gov/";
 
