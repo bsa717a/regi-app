@@ -8,6 +8,10 @@ import {
   confirmVehicle,
   documentPreviewModal,
   feeEstimate,
+  navDocuments,
+  navGarage,
+  navRenewals,
+  navSettings,
   paymentNotRequired,
   renewNow,
   saveProfile,
@@ -39,7 +43,7 @@ test.describe("Applicant funnel against staging", () => {
 });
 
 async function fillApplicantProfileFields(page: Page) {
-  await page.getByRole("link", { name: "Settings" }).click();
+  await navSettings(page).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
     timeout: 20_000,
   });
@@ -61,7 +65,7 @@ async function fillApplicantProfileFields(page: Page) {
 }
 
 async function exerciseRegistrationForm(page: Page) {
-  await page.getByRole("link", { name: "Garage" }).click();
+  await navGarage(page).click();
   await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
     timeout: 20_000,
   });
@@ -75,21 +79,35 @@ async function exerciseRegistrationForm(page: Page) {
 
   const confirm = confirmVehicle(page);
   const passenger = typePickerPassenger(page);
-  const alert = page.getByRole("alert");
+  const lookingUp = page.getByRole("button", { name: "Looking up VIN" });
 
+  // Wait until the VIN request starts (button disables) so we do not treat
+  // the still-idle "Look up VIN" label as done. Then wait for confirm, the
+  // type picker, or lookup idle. Do not race on a generic role=alert —
+  // AppShell/assistant may already have one. "Or add manually" stays
+  // visible-but-disabled while busy.
+  await lookingUp.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {
+    /* decode may finish before the busy label paints */
+  });
   await Promise.race([
-    confirm.waitFor({ state: "visible", timeout: 25_000 }),
-    passenger.waitFor({ state: "visible", timeout: 25_000 }),
-    alert.waitFor({ state: "visible", timeout: 25_000 }),
+    confirm.waitFor({ state: "visible", timeout: 45_000 }),
+    passenger.waitFor({ state: "visible", timeout: 45_000 }),
+    lookingUp.waitFor({ state: "hidden", timeout: 45_000 }),
   ]).catch(() => {
-    /* continue to manual picker */
+    /* continue to manual picker once lookup is idle */
   });
 
   if (await confirm.isVisible().catch(() => false)) {
     await expect(confirm).toBeVisible();
+  } else if (await passenger.isVisible().catch(() => false)) {
+    await passenger.click();
+    await expect(page.getByText(/Registration type/i)).toBeVisible({
+      timeout: 10_000,
+    });
   } else {
-    if (await addManually(page).isVisible().catch(() => false)) {
-      await addManually(page).click();
+    const manual = addManually(page);
+    if (await manual.isEnabled().catch(() => false)) {
+      await manual.click();
     }
     await expect(typePickerPassenger(page)).toBeVisible({ timeout: 15_000 });
     await typePickerPassenger(page).click();
@@ -102,12 +120,12 @@ async function exerciseRegistrationForm(page: Page) {
   if (await backToGarage.isVisible().catch(() => false)) {
     await backToGarage.click();
   } else {
-    await page.getByRole("link", { name: "Garage" }).click();
+    await navGarage(page).click();
   }
 }
 
 async function exerciseDocumentPreview(page: Page) {
-  await page.getByRole("link", { name: "Documents" }).click();
+  await navDocuments(page).click();
   await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible({
     timeout: 20_000,
   });
@@ -122,7 +140,7 @@ async function exerciseDocumentPreview(page: Page) {
     return;
   }
 
-  await page.getByRole("link", { name: "Garage" }).click();
+  await navGarage(page).click();
   await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
     timeout: 15_000,
   });
@@ -149,7 +167,7 @@ async function exerciseDocumentPreview(page: Page) {
 }
 
 async function exerciseSubmitPath(page: Page) {
-  await page.getByRole("link", { name: "Renewals" }).click();
+  await navRenewals(page).click();
   await expect(page.getByRole("heading", { name: "Renewals" })).toBeVisible({
     timeout: 20_000,
   });
@@ -162,7 +180,7 @@ async function exerciseSubmitPath(page: Page) {
   } else if (await renewLink.isVisible().catch(() => false)) {
     await renewLink.click();
   } else {
-    await page.getByRole("link", { name: "Garage" }).click();
+    await navGarage(page).click();
     const vehicle = vehicleItems(page).first();
     if ((await vehicle.count()) === 0) {
       test.info().annotations.push({

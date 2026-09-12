@@ -251,7 +251,7 @@ export function GarageClient() {
           <ul className="space-y-4" data-testid="vehicle-list">
             {vehicles.map((vehicle) => (
               <li key={vehicle.id} data-testid={`vehicle-item-${vehicle.id}`}>
-                <VehicleCard>
+                <VehicleCard
                   vehicle={vehicle}
                   expanded={expandedId === vehicle.id}
                   onToggle={() =>

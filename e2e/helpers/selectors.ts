@@ -57,20 +57,51 @@ export function signupSubmit(page: Page) {
     .or(page.getByRole("button", { name: /Create account|Creating account/ }));
 }
 
+/** Bottom-nav tab — not CTAs like "Go to garage". */
+export function navGarage(page: Page) {
+  return page.getByRole("link", { name: "Garage", exact: true });
+}
+
+export function navDocuments(page: Page) {
+  return page.getByRole("link", { name: "Documents", exact: true });
+}
+
+export function navSettings(page: Page) {
+  return page.getByRole("link", { name: "Settings", exact: true });
+}
+
+export function navRenewals(page: Page) {
+  return page.getByRole("link", { name: "Renewals", exact: true });
+}
+
 export function addFirstRegistration(page: Page) {
+  // Live staging empty garage: card CTA "Add a registration"
+  // (testid may be absent until this branch is deployed).
   return page
     .getByTestId("add-first-registration-button")
-    .or(page.getByRole("button", { name: "Add a registration" }));
+    .or(page.getByRole("button", { name: /^Add a registration$/i }))
+    .or(page.getByRole("button", { name: /Add a registration/i }))
+    .or(page.locator("button").filter({ hasText: /^Add a registration$/i }));
 }
 
 export function addVehicle(page: Page) {
-  return page.getByTestId("add-vehicle-button").or(page.getByRole("button", { name: "Add", exact: true }));
+  return page
+    .getByTestId("add-vehicle-button")
+    .or(page.getByRole("button", { name: "Add", exact: true }));
 }
 
 export function addAnotherRegistration(page: Page) {
   return page
     .getByTestId("add-another-registration-button")
-    .or(page.getByRole("button", { name: "Add another registration" }));
+    .or(page.getByRole("button", { name: /^Add another registration$/i }))
+    .or(page.locator("button").filter({ hasText: /^Add another registration$/i }));
+}
+
+/** Unique plates-step fieldset label — not body copy or the stepper. */
+export function plateTypeLegend(page: Page) {
+  return page
+    .getByRole("legend", { name: "Plate type" })
+    .or(page.locator("legend").filter({ hasText: /^Plate type$/ }));
 }
 
 export function vinInput(page: Page) {
