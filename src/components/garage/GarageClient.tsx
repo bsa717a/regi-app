@@ -217,6 +217,15 @@ export function GarageClient() {
               Add a registration
             </button>
           </div>
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+            Already registered in Utah?{" "}
+            <Link
+              href="/garage/plates"
+              className="font-semibold text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
+            >
+              Plan a personalized plate
+            </Link>
+          </p>
         </section>
       ) : null}
 
@@ -260,6 +269,12 @@ export function GarageClient() {
           >
             Add another registration
           </button>
+          <Link
+            href="/garage/plates"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+          >
+            Utah personalized / specialty plates
+          </Link>
         </div>
       ) : null}
     </AppShell>

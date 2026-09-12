@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { updateMe } from "@/lib/api/client";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
@@ -289,6 +290,22 @@ function SettingsForm({
       ) : null}
 
       <StaffPortalLink />
+
+      <section>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Utah plates
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Plan a personalized or specialty plate, then enter it yourself in
+          Utah MVP. REGI does not submit or prefill the DMV request.
+        </p>
+        <Link
+          href="/garage/plates"
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+        >
+          Utah personalized / specialty plates
+        </Link>
+      </section>
 
       <section className="border-t border-slate-200 pt-6 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
