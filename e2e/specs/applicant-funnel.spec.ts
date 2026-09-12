@@ -75,21 +75,35 @@ async function exerciseRegistrationForm(page: Page) {
 
   const confirm = confirmVehicle(page);
   const passenger = typePickerPassenger(page);
-  const alert = page.getByRole("alert");
+  const lookingUp = page.getByRole("button", { name: "Looking up VIN" });
 
+  // Wait until the VIN request starts (button disables) so we do not treat
+  // the still-idle "Look up VIN" label as done. Then wait for confirm, the
+  // type picker, or lookup idle. Do not race on a generic role=alert —
+  // AppShell/assistant may already have one. "Or add manually" stays
+  // visible-but-disabled while busy.
+  await lookingUp.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {
+    /* decode may finish before the busy label paints */
+  });
   await Promise.race([
-    confirm.waitFor({ state: "visible", timeout: 25_000 }),
-    passenger.waitFor({ state: "visible", timeout: 25_000 }),
-    alert.waitFor({ state: "visible", timeout: 25_000 }),
+    confirm.waitFor({ state: "visible", timeout: 45_000 }),
+    passenger.waitFor({ state: "visible", timeout: 45_000 }),
+    lookingUp.waitFor({ state: "hidden", timeout: 45_000 }),
   ]).catch(() => {
-    /* continue to manual picker */
+    /* continue to manual picker once lookup is idle */
   });
 
   if (await confirm.isVisible().catch(() => false)) {
     await expect(confirm).toBeVisible();
+  } else if (await passenger.isVisible().catch(() => false)) {
+    await passenger.click();
+    await expect(page.getByText(/Registration type/i)).toBeVisible({
+      timeout: 10_000,
+    });
   } else {
-    if (await addManually(page).isVisible().catch(() => false)) {
-      await addManually(page).click();
+    const manual = addManually(page);
+    if (await manual.isEnabled().catch(() => false)) {
+      await manual.click();
     }
     await expect(typePickerPassenger(page)).toBeVisible({ timeout: 15_000 });
     await typePickerPassenger(page).click();
