@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { hasDemoPassword, missingPasswordMessage } from "../env";
 import { signInDemoApplicant } from "../helpers/auth";
-import { plateType, platesContinue } from "../helpers/selectors";
+import { plateType, plateTypeLegend, platesContinue } from "../helpers/selectors";
 
 test.describe("Utah plate type picker on staging", () => {
   test.beforeEach(() => {
@@ -17,7 +17,7 @@ test.describe("Utah plate type picker on staging", () => {
     await expect(
       page.getByRole("heading", { name: /Plan your request/i }),
     ).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByText("Plate type")).toBeVisible();
+    await expect(plateTypeLegend(page)).toBeVisible();
     await expect(page.getByText(/In God We Trust/i).first()).toBeVisible();
 
     await plateType(page, "in_god_we_trust", "In God We Trust").click();
