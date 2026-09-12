@@ -262,7 +262,7 @@ Every push to `main` runs [.github/workflows/deploy-main.yml](.github/workflows/
 
 **GitHub secret required:** `GCP_SA_KEY` — JSON key for `regi-deploy@regi-app-v1.iam.gserviceaccount.com` (Cloud Build submit).
 
-**Secret Manager (never commit values):** `regi-database-url`, `regi-cron-secret`, `regi-gemini-api-key`, `regi-firebase-web-api-key`, `regi-resend-api-key`.
+**Secret Manager (never commit values):** `regi-database-url`, `regi-cron-secret`, `regi-gemini-api-key`, `regi-firebase-web-api-key`, `regi-resend-api-key`. Optional after Sentry project exists: `regi-sentry-dsn` ([docs/sentry.md](docs/sentry.md)).
 
 Manual re-run: Actions → **Deploy main** → **Run workflow**.
 
@@ -340,6 +340,12 @@ postgresql://USER:PASSWORD@localhost/DB_NAME?host=/cloudsql/regi-app-v1:us-centr
 | `GEMINI_MODEL` | Gemini model id (default `gemini-2.5-flash`) |
 | `NOTIFICATION_EMAIL_PROVIDER` + Resend vars | Real email (`resend` in production; `RESEND_API_KEY` from Secret Manager) |
 | `NEXT_PUBLIC_APP_URL` | Canonical origin (invite links, etc.) |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Optional. Blank = no-op. See [docs/sentry.md](docs/sentry.md) |
+| `SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | `production` or `staging` only |
+
+## Error monitoring (Sentry MVP)
+
+Client + server errors report to Sentry in production/staging when a DSN is set. Local and CI stay quiet. Derek/ops add the real DSN in Secret Manager (`regi-sentry-dsn`) — do not invent or commit one. Alerts (email/Slack) are enabled in the Sentry UI. Full setup, env vars, and manual verify steps: [docs/sentry.md](docs/sentry.md).
 
 ### Cloud Scheduler
 

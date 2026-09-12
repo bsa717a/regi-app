@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin/updateUser";
 import { verifyStaff } from "@/lib/auth/verifyStaff";
 import { prisma } from "@/lib/prisma";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (err instanceof AdminUserError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
+    captureRouteException(err, "PATCH /api/admin/users/[id]");
     console.error("[admin/users/patch]", err);
     return NextResponse.json(
       { error: "Could not update user" },
@@ -103,6 +105,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     if (err instanceof AdminUserError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
+    captureRouteException(err, "DELETE /api/admin/users/[id]");
     console.error("[admin/users/delete]", err);
     return NextResponse.json(
       { error: "Could not delete user" },

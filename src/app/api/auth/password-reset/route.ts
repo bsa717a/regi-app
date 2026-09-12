@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/rateLimit";
 import { resolveAppOrigin } from "@/lib/household/appOrigin";
 import { createEmailProviderFromEnv } from "@/lib/notifications/SendGridEmailProvider";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     if (err instanceof EmailDeliveryNotConfiguredError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
+    captureRouteException(err, "POST /api/auth/password-reset");
     console.error("[password-reset] Failed to send:", err);
   }
 

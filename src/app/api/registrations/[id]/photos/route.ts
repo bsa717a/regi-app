@@ -14,6 +14,7 @@ import {
   addRegistrationPhoto,
   syncRegistrationPhotos,
 } from "@/lib/registrations/registrationPhotos";
+import { captureRouteException } from "@/lib/sentry/report";
 import { objectExists } from "@/lib/storage/gcs";
 
 export const runtime = "nodejs";
@@ -171,6 +172,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 404, headers: rateLimitHeaders(limited) },
       );
     }
+    captureRouteException(error, "PATCH /api/registrations/[id]/photos");
     return NextResponse.json(
       { error: "Could not save photo changes." },
       { status: 500, headers: rateLimitHeaders(limited) },

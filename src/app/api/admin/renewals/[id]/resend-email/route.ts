@@ -3,6 +3,7 @@ import { resendRenewalStatusEmail } from "@/lib/admin/resendEmail";
 import { verifyStaff } from "@/lib/auth/verifyStaff";
 import { createNotificationService } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,7 @@ export async function POST(request: Request, context: RouteContext) {
     if (message === "User has email notifications disabled") {
       return NextResponse.json({ error: message }, { status: 400 });
     }
+    captureRouteException(err, "POST /api/admin/renewals/[id]/resend-email");
     console.error("[admin/renewals/resend-email]", err);
     return NextResponse.json(
       { error: "Could not resend email" },

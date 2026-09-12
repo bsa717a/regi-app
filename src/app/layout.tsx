@@ -8,6 +8,7 @@ import { CapacitorShell } from "@/components/CapacitorShell";
 import { NativeOfflineOverlay } from "@/components/NativeOfflineOverlay";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { PwaRegister } from "@/components/PwaRegister";
+import { SentryClientInit } from "@/components/sentry/SentryClientInit";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { themeInitScript } from "@/lib/theme/script";
 import "./globals.css";
@@ -75,6 +76,13 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
+        <SentryClientInit
+          dsn={process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN}
+          environment={
+            process.env.SENTRY_ENVIRONMENT ||
+            process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT
+          }
+        />
         <ThemeProvider>
           <AuthProvider>
             <BiometricLockGate>

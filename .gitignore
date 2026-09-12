@@ -9,6 +9,10 @@ out/
 build/
 dist/
 
+# Sentry build plugin (auth token / CLI config — never commit)
+.sentryclirc
+.env.sentry-build-plugin
+
 # Environment / secrets — NEVER commit
 .env
 .env.local

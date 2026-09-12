@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { appendStaffNote, parseNoteBody } from "@/lib/admin/notes";
 import { verifyStaff } from "@/lib/auth/verifyStaff";
 import { prisma } from "@/lib/prisma";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +53,7 @@ export async function POST(request: Request, context: RouteContext) {
     if (err instanceof Error && err.message === "Renewal not found") {
       return NextResponse.json({ error: "Renewal not found" }, { status: 404 });
     }
+    captureRouteException(err, "POST /api/admin/renewals/[id]/notes");
     console.error("[admin/renewals/notes]", err);
     return NextResponse.json(
       { error: "Could not add staff note" },
