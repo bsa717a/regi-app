@@ -11,12 +11,10 @@ Regenerate:
 npm run capture:plates-evidence
 ```
 
-Before (PR #65 bucket): `docs/evidence/plates-65/type_step_specialty_special_group.png`
-showed Elk, Jazz, and Historic B&W as static examples on one non-selectable card.
-
 | File | What it shows |
 | --- | --- |
-| `special_group_cards_before_selection.png` | Three separate special-group cards (Elk, Jazz, Historic B&W) before one is picked |
+| `before_special_group_bucket.png` | Before: one Special group bucket with static Elk / Jazz / Historic B&W examples (from #65) |
+| `special_group_cards_before_selection.png` | After: three separate special-group cards before one is picked |
 | `special_group_wildlife_elk_selected.png` | Wildlife Elk selected |
 | `special_group_utah_jazz_selected.png` | Utah Jazz selected |
 | `special_group_historic_bw_selected.png` | Historic B&W selected |

@@ -115,12 +115,6 @@ try {
     specialGroupDir,
     "special_group_historic_bw_selected.png",
   );
-  await writeShot(
-    page,
-    historic,
-    plates65Dir,
-    "type_step_specialty_special_group.png",
-  );
 
   await page.getByTestId("plates-continue").click();
   await page.getByText(/Historic B&W allows up to 7 characters/i).waitFor();
