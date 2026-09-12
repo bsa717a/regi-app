@@ -31,3 +31,49 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+  # Real browser tests against durable staging. Never Deploy main / prod.
+  # Skips gracefully when REGI_STAGING_DEMO_PASSWORD is not configured so
+  # Vitest / unit CI stays green.
+  staging-e2e:
+    name: Playwright staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decide whether secrets are present
+        id: e2e
+        env:
+          REGI_STAGING_DEMO_PASSWORD: ${{ secrets.REGI_STAGING_DEMO_PASSWORD }}
+        run: |
+          if [ -z "${REGI_STAGING_DEMO_PASSWORD}" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "REGI_STAGING_DEMO_PASSWORD missing — skipping staging e2e (unit job still green)."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js
+        if: steps.e2e.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        if: steps.e2e.outputs.run == 'true'
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        if: steps.e2e.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Staging E2E
+        if: steps.e2e.outputs.run == 'true'
+        env:
+          PLAYWRIGHT_BASE_URL: https://regi-staging-90502049802.us-central1.run.app
+          REGI_STAGING_DEMO_EMAIL: ${{ vars.REGI_STAGING_DEMO_EMAIL }}
+          REGI_STAGING_DEMO_PASSWORD: ${{ secrets.REGI_STAGING_DEMO_PASSWORD }}
+        run: npm run test:e2e

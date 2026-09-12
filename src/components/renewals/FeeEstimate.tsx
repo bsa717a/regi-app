@@ -7,6 +7,7 @@ export function FeeEstimate({ fees }: { fees: FeeBreakdown }) {
   return (
     <section
       aria-labelledby="fee-estimate-heading"
+      data-testid="fee-estimate"
       className="rounded-3xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm shadow-slate-200/40 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none"
     >
       <h2
@@ -43,6 +44,7 @@ export function FeeEstimate({ fees }: { fees: FeeBreakdown }) {
       </ul>
       <p
         role="note"
+        data-testid="payment-not-required"
         className="mt-3 rounded-2xl bg-amber-50 px-3 py-2.5 text-sm leading-relaxed text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
       >
         No payment required during MVP — you won&apos;t be charged yet. This is

@@ -456,6 +456,7 @@ export function VehicleCard({
         aria-expanded={expanded}
         aria-controls={detailsId}
         onClick={onToggle}
+        data-testid={`vehicle-expand-${vehicle.id}`}
       >
         <div className="relative h-36 w-full overflow-hidden">
           <VehicleIllustration
@@ -609,6 +610,7 @@ export function VehicleCard({
                 type="button"
                 onClick={() => void openRegistrationPreview()}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70 sm:w-auto"
+                data-testid={`view-registration-card-${vehicle.id}`}
               >
                 View registration card
               </button>
@@ -734,6 +736,7 @@ export function VehicleCard({
                 <Link
                   href={`/renewals/new?registrationId=${encodeURIComponent(vehicle.id)}`}
                   className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+                  data-testid={`renew-vehicle-${vehicle.id}`}
                 >
                   Renew registration
                 </Link>

@@ -67,7 +67,7 @@ Open [http://localhost:3000](http://localhost:3000). Health check: [http://local
 | `npm run start`   | Start production server (port from `PORT`)   |
 | `npm run lint`    | ESLint                                       |
 | `npm test`        | Vitest unit tests (`--passWithNoTests`)      |
-| `npm run test:e2e`| Playwright E2E stub (`--pass-with-no-tests`) |
+| `npm run test:e2e`| Playwright against staging (see [e2e/README.md](e2e/README.md)) |
 | `npm run db:generate` | `prisma generate`                        |
 | `npm run db:migrate`  | `prisma migrate dev`                     |
 | `npm run db:studio`   | Prisma Studio                            |

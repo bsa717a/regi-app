@@ -549,6 +549,7 @@ function DocumentList({
                     disabled={busyId === doc.id}
                     className="rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70"
                     onClick={() => onView(doc)}
+                    data-testid={`view-document-${doc.id}`}
                   >
                     {canEdit ? "View/rename" : "View"}
                   </button>
