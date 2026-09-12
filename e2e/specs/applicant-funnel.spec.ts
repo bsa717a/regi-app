@@ -8,6 +8,10 @@ import {
   confirmVehicle,
   documentPreviewModal,
   feeEstimate,
+  navDocuments,
+  navGarage,
+  navRenewals,
+  navSettings,
   paymentNotRequired,
   renewNow,
   saveProfile,
@@ -39,7 +43,7 @@ test.describe("Applicant funnel against staging", () => {
 });
 
 async function fillApplicantProfileFields(page: Page) {
-  await page.getByRole("link", { name: "Settings" }).click();
+  await navSettings(page).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
     timeout: 20_000,
   });
@@ -61,7 +65,7 @@ async function fillApplicantProfileFields(page: Page) {
 }
 
 async function exerciseRegistrationForm(page: Page) {
-  await page.getByRole("link", { name: "Garage" }).click();
+  await navGarage(page).click();
   await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
     timeout: 20_000,
   });
@@ -116,12 +120,12 @@ async function exerciseRegistrationForm(page: Page) {
   if (await backToGarage.isVisible().catch(() => false)) {
     await backToGarage.click();
   } else {
-    await page.getByRole("link", { name: "Garage" }).click();
+    await navGarage(page).click();
   }
 }
 
 async function exerciseDocumentPreview(page: Page) {
-  await page.getByRole("link", { name: "Documents" }).click();
+  await navDocuments(page).click();
   await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible({
     timeout: 20_000,
   });
@@ -136,7 +140,7 @@ async function exerciseDocumentPreview(page: Page) {
     return;
   }
 
-  await page.getByRole("link", { name: "Garage" }).click();
+  await navGarage(page).click();
   await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
     timeout: 15_000,
   });
@@ -163,7 +167,7 @@ async function exerciseDocumentPreview(page: Page) {
 }
 
 async function exerciseSubmitPath(page: Page) {
-  await page.getByRole("link", { name: "Renewals" }).click();
+  await navRenewals(page).click();
   await expect(page.getByRole("heading", { name: "Renewals" })).toBeVisible({
     timeout: 20_000,
   });
@@ -176,7 +180,7 @@ async function exerciseSubmitPath(page: Page) {
   } else if (await renewLink.isVisible().catch(() => false)) {
     await renewLink.click();
   } else {
-    await page.getByRole("link", { name: "Garage" }).click();
+    await navGarage(page).click();
     const vehicle = vehicleItems(page).first();
     if ((await vehicle.count()) === 0) {
       test.info().annotations.push({

@@ -57,6 +57,23 @@ export function signupSubmit(page: Page) {
     .or(page.getByRole("button", { name: /Create account|Creating account/ }));
 }
 
+/** Bottom-nav tab — not CTAs like "Go to garage". */
+export function navGarage(page: Page) {
+  return page.getByRole("link", { name: "Garage", exact: true });
+}
+
+export function navDocuments(page: Page) {
+  return page.getByRole("link", { name: "Documents", exact: true });
+}
+
+export function navSettings(page: Page) {
+  return page.getByRole("link", { name: "Settings", exact: true });
+}
+
+export function navRenewals(page: Page) {
+  return page.getByRole("link", { name: "Renewals", exact: true });
+}
+
 export function addFirstRegistration(page: Page) {
   // Live staging empty garage: card CTA "Add a registration"
   // (testid may be absent until this branch is deployed).
