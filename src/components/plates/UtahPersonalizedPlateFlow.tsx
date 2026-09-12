@@ -10,16 +10,21 @@ import { UtahDmvHandoff } from "@/components/plates/UtahDmvHandoff";
 import { UtahMvpCopyCard } from "@/components/plates/UtahMvpCopyCard";
 import { UtahPlateFeeEstimateCard } from "@/components/plates/UtahPlateFeeEstimate";
 import { UtahPlateRequirementsChecklist } from "@/components/plates/UtahPlateRequirementsChecklist";
+import { UtahPlatePreviewImage } from "@/components/plates/UtahPlatePreviewImage";
 import {
   collectSoftWarnings,
+  defaultUtahPlatePickerOptionId,
   estimateUtahPersonalizedPlateFees,
+  getUtahPlatePickerOption,
   getUtahPlateType,
   normalizePlateCombo,
   suggestedUtahPlateTypes,
+  utahPlateTypePickerOptions,
+  UTAH_PLATE_CATALOG_URL,
+  UTAH_PLATE_PREVIEW_ATTRIBUTION,
   validatePlateCombo,
   validatePlateCombos,
   validatePlateMeaning,
-  type UtahPlateTypeId,
 } from "@/lib/plates/utah";
 
 const STEPS = [
@@ -51,15 +56,17 @@ export function UtahPersonalizedPlateFlow({
     () => suggestedUtahPlateTypes(vehicle?.type),
     [vehicle?.type],
   );
-  const defaultType =
-    vehicle?.type === "motorcycle"
-      ? "motorcycle_standard"
-      : "standard_life_elevated";
+  const pickerOptions = useMemo(
+    () => utahPlateTypePickerOptions(plateTypes),
+    [plateTypes],
+  );
+  const defaultOptionId = defaultUtahPlatePickerOptionId(vehicle?.type);
 
   const [step, setStep] = useState<StepId>("type");
-  const [selectedPlateTypeId, setSelectedPlateTypeId] =
-    useState<UtahPlateTypeId | null>(null);
-  const plateTypeId = selectedPlateTypeId ?? defaultType;
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const optionId = selectedOptionId ?? defaultOptionId;
+  const selectedOption = getUtahPlatePickerOption(pickerOptions, optionId);
+  const plateTypeId = selectedOption.plateTypeId;
   const [combos, setCombos] = useState(["", "", ""]);
   const [comboErrors, setComboErrors] = useState<Array<string | null>>([
     null,
@@ -80,11 +87,14 @@ export function UtahPersonalizedPlateFlow({
 
   const draft = {
     plateTypeId,
+    plateDesignLabel: selectedOption.label,
     combos: comboValues,
     meaning: meaning.trim(),
     vehicleLabel: vehicle?.label ?? null,
     vehiclePlate: vehicle?.plate ?? null,
   };
+  const liveCharacters = combos[0]?.trim() ?? "";
+  const livePreview = selectedOption.previews[0];
 
   function goNext() {
     if (step === "type") {
@@ -203,46 +213,87 @@ export function UtahPersonalizedPlateFlow({
           <UtahPlateRequirementsChecklist />
           <fieldset>
             <legend className={labelClassName}>Plate type</legend>
-            <div className="mt-2 space-y-2">
-              {plateTypes.map((type) => {
-                const selected = type.id === plateTypeId;
+            <div className="mt-2 space-y-3">
+              {pickerOptions.map((option) => {
+                const selected = option.optionId === optionId;
+                const multi = option.previews.length > 1;
                 return (
                   <label
-                    key={type.id}
-                    className={`flex cursor-pointer gap-3 rounded-2xl border px-4 py-3 transition ${
+                    key={option.optionId}
+                    data-testid={`utah-plate-type-${option.optionId}`}
+                    className={`flex cursor-pointer flex-col gap-3 rounded-2xl border px-4 py-3 transition ${
                       selected
                         ? "border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/40"
                         : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900"
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="utah-plate-type"
-                      className="mt-1"
-                      checked={selected}
-                      onChange={() => {
-                        setSelectedPlateTypeId(type.id);
-                        setComboErrors([null, null, null]);
-                      }}
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {type.label}
-                      </span>
-                      <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">
-                        {type.description}
+                    <span className="flex gap-3">
+                      <input
+                        type="radio"
+                        name="utah-plate-type"
+                        className="mt-1"
+                        checked={selected}
+                        onChange={() => {
+                          setSelectedOptionId(option.optionId);
+                          setComboErrors([null, null, null]);
+                        }}
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {option.label}
+                        </span>
+                        <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">
+                          {option.description}
+                        </span>
                       </span>
                     </span>
+                    <span
+                      className={
+                        multi
+                          ? "grid grid-cols-2 gap-2 sm:grid-cols-3"
+                          : "block"
+                      }
+                    >
+                      {option.previews.map((preview) => (
+                        <UtahPlatePreviewImage
+                          key={preview.src}
+                          preview={preview}
+                        />
+                      ))}
+                    </span>
+                    {option.previewCaption ? (
+                      <span className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        {option.previewCaption}
+                      </span>
+                    ) : null}
                   </label>
                 );
               })}
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              {UTAH_PLATE_PREVIEW_ATTRIBUTION.note}{" "}
+              <a
+                href={UTAH_PLATE_CATALOG_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
+              >
+                Utah DMV plate catalog
+              </a>
+              .
+            </p>
           </fieldset>
         </div>
       ) : null}
 
       {step === "combos" ? (
         <div className="space-y-4">
+          {livePreview ? (
+            <UtahPlatePreviewImage
+              preview={livePreview}
+              characters={liveCharacters}
+            />
+          ) : null}
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Enter up to three letter/number choices in preference order.{" "}
             {plateType.shortLabel} allows up to {plateType.maxCharacters}{" "}
@@ -345,6 +396,13 @@ export function UtahPersonalizedPlateFlow({
 
       {step === "summary" ? (
         <div className="space-y-4">
+          {livePreview ? (
+            <UtahPlatePreviewImage
+              preview={livePreview}
+              characters={comboValues[0] ?? liveCharacters}
+              compact
+            />
+          ) : null}
           <UtahMvpCopyCard draft={draft} />
           <UtahDmvHandoff />
           <UtahPlateRequirementsChecklist heading="Remember" />

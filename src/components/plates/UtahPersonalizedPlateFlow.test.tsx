@@ -53,6 +53,54 @@ afterEach(() => {
 });
 
 describe("UtahPersonalizedPlateFlow", () => {
+  it("shows official plate previews with meaningful alt text on the type step", async () => {
+    const view = await renderFlow();
+
+    const arches = view.querySelector(
+      'img[alt="Utah Life Elevated Arches license plate"]',
+    ) as HTMLImageElement;
+    const skier = view.querySelector(
+      'img[alt="Utah Life Elevated Skier license plate"]',
+    ) as HTMLImageElement;
+    const igwt = view.querySelector(
+      'img[alt="Utah In God We Trust license plate"]',
+    ) as HTMLImageElement;
+
+    expect(arches?.src).toMatch(/life-elevated-arches\.png$/);
+    expect(skier?.src).toMatch(/life-elevated-skier\.png$/);
+    expect(igwt?.src).toMatch(/in-god-we-trust\.png$/);
+    expect(view.querySelector('img[alt="Utah amateur radio specialty license plate"]')).toBeTruthy();
+    expect(view.querySelector('img[alt="Utah Search and Rescue specialty license plate"]')).toBeTruthy();
+    expect(view.querySelector('img[alt="Utah disabled person license plate"]')).toBeTruthy();
+    expect(
+      view.querySelector('img[alt="Example Utah special group plate: Wildlife Elk"]'),
+    ).toBeTruthy();
+    expect(view.textContent).toContain("Plate images are official Utah DMV catalog art.");
+  });
+
+  it("keeps plate-type selection working after choosing a preview card", async () => {
+    const view = await renderFlow();
+    const igwtImage = view.querySelector(
+      'img[alt="Utah In God We Trust license plate"]',
+    ) as HTMLImageElement;
+    const igwtLabel = igwtImage.closest("label");
+    expect(igwtLabel).toBeTruthy();
+
+    await click(igwtLabel as HTMLElement);
+
+    const radios = Array.from(
+      view.querySelectorAll<HTMLInputElement>('input[name="utah-plate-type"]'),
+    );
+    const checked = radios.find((radio) => radio.checked);
+    expect(checked?.closest("label")?.textContent).toContain("In God We Trust");
+
+    await click(view.querySelector("button") as HTMLButtonElement);
+    expect(view.textContent).toMatch(/In God We Trust allows up to 5 characters/i);
+    expect(
+      view.querySelector('img[alt="Utah In God We Trust license plate"]'),
+    ).toBeTruthy();
+  });
+
   it("walks type → combos → meaning → checks → fees → MVP handoff", async () => {
     const view = await renderFlow();
 

@@ -3,6 +3,7 @@ export {
   UTAH_NO_PREFILL_NOTE,
   UTAH_PERSONALIZED_PLATES_INFO_URL,
   UTAH_PLATE_APPLICATION_FEE_CENTS,
+  UTAH_PLATE_CATALOG_URL,
   UTAH_PLATE_FEE_DISCLAIMER,
   UTAH_PLATE_PROCESSING_FEE_CENTS,
   UTAH_PLATE_RENEWAL_FEE_CENTS,
@@ -15,6 +16,16 @@ export {
   suggestedUtahPlateTypes,
   UTAH_PLATE_TYPES,
 } from "./plateTypes";
+export {
+  defaultUtahPlatePickerOptionId,
+  getUtahPlatePickerOption,
+  utahPlateTypePickerOptions,
+  UTAH_PLATE_PREVIEW_ATTRIBUTION,
+} from "./previews";
+export type {
+  UtahPlatePreview,
+  UtahPlateTypePickerOption,
+} from "./previews";
 export { formatMvpEntryCard } from "./summary";
 export type {
   PlateComboValidation,
