@@ -57,8 +57,9 @@ export function UtahPersonalizedPlateFlow({
       : "standard_life_elevated";
 
   const [step, setStep] = useState<StepId>("type");
-  const [plateTypeId, setPlateTypeId] =
-    useState<UtahPlateTypeId>(defaultType);
+  const [selectedPlateTypeId, setSelectedPlateTypeId] =
+    useState<UtahPlateTypeId | null>(null);
+  const plateTypeId = selectedPlateTypeId ?? defaultType;
   const [combos, setCombos] = useState(["", "", ""]);
   const [comboErrors, setComboErrors] = useState<Array<string | null>>([
     null,
@@ -220,7 +221,7 @@ export function UtahPersonalizedPlateFlow({
                       className="mt-1"
                       checked={selected}
                       onChange={() => {
-                        setPlateTypeId(type.id);
+                        setSelectedPlateTypeId(type.id);
                         setComboErrors([null, null, null]);
                       }}
                     />
