@@ -26,7 +26,7 @@ test.describe("Utah plate type picker on staging", () => {
     await expect(page.getByLabel("First choice (required)")).toBeVisible({
       timeout: 10_000,
     });
-    await page.getByLabel("First choice (required)").fill("REGI01");
+    await page.getByLabel("First choice (required)").fill("REGI1");
     await platesContinue(page).click();
 
     await expect(page.getByLabel(/What does this combination mean/i)).toBeVisible({
