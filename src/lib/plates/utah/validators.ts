@@ -1,4 +1,4 @@
-import { resolveUtahPlateMaxCharacters } from "./specialGroupDesigns";
+import { resolveUtahPlateMaxCharacters } from "./plateDesigns";
 import type {
   PlateComboValidation,
   PlateSoftWarning,

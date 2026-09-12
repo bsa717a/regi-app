@@ -224,17 +224,18 @@ export function UtahPersonalizedPlateFlow({
               {pickerOptions.map((option, index) => {
                 const selected = option.optionId === optionId;
                 const multi = option.previews.length > 1;
-                const startSpecialGroup =
-                  option.plateTypeId === "special_group" &&
-                  pickerOptions[index - 1]?.plateTypeId !== "special_group";
-                const endSpecialGroup =
-                  option.plateTypeId === "special_group" &&
-                  pickerOptions[index + 1]?.plateTypeId !== "special_group";
+                const group = option.pickerGroup;
+                const startGroup =
+                  Boolean(group) &&
+                  pickerOptions[index - 1]?.pickerGroup?.id !== group?.id;
+                const endGroup =
+                  Boolean(group) &&
+                  pickerOptions[index + 1]?.pickerGroup?.id !== group?.id;
                 return (
                   <div key={option.optionId} className="space-y-3">
-                    {startSpecialGroup ? (
+                    {startGroup && group ? (
                       <p className="pt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                        Special group designs
+                        {group.heading}
                       </p>
                     ) : null}
                     <label
@@ -285,10 +286,9 @@ export function UtahPersonalizedPlateFlow({
                         </span>
                       ) : null}
                     </label>
-                    {endSpecialGroup ? (
+                    {endGroup && group?.footer ? (
                       <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                        More special group designs can be added from the Utah
-                        DMV catalog.
+                        {group.footer}
                       </p>
                     ) : null}
                   </div>

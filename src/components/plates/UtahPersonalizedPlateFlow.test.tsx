@@ -84,7 +84,138 @@ describe("UtahPersonalizedPlateFlow", () => {
       ),
     ).toBeTruthy();
     expect(view.textContent).toContain("Special group designs");
+    expect(view.textContent).toContain("Motorcycle Life Elevated");
+    expect(view.textContent).toContain("Motorcycle specialty");
+    expect(view.textContent).toContain("Radio plates");
     expect(view.textContent).toContain("Plate images are official Utah DMV catalog art.");
+  });
+
+  it("lets Derek pick motorcycle and radio designs instead of multi-preview buckets", async () => {
+    const view = await renderFlow();
+
+    expect(
+      view.querySelector('[data-testid="utah-plate-type-motorcycle_standard"]'),
+    ).toBeNull();
+    expect(
+      view.querySelector(
+        '[data-testid="utah-plate-type-motorcycle_special_or_igwt"]',
+      ),
+    ).toBeNull();
+    expect(view.querySelector('[data-testid="utah-plate-type-radio"]')).toBeNull();
+
+    const motoArches = view.querySelector(
+      '[data-testid="utah-plate-type-motorcycle_life_elevated_arches"]',
+    ) as HTMLElement;
+    const motoSkier = view.querySelector(
+      '[data-testid="utah-plate-type-motorcycle_life_elevated_skier"]',
+    ) as HTMLElement;
+    const motoIgwt = view.querySelector(
+      '[data-testid="utah-plate-type-motorcycle_in_god_we_trust"]',
+    ) as HTMLElement;
+    const motoElk = view.querySelector(
+      '[data-testid="utah-plate-type-motorcycle_special_group_wildlife_elk"]',
+    ) as HTMLElement;
+    const amateur = view.querySelector(
+      '[data-testid="utah-plate-type-radio_amateur"]',
+    ) as HTMLElement;
+    const searchRescue = view.querySelector(
+      '[data-testid="utah-plate-type-radio_search_rescue"]',
+    ) as HTMLElement;
+
+    expect(motoArches).toBeTruthy();
+    expect(motoSkier).toBeTruthy();
+    expect(motoIgwt).toBeTruthy();
+    expect(motoElk).toBeTruthy();
+    expect(amateur).toBeTruthy();
+    expect(searchRescue).toBeTruthy();
+
+    await click(motoSkier);
+    expect(
+      motoSkier.querySelector<HTMLInputElement>('input[name="utah-plate-type"]')
+        ?.checked,
+    ).toBe(true);
+    expect(
+      motoArches.querySelector<HTMLInputElement>('input[name="utah-plate-type"]')
+        ?.checked,
+    ).toBe(false);
+
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(
+      /Motorcycle Life Elevated Skier allows up to 5 characters/i,
+    );
+    expect(
+      view.querySelector('[data-testid="selected-plate-design"]')?.textContent,
+    ).toMatch(/Motorcycle Life Elevated Skier/);
+
+    const back = () =>
+      Array.from(view.querySelectorAll("button")).find((button) =>
+        /back/i.test(button.textContent ?? ""),
+      );
+    const card = (optionId: string) =>
+      view.querySelector(`[data-testid="utah-plate-type-${optionId}"]`) as HTMLElement;
+
+    await click(back() as HTMLElement);
+    await click(card("motorcycle_in_god_we_trust"));
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(
+      /Motorcycle In God We Trust allows up to 4 characters/i,
+    );
+
+    await click(back() as HTMLElement);
+    await click(card("radio_search_rescue"));
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(/Search & Rescue allows up to 6 characters/i);
+  });
+
+  it("enforces motorcycle 5/4 and radio 6 character limits from the selected design", async () => {
+    const view = await renderFlow();
+    const firstChoice = () =>
+      view.querySelector("#utah-combo-0") as HTMLInputElement;
+    const continueBtn = () =>
+      view.querySelector('[data-testid="plates-continue"]') as HTMLElement;
+    const back = () =>
+      Array.from(view.querySelectorAll("button")).find((button) =>
+        /back/i.test(button.textContent ?? ""),
+      );
+
+    await click(
+      view.querySelector(
+        '[data-testid="utah-plate-type-motorcycle_life_elevated_arches"]',
+      ) as HTMLElement,
+    );
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(firstChoice(), "ARCHES");
+    });
+    await click(continueBtn());
+    expect(view.textContent).toMatch(/up to 5 characters/i);
+    expect(view.querySelector("#utah-combo-0")).toBeTruthy();
+
+    await click(back() as HTMLElement);
+    await click(
+      view.querySelector(
+        '[data-testid="utah-plate-type-motorcycle_in_god_we_trust"]',
+      ) as HTMLElement,
+    );
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(firstChoice(), "RIDER");
+    });
+    await click(continueBtn());
+    expect(view.textContent).toMatch(/up to 4 characters/i);
+
+    await click(back() as HTMLElement);
+    await click(
+      view.querySelector(
+        '[data-testid="utah-plate-type-radio_amateur"]',
+      ) as HTMLElement,
+    );
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(firstChoice(), "K7ABCD");
+    });
+    await click(continueBtn());
+    expect(view.querySelector("#utah-plate-meaning")).toBeTruthy();
   });
 
   it("lets Derek pick a specific special-group design instead of one example bucket", async () => {
@@ -255,5 +386,41 @@ describe("UtahPersonalizedPlateFlow", () => {
     expect(view.innerHTML).toContain("https://dmv.utah.gov/plates/personalized/");
     expect(view.innerHTML).toContain("https://mvp.tax.utah.gov/");
     expect(view.textContent).toContain("TC-817 is not required");
+  });
+
+  it("carries motorcycle specialty design id and special-group fee note to MVP", async () => {
+    const view = await renderFlow();
+    const continueBtn = () =>
+      view.querySelector('[data-testid="plates-continue"]') as HTMLElement;
+
+    await click(
+      view.querySelector(
+        '[data-testid="utah-plate-type-motorcycle_special_group_wildlife_elk"]',
+      ) as HTMLElement,
+    );
+    await click(continueBtn());
+    expect(view.textContent).toMatch(
+      /Motorcycle Wildlife Elk allows up to 4 characters/i,
+    );
+
+    await act(async () => {
+      setFieldValue(
+        view.querySelector("#utah-combo-0") as HTMLInputElement,
+        "ELK1",
+      );
+    });
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(
+        view.querySelector("#utah-plate-meaning") as HTMLTextAreaElement,
+        "Wildlife club",
+      );
+    });
+    await click(continueBtn());
+    await click(continueBtn());
+    expect(view.textContent).toMatch(/organization contribution/i);
+    await click(continueBtn());
+    expect(view.textContent).toContain("Design id: motorcycle_special_group_wildlife_elk");
+    expect(view.textContent).toContain("Plate type: Motorcycle Wildlife Elk");
   });
 });

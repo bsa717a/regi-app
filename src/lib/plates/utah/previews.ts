@@ -1,8 +1,14 @@
 import { UTAH_PLATE_CATALOG_URL } from "./constants";
-import { UTAH_SPECIAL_GROUP_DESIGNS } from "./specialGroupDesigns";
+import { designsForPlateType } from "./plateDesigns";
 import type { UtahPlatePreview, UtahPlateType, UtahPlateTypeId } from "./types";
 
 export type { UtahPlatePreview };
+
+export type UtahPlatePickerGroup = {
+  id: string;
+  heading: string;
+  footer?: string;
+};
 
 export type UtahPlateTypePickerOption = {
   optionId: string;
@@ -12,50 +18,7 @@ export type UtahPlateTypePickerOption = {
   maxCharacters: number;
   previews: UtahPlatePreview[];
   previewCaption?: string;
-};
-
-const CATALOG = "/plates/utah";
-
-const ARCHES: UtahPlatePreview = {
-  src: `${CATALOG}/life-elevated-arches.png`,
-  alt: "Utah Life Elevated Arches license plate",
-  width: 400,
-  height: 199,
-};
-
-const SKIER: UtahPlatePreview = {
-  src: `${CATALOG}/life-elevated-skier.png`,
-  alt: "Utah Life Elevated Skier license plate",
-  width: 400,
-  height: 199,
-};
-
-const IN_GOD_WE_TRUST: UtahPlatePreview = {
-  src: `${CATALOG}/in-god-we-trust.png`,
-  alt: "Utah In God We Trust license plate",
-  width: 400,
-  height: 199,
-};
-
-const AMATEUR_RADIO: UtahPlatePreview = {
-  src: `${CATALOG}/amateur-radio.png`,
-  alt: "Utah amateur radio specialty license plate",
-  width: 400,
-  height: 200,
-};
-
-const SEARCH_RESCUE: UtahPlatePreview = {
-  src: `${CATALOG}/search-rescue.png`,
-  alt: "Utah Search and Rescue specialty license plate",
-  width: 400,
-  height: 200,
-};
-
-const DISABLED_PERSON: UtahPlatePreview = {
-  src: `${CATALOG}/disabled-person.png`,
-  alt: "Utah disabled person license plate",
-  width: 400,
-  height: 200,
+  pickerGroup?: UtahPlatePickerGroup;
 };
 
 export const UTAH_PLATE_PREVIEW_ATTRIBUTION = {
@@ -63,31 +26,29 @@ export const UTAH_PLATE_PREVIEW_ATTRIBUTION = {
   note: "Plate images are official Utah DMV catalog art.",
 };
 
-function option(
-  type: UtahPlateType,
-  previews: UtahPlatePreview[],
-  extras?: Partial<
-    Pick<
-      UtahPlateTypePickerOption,
-      "optionId" | "label" | "description" | "previewCaption" | "maxCharacters"
-    >
-  >,
-): UtahPlateTypePickerOption {
-  return {
-    optionId: extras?.optionId ?? type.id,
-    plateTypeId: type.id,
-    label: extras?.label ?? type.label,
-    description: extras?.description ?? type.description,
-    maxCharacters: extras?.maxCharacters ?? type.maxCharacters,
-    previews,
-    previewCaption: extras?.previewCaption,
-  };
-}
+const PICKER_GROUPS: Partial<
+  Record<UtahPlateTypeId, Omit<UtahPlatePickerGroup, "id">>
+> = {
+  special_group: {
+    heading: "Special group designs",
+    footer:
+      "More special group designs can be added from the Utah DMV catalog.",
+  },
+  motorcycle_standard: {
+    heading: "Motorcycle Life Elevated",
+  },
+  motorcycle_special_or_igwt: {
+    heading: "Motorcycle specialty",
+  },
+  radio: {
+    heading: "Radio plates",
+  },
+};
 
 /**
- * Type-picker rows. Standard Life Elevated is split into Arches and Skier
- * so each design has its own clear preview. Both still use the same
- * `standard_life_elevated` limits and fees.
+ * Type-picker rows. Every catalog design is its own radio card.
+ * Adding a design is catalog + PNG — this builder does not grow
+ * per-bucket special cases.
  */
 export function utahPlateTypePickerOptions(
   types: readonly UtahPlateType[],
@@ -95,64 +56,22 @@ export function utahPlateTypePickerOptions(
   const options: UtahPlateTypePickerOption[] = [];
 
   for (const type of types) {
-    switch (type.id) {
-      case "standard_life_elevated":
-        options.push(
-          option(type, [ARCHES], {
-            optionId: "standard_life_elevated_arches",
-            label: "Life Elevated Arches",
-            description: "Standard issue. Up to 7 characters on the arches plate.",
-          }),
-          option(type, [SKIER], {
-            optionId: "standard_life_elevated_skier",
-            label: "Life Elevated Skier",
-            description: "Standard issue. Up to 7 characters on the skier plate.",
-          }),
-        );
-        break;
-      case "in_god_we_trust":
-        options.push(option(type, [IN_GOD_WE_TRUST]));
-        break;
-      case "special_group":
-        for (const design of UTAH_SPECIAL_GROUP_DESIGNS) {
-          options.push(
-            option(type, [design.preview], {
-              optionId: design.id,
-              label: design.label,
-              description: design.description,
-              maxCharacters: design.maxCharacters,
-            }),
-          );
-        }
-        break;
-      case "motorcycle_standard":
-        options.push(
-          option(type, [ARCHES, SKIER], {
-            previewCaption:
-              "Motorcycle plates use these Life Elevated designs (up to 5 characters).",
-          }),
-        );
-        break;
-      case "motorcycle_special_or_igwt":
-        options.push(
-          option(type, [IN_GOD_WE_TRUST, UTAH_SPECIAL_GROUP_DESIGNS[0]!.preview], {
-            previewCaption:
-              "Motorcycle specialty and In God We Trust plates use these catalog designs (up to 4 characters).",
-          }),
-        );
-        break;
-      case "radio":
-        options.push(
-          option(type, [AMATEUR_RADIO, SEARCH_RESCUE], {
-            previewCaption: "Amateur radio and Search & Rescue radio plates.",
-          }),
-        );
-        break;
-      case "disabled_person":
-        options.push(option(type, [DISABLED_PERSON]));
-        break;
-      default:
-        break;
+    const designs = designsForPlateType(type.id);
+    const groupMeta = designs.length > 1 ? PICKER_GROUPS[type.id] : undefined;
+    const pickerGroup = groupMeta
+      ? { id: type.id, ...groupMeta }
+      : undefined;
+
+    for (const design of designs) {
+      options.push({
+        optionId: design.id,
+        plateTypeId: design.plateTypeId,
+        label: design.label,
+        description: design.description,
+        maxCharacters: design.maxCharacters,
+        previews: [design.preview],
+        pickerGroup,
+      });
     }
   }
 
@@ -163,7 +82,7 @@ export function defaultUtahPlatePickerOptionId(
   vehicleKind?: string | null,
 ): string {
   return vehicleKind === "motorcycle"
-    ? "motorcycle_standard"
+    ? "motorcycle_life_elevated_arches"
     : "standard_life_elevated_arches";
 }
 

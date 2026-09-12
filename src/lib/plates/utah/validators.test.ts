@@ -50,6 +50,40 @@ describe("validatePlateCombo", () => {
       ok: true,
       value: "RADIO1",
     });
+    expect(
+      validatePlateCombo(
+        "ARCH5",
+        "motorcycle_standard",
+        "motorcycle_life_elevated_arches",
+      ),
+    ).toEqual({ ok: true, value: "ARCH5" });
+    expect(
+      validatePlateCombo(
+        "ARCHES",
+        "motorcycle_standard",
+        "motorcycle_life_elevated_arches",
+      ).ok,
+    ).toBe(false);
+    expect(
+      validatePlateCombo(
+        "RIDE",
+        "motorcycle_special_or_igwt",
+        "motorcycle_in_god_we_trust",
+      ),
+    ).toEqual({ ok: true, value: "RIDE" });
+    expect(
+      validatePlateCombo(
+        "RIDER",
+        "motorcycle_special_or_igwt",
+        "motorcycle_special_group_wildlife_elk",
+      ).ok,
+    ).toBe(false);
+    expect(
+      validatePlateCombo("RADIO1", "radio", "radio_amateur"),
+    ).toEqual({ ok: true, value: "RADIO1" });
+    expect(
+      validatePlateCombo("RADIO12", "radio", "radio_search_rescue").ok,
+    ).toBe(false);
   });
 
   it("uses the selected special-group design limit (5 vs Historic B&W 7)", () => {

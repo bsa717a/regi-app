@@ -63,9 +63,48 @@ describe("utahPlateTypePickerOptions", () => {
     ).toBe(5);
   });
 
-  it("keeps motorcycle default on the motorcycle standard option", () => {
+  it("splits motorcycle and radio buckets into one-preview cards", () => {
+    const motoStandard = options.filter(
+      (option) => option.plateTypeId === "motorcycle_standard",
+    );
+    const motoSpecialty = options.filter(
+      (option) => option.plateTypeId === "motorcycle_special_or_igwt",
+    );
+    const radio = options.filter((option) => option.plateTypeId === "radio");
+
+    expect(motoStandard.map((option) => option.optionId)).toEqual([
+      "motorcycle_life_elevated_arches",
+      "motorcycle_life_elevated_skier",
+    ]);
+    expect(motoSpecialty.map((option) => option.optionId)).toEqual([
+      "motorcycle_in_god_we_trust",
+      "motorcycle_special_group_wildlife_elk",
+    ]);
+    expect(radio.map((option) => option.optionId)).toEqual([
+      "radio_amateur",
+      "radio_search_rescue",
+    ]);
+
+    expect(
+      [...motoStandard, ...motoSpecialty, ...radio].every(
+        (option) => option.previews.length === 1,
+      ),
+    ).toBe(true);
+    expect(options.some((option) => option.optionId === "motorcycle_standard")).toBe(
+      false,
+    );
+    expect(
+      options.some((option) => option.optionId === "motorcycle_special_or_igwt"),
+    ).toBe(false);
+    expect(options.some((option) => option.optionId === "radio")).toBe(false);
+    expect(
+      options.every((option) => option.previews.length === 1),
+    ).toBe(true);
+  });
+
+  it("keeps motorcycle default on the motorcycle arches design", () => {
     expect(defaultUtahPlatePickerOptionId("motorcycle")).toBe(
-      "motorcycle_standard",
+      "motorcycle_life_elevated_arches",
     );
     expect(defaultUtahPlatePickerOptionId("passenger")).toBe(
       "standard_life_elevated_arches",
@@ -73,5 +112,12 @@ describe("utahPlateTypePickerOptions", () => {
     expect(
       getUtahPlatePickerOption(options, "in_god_we_trust").plateTypeId,
     ).toBe("in_god_we_trust");
+    expect(
+      getUtahPlatePickerOption(options, "motorcycle_in_god_we_trust")
+        .maxCharacters,
+    ).toBe(4);
+    expect(
+      getUtahPlatePickerOption(options, "radio_amateur").maxCharacters,
+    ).toBe(6);
   });
 });
