@@ -8,6 +8,7 @@ import {
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { loadEditableRegistration } from "@/lib/documents/ownership";
 import { buildGcsPath, parseUploadUrlBody } from "@/lib/documents/validation";
+import { captureRouteException } from "@/lib/sentry/report";
 import { createUploadSignedUrl } from "@/lib/storage/gcs";
 
 export const runtime = "nodejs";
@@ -97,7 +98,8 @@ export async function POST(request: Request) {
       },
       { headers: rateLimitHeaders(limited) },
     );
-  } catch {
+  } catch (err) {
+    captureRouteException(err, "POST /api/documents/upload-url");
     return NextResponse.json(
       { error: "Could not prepare upload. Please try again." },
       { status: 500, headers: rateLimitHeaders(limited) },

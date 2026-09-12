@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/rateLimit";
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { loadEditableRegistration } from "@/lib/documents/ownership";
+import { captureRouteException } from "@/lib/sentry/report";
 import { loadStateRules } from "@/lib/stateEngine/loadRules";
 import { resolvePhotoUrl } from "@/lib/registrations/photo";
 import {
@@ -75,6 +76,7 @@ export async function DELETE(request: Request, context: RouteContext) {
         { status: 404, headers: rateLimitHeaders(limited) },
       );
     }
+    captureRouteException(error, "DELETE /api/registrations/[id]/photos/[photoId]");
     return NextResponse.json(
       { error: "Could not delete photo. Please try again." },
       { status: 500, headers: rateLimitHeaders(limited) },

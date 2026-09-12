@@ -10,6 +10,7 @@ import {
   parsePushPlatform,
   registerPushTokenDetailed,
 } from "@/lib/push/tokens";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
         { status: 409, headers: rateLimitHeaders(limited) },
       );
     }
+    captureRouteException(err, "POST /api/push/register");
     return NextResponse.json(
       { error: "Could not register push token" },
       { status: 500, headers: rateLimitHeaders(limited) },

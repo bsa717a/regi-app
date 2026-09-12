@@ -1,4 +1,5 @@
 import { StartRenewalClient } from "@/components/renewals/StartRenewalClient";
+import { FeatureErrorBoundary } from "@/components/sentry/FeatureErrorBoundary";
 
 export default async function NewRenewalPage({
   searchParams,
@@ -28,5 +29,9 @@ export default async function NewRenewalPage({
     );
   }
 
-  return <StartRenewalClient registrationId={registrationId} />;
+  return (
+    <FeatureErrorBoundary feature="renewal">
+      <StartRenewalClient registrationId={registrationId} />
+    </FeatureErrorBoundary>
+  );
 }

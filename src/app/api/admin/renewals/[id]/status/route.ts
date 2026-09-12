@@ -8,6 +8,7 @@ import {
 import { verifyStaff } from "@/lib/auth/verifyStaff";
 import { createNotificationService } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,6 +78,7 @@ export async function POST(request: Request, context: RouteContext) {
     if (err instanceof AdminRenewalError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
+    captureRouteException(err, "POST /api/admin/renewals/[id]/status");
     console.error("[admin/renewals/status]", err);
     return NextResponse.json(
       { error: "Could not update renewal status" },

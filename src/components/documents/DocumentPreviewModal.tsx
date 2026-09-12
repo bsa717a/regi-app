@@ -5,6 +5,7 @@ import {
   fieldClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { FeatureErrorBoundary } from "@/components/sentry/FeatureErrorBoundary";
 import {
   inferPreviewKind,
   type PreviewKind,
@@ -13,7 +14,38 @@ import {
 const secondaryDownloadClassName =
   "inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800";
 
-export function DocumentPreviewModal({
+export function DocumentPreviewModal(props: DocumentPreviewModalProps) {
+  return (
+    <FeatureErrorBoundary feature="document-preview">
+      <DocumentPreviewModalView {...props} />
+    </FeatureErrorBoundary>
+  );
+}
+
+type DocumentPreviewModalProps = {
+  open: boolean;
+  onClose: () => void;
+  categoryLabel?: string;
+  title: string;
+  filename: string;
+  downloadUrl: string | null;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  kind?: PreviewKind;
+  extraActions?: ReactNode;
+  closeDisabled?: boolean;
+  canRename?: boolean;
+  onRename?: (filename: string) => Promise<void>;
+  confirmMode?: boolean;
+  onConfirm?: () => void | Promise<void>;
+  onReject?: () => void;
+  confirmLabel?: string;
+  rejectLabel?: string;
+  confirmBusy?: boolean;
+};
+
+function DocumentPreviewModalView({
   open,
   onClose,
   categoryLabel = "Document",
