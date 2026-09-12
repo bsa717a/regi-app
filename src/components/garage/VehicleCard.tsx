@@ -713,6 +713,14 @@ export function VehicleCard({
                   ? `Recalls (${vehicle.openRecallCount})`
                   : "Recalls"}
               </Link>
+              {vehicle.state === "UT" ? (
+                <Link
+                  href={`/garage/plates?registrationId=${encodeURIComponent(vehicle.id)}`}
+                  className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                >
+                  Personalized plate
+                </Link>
+              ) : null}
               {vehicle.canEdit && onEdit ? (
                 <button
                   type="button"

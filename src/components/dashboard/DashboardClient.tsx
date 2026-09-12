@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
@@ -239,6 +240,14 @@ export function DashboardClient() {
                 )}
               </div>
             </div>
+            <p className="mt-3">
+              <Link
+                href="/garage/plates"
+                className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
+              >
+                Utah personalized / specialty plates
+              </Link>
+            </p>
           </section>
 
           {groups.expired.length > 0 ? (
