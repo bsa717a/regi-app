@@ -53,9 +53,12 @@ async function resetToTypeStep(page) {
 }
 
 async function walkToMvp(page, { combo, meaning }) {
-  await page.getByTestId("plates-continue").click();
-  await page.getByLabel("First choice (required)").waitFor();
-  await page.getByLabel("First choice (required)").fill(combo);
+  const firstChoice = page.getByLabel("First choice (required)");
+  if (!(await firstChoice.isVisible().catch(() => false))) {
+    await page.getByTestId("plates-continue").click();
+    await firstChoice.waitFor();
+  }
+  await firstChoice.fill(combo);
   await page.getByTestId("plates-continue").click();
   await page.getByLabel(/What does this combination mean/i).fill(meaning);
   await page.getByTestId("plates-continue").click();
@@ -164,6 +167,7 @@ try {
   await selectCard(page, "motorcycle_life_elevated_skier");
   await page.getByTestId("plates-continue").click();
   await page.getByText(/Motorcycle Life Elevated Skier allows up to 5 characters/i).waitFor();
+  await page.getByLabel("First choice (required)").fill("RIDE1");
   await writeShot(
     page,
     null,
@@ -182,13 +186,13 @@ try {
   await selectCard(page, "motorcycle_in_god_we_trust");
   await page.getByTestId("plates-continue").click();
   await page.getByText(/Motorcycle In God We Trust allows up to 4 characters/i).waitFor();
+  await page.getByLabel("First choice (required)").fill("RIDE");
   await writeShot(
     page,
     null,
     selectableDir,
     "motorcycle_igwt_combos_4_character_limit.png",
   );
-  await page.getByLabel("First choice (required)").fill("RIDE");
   await page.getByTestId("plates-continue").click();
   await page.getByLabel(/What does this combination mean/i).fill("Faith plate");
   await page.getByTestId("plates-continue").click();
@@ -214,6 +218,7 @@ try {
   await selectCard(page, "radio_amateur");
   await page.getByTestId("plates-continue").click();
   await page.getByText(/Amateur Radio allows up to 6 characters/i).waitFor();
+  await page.getByLabel("First choice (required)").fill("K7ABC");
   await writeShot(page, null, selectableDir, "radio_amateur_combos_6_character_limit.png");
   await walkToMvp(page, { combo: "K7ABC", meaning: "Call sign" });
   await writeShot(page, null, selectableDir, "radio_amateur_mvp_copy_design_id.png");
