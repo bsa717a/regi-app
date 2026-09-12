@@ -38,7 +38,8 @@ export function UtahPlatesPage({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!registrationId || authLoading) return;
+    const id = registrationId?.trim() ?? "";
+    if (!id || authLoading) return;
 
     let cancelled = false;
 
@@ -46,7 +47,7 @@ export function UtahPlatesPage({
       try {
         const token = idToken ?? (await getIdToken());
         if (!token) return;
-        const row = await getRegistration(token, registrationId);
+        const row = await getRegistration(token, id);
         if (cancelled) return;
         setVehicle({
           id: row.id,
