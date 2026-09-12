@@ -154,12 +154,15 @@ try {
     handoffDir,
     "order_packet_sticky.png",
   );
+  await page.setViewportSize({ width: 430, height: 1600 });
+  await page.getByTestId("utah-get-to-payment").scrollIntoViewIfNeeded();
   await writeShot(
     page,
     page.getByTestId("utah-get-to-payment"),
     handoffDir,
     "get_to_payment_checklist.png",
   );
+  await page.setViewportSize({ width: 430, height: 920 });
 
   const orderPlatesHref = await page
     .getByTestId("utah-open-order-plates")
