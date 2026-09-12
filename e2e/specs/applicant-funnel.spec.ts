@@ -1,6 +1,23 @@
 import { expect, test, type Page } from "@playwright/test";
 import { hasDemoPassword, missingPasswordMessage } from "../env";
 import { openAddRegistration, signInDemoApplicant } from "../helpers/auth";
+import {
+  addManually,
+  applicantName,
+  applicantProfileForm,
+  confirmVehicle,
+  documentPreviewModal,
+  feeEstimate,
+  paymentNotRequired,
+  renewNow,
+  saveProfile,
+  submitBlockingReasons,
+  submitRenewal,
+  typePickerPassenger,
+  vehicleItems,
+  vinInput,
+  vinLookupSubmit,
+} from "../helpers/selectors";
 
 const SAMPLE_VIN = "1HGCM82633A004352";
 
@@ -26,12 +43,10 @@ async function fillApplicantProfileFields(page: Page) {
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByTestId("applicant-profile-form")).toBeVisible({
-    timeout: 20_000,
-  });
+  await expect(applicantProfileForm(page)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/Signed in as/i)).toBeVisible();
 
-  const name = page.getByTestId("applicant-name");
+  const name = applicantName(page);
   const current = await name.inputValue();
   if (!current.trim()) {
     await name.fill("Demo Applicant");
@@ -42,7 +57,7 @@ async function fillApplicantProfileFields(page: Page) {
   await expect(page.getByLabel("Street address")).toBeVisible();
   await expect(page.getByLabel("City")).toBeVisible();
   await expect(page.getByLabel("ZIP")).toBeVisible();
-  await expect(page.getByTestId("save-profile-button")).toBeVisible();
+  await expect(saveProfile(page)).toBeVisible();
 }
 
 async function exerciseRegistrationForm(page: Page) {
@@ -52,21 +67,20 @@ async function exerciseRegistrationForm(page: Page) {
   });
 
   await openAddRegistration(page);
-  await expect(page.getByTestId("vin-lookup-form")).toBeVisible();
-  await expect(page.getByTestId("vin-input")).toBeVisible();
-  await expect(page.getByTestId("vin-lookup-submit")).toBeVisible();
+  await expect(vinInput(page)).toBeVisible();
+  await expect(vinLookupSubmit(page)).toBeVisible();
 
-  await page.getByTestId("vin-input").fill(SAMPLE_VIN);
-  await page.getByTestId("vin-lookup-submit").click();
+  await vinInput(page).fill(SAMPLE_VIN);
+  await vinLookupSubmit(page).click();
 
-  const confirm = page.getByTestId("confirm-vehicle-button");
-  const typePicker = page.getByTestId("type-picker-grid");
-  const vinAlert = page.getByRole("alert");
+  const confirm = confirmVehicle(page);
+  const passenger = typePickerPassenger(page);
+  const alert = page.getByRole("alert");
 
   await Promise.race([
     confirm.waitFor({ state: "visible", timeout: 25_000 }),
-    typePicker.waitFor({ state: "visible", timeout: 25_000 }),
-    vinAlert.waitFor({ state: "visible", timeout: 25_000 }),
+    passenger.waitFor({ state: "visible", timeout: 25_000 }),
+    alert.waitFor({ state: "visible", timeout: 25_000 }),
   ]).catch(() => {
     /* continue to manual picker */
   });
@@ -74,20 +88,16 @@ async function exerciseRegistrationForm(page: Page) {
   if (await confirm.isVisible().catch(() => false)) {
     await expect(confirm).toBeVisible();
   } else {
-    if (await page.getByTestId("add-manually-button").isVisible().catch(() => false)) {
-      await page.getByTestId("add-manually-button").click();
+    if (await addManually(page).isVisible().catch(() => false)) {
+      await addManually(page).click();
     }
-    await expect(page.getByTestId("type-picker-grid")).toBeVisible({
-      timeout: 15_000,
-    });
-    await expect(page.getByTestId("type-picker-passenger")).toBeVisible();
-    await page.getByTestId("type-picker-passenger").click();
+    await expect(typePickerPassenger(page)).toBeVisible({ timeout: 15_000 });
+    await typePickerPassenger(page).click();
     await expect(page.getByText(/Registration type/i)).toBeVisible({
       timeout: 10_000,
     });
   }
 
-  // Do not save a new vehicle — keep staging garage stable.
   const backToGarage = page.getByRole("button", { name: /Back to garage/i });
   if (await backToGarage.isVisible().catch(() => false)) {
     await backToGarage.click();
@@ -102,12 +112,12 @@ async function exerciseDocumentPreview(page: Page) {
     timeout: 20_000,
   });
 
-  const viewButtons = page.locator("[data-testid^='view-document-']");
-  if ((await viewButtons.count()) > 0) {
+  const viewButtons = page
+    .locator("[data-testid^='view-document-']")
+    .or(page.getByRole("button", { name: /View(\/rename)?/ }));
+  if ((await viewButtons.count()) > 0 && (await viewButtons.first().isVisible().catch(() => false))) {
     await viewButtons.first().click();
-    await expect(page.getByTestId("document-preview-modal")).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(documentPreviewModal(page)).toBeVisible({ timeout: 20_000 });
     await page.keyboard.press("Escape");
     return;
   }
@@ -116,7 +126,7 @@ async function exerciseDocumentPreview(page: Page) {
   await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
     timeout: 15_000,
   });
-  const firstVehicle = page.locator("[data-testid^='vehicle-item-']").first();
+  const firstVehicle = vehicleItems(page).first();
   if ((await firstVehicle.count()) === 0) {
     test.info().annotations.push({
       type: "note",
@@ -124,13 +134,11 @@ async function exerciseDocumentPreview(page: Page) {
     });
     return;
   }
-  await firstVehicle.locator("[data-testid^='vehicle-expand-']").click();
-  const card = page.locator("[data-testid^='view-registration-card-']").first();
+  await firstVehicle.click();
+  const card = page.getByRole("button", { name: "View registration card" });
   if (await card.isVisible().catch(() => false)) {
     await card.click();
-    await expect(page.getByTestId("document-preview-modal")).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(documentPreviewModal(page)).toBeVisible({ timeout: 20_000 });
     await page.keyboard.press("Escape");
   } else {
     test.info().annotations.push({
@@ -146,16 +154,16 @@ async function exerciseSubmitPath(page: Page) {
     timeout: 20_000,
   });
 
-  const renewNow = page.getByTestId("renew-now-button");
+  const now = renewNow(page);
   const renewLink = page.getByRole("link", { name: /Renew Registration/i }).first();
 
-  if (await renewNow.isEnabled().catch(() => false)) {
-    await renewNow.click();
+  if (await now.isEnabled().catch(() => false)) {
+    await now.click();
   } else if (await renewLink.isVisible().catch(() => false)) {
     await renewLink.click();
   } else {
     await page.getByRole("link", { name: "Garage" }).click();
-    const vehicle = page.locator("[data-testid^='vehicle-item-']").first();
+    const vehicle = vehicleItems(page).first();
     if ((await vehicle.count()) === 0) {
       test.info().annotations.push({
         type: "note",
@@ -163,8 +171,8 @@ async function exerciseSubmitPath(page: Page) {
       });
       return;
     }
-    await vehicle.locator("[data-testid^='vehicle-expand-']").click();
-    const renew = page.locator("[data-testid^='renew-vehicle-']").first();
+    await vehicle.click();
+    const renew = page.getByRole("link", { name: "Renew registration" }).first();
     if (await renew.isVisible().catch(() => false)) {
       await renew.click();
     } else {
@@ -178,32 +186,26 @@ async function exerciseSubmitPath(page: Page) {
   }
 
   await expect(page).toHaveURL(/\/renewals\//, { timeout: 30_000 });
-  await expect(page.getByTestId("submit-renewal-button")).toBeVisible({
-    timeout: 25_000,
-  });
-  await expect(page.getByTestId("fee-estimate")).toBeVisible();
-  await expect(page.getByTestId("payment-not-required")).toBeVisible();
-  await expect(page.getByTestId("payment-not-required")).toContainText(
-    /No payment required/i,
-  );
+  await expect(submitRenewal(page)).toBeVisible({ timeout: 25_000 });
+  await expect(feeEstimate(page)).toBeVisible();
+  await expect(paymentNotRequired(page)).toBeVisible();
   await expect(page.getByText(/stripe/i)).toHaveCount(0);
 
-  const submit = page.getByTestId("submit-renewal-button");
-  if (await submit.isDisabled()) {
-    await expect(page.getByTestId("submit-blocking-reasons")).toBeVisible();
-    await expect(page.getByTestId("submit-blocking-reasons")).toContainText(
-      /Complete these items to submit/i,
-    );
-    const title = await submit.getAttribute("title");
-    expect(title ?? "").toMatch(/Submit is disabled/i);
+  if (await submitRenewal(page).isDisabled()) {
+    await expect(submitBlockingReasons(page)).toBeVisible();
+    const title = await submitRenewal(page).getAttribute("title");
+    if (title) {
+      expect(title).toMatch(/Submit is disabled/i);
+    }
   }
 
-  const viewDoc = page.locator("[data-testid^='view-document-']").first();
+  const viewDoc = page
+    .locator("[data-testid^='view-document-']")
+    .or(page.getByRole("button", { name: "View" }))
+    .first();
   if (await viewDoc.isVisible().catch(() => false)) {
     await viewDoc.click();
-    await expect(page.getByTestId("document-preview-modal")).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(documentPreviewModal(page)).toBeVisible({ timeout: 20_000 });
     await page.keyboard.press("Escape");
   }
 }

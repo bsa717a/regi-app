@@ -26,6 +26,8 @@ Stripe stays yellow / parked. Tests assert the “no payment required” copy an
 
 Public specs (`e2e/specs/public-staging.spec.ts`) run without a password. Authenticated specs skip when the password env is missing (exit 0 for those tests).
 
+Selectors prefer `data-testid` (this PR / #58) and fall back to labels/roles so the suite can run against **currently deployed** staging before this branch is rolled out to `regi-staging`.
+
 ## Run locally against staging
 
 ```bash

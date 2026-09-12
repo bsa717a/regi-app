@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { STAGING_ORIGIN } from "../env";
 import {
+  loginEmail,
+  loginForm,
+  loginSubmit,
+} from "../helpers/selectors";
+import {
   isProductionPlaywrightHost,
   resolvePlaywrightBaseURL,
 } from "../../src/lib/e2e/stagingTarget";
@@ -33,13 +38,13 @@ test.describe("Staging public smoke (no demo password)", () => {
     }
   });
 
-  test("login form is reachable with #58 testids", async ({ page }) => {
+  test("login form is reachable", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByTestId("login-form")).toBeVisible({ timeout: 45_000 });
-    await expect(page.getByTestId("login-email")).toBeVisible();
-    await expect(page.getByTestId("login-password")).toBeVisible();
-    await expect(page.getByTestId("login-submit")).toBeVisible();
-    await expect(page.getByTestId("login-submit")).toHaveText("Open garage");
+    await expect(loginForm(page)).toBeVisible({ timeout: 45_000 });
+    await expect(loginEmail(page)).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+    await expect(loginSubmit(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open garage" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Create account" })).toHaveAttribute(
       "href",
       "/signup",
@@ -50,12 +55,14 @@ test.describe("Staging public smoke (no demo password)", () => {
     );
   });
 
-  test("empty login submit uses native required validation", async ({ page }) => {
+  test("empty login submit stays on the login page", async ({ page }) => {
     await page.goto("/login");
-    await page.getByTestId("login-submit").click();
-    const invalid = await page
-      .getByTestId("login-email")
-      .evaluate((el: HTMLInputElement) => !el.validity.valid);
-    expect(invalid).toBe(true);
+    await expect(loginSubmit(page)).toBeVisible({ timeout: 45_000 });
+    const email = page.locator("#email");
+    await expect(email).toHaveAttribute("required", "");
+    await expect(page.locator("#password")).toHaveAttribute("required", "");
+    await loginSubmit(page).click();
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page.getByRole("heading", { name: "Open the garage" })).toBeVisible();
   });
 });
