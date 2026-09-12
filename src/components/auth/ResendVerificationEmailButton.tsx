@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
-type ButtonVariant = "primary" | "link";
+type ButtonVariant = "primary" | "link" | "banner";
 
 const COOLDOWN_MS = 60_000;
 
@@ -65,7 +65,9 @@ export function ResendVerificationEmailButton({
   const baseClassName =
     variant === "primary"
       ? "inline-flex items-center justify-center rounded-xl bg-teal-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:bg-teal-600 dark:hover:bg-teal-500"
-      : "text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:text-teal-300";
+      : variant === "banner"
+        ? "shrink-0 rounded-lg bg-amber-900 px-3 py-2 text-left text-sm font-medium text-amber-50 transition hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 disabled:opacity-60 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100 dark:focus-visible:outline-amber-200 sm:text-center"
+        : "text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:text-teal-300";
 
   const buttonClassName = className
     ? `${baseClassName} ${className}`
@@ -75,6 +77,7 @@ export function ResendVerificationEmailButton({
     <div className="space-y-2">
       <button
         type="button"
+        data-testid="resend-verification-email"
         onClick={() => void handleResend()}
         disabled={sending || inCooldown}
         className={buttonClassName}
@@ -85,7 +88,7 @@ export function ResendVerificationEmailButton({
             ? `Resend in ${cooldownSeconds}s`
             : "Resend verification email"}
       </button>
-      {sent && !inCooldown ? (
+      {sent ? (
         <p className="text-sm text-teal-700 dark:text-teal-300">
           Verification email sent. Check your inbox and spam folder.
         </p>
