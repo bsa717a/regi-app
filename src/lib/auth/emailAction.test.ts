@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { FirebaseError } from "firebase/app";
-import { PRODUCTION_ORIGIN } from "@/lib/legal/constants";
+import { PRODUCTION_ORIGIN, STAGING_ORIGIN } from "@/lib/legal/constants";
 import {
+  allowedEmailActionOrigins,
   isSafeContinueUrl,
   mapEmailActionError,
   parseEmailActionParams,
@@ -47,6 +48,12 @@ describe("rewriteFirebaseEmailActionLink", () => {
     expect(rewritten).toBe(
       "https://regi-90502049802.us-central1.run.app/auth/action?mode=verifyEmail&oobCode=abc&apiKey=dead",
     );
+  });
+});
+
+describe("allowedEmailActionOrigins", () => {
+  it("includes the durable staging Cloud Run origin", () => {
+    expect(allowedEmailActionOrigins()).toContain(STAGING_ORIGIN);
   });
 });
 

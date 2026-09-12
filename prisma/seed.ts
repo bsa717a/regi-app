@@ -3,6 +3,7 @@
  * Run: npx prisma db seed
  */
 import { AppRole, PrismaClient, RenewalStatus, StaffRole } from "@prisma/client";
+import { resolveStagingDemoApplicant } from "../src/lib/deploy/stagingDemoApplicant";
 import type { StateRulesConfig } from "../src/lib/stateEngine/types";
 
 const prisma = new PrismaClient();
@@ -267,6 +268,27 @@ async function main() {
       },
     },
   });
+
+  // 2b) Priority 2 hook — real Firebase applicant on a non-prod DB only.
+  const stagingApplicant = resolveStagingDemoApplicant(process.env);
+  if (stagingApplicant) {
+    await prisma.user.upsert({
+      where: { firebaseUid: stagingApplicant.firebaseUid },
+      create: {
+        firebaseUid: stagingApplicant.firebaseUid,
+        email: stagingApplicant.email,
+        name: "Staging Demo Applicant",
+        role: AppRole.user,
+      },
+      update: {
+        email: stagingApplicant.email,
+        name: "Staging Demo Applicant",
+      },
+    });
+    console.log(
+      `  staging demo applicant: ${stagingApplicant.email} (${stagingApplicant.firebaseUid})`,
+    );
+  }
 
   // 3) Household of one
   let household = await prisma.household.findFirst({

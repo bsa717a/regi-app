@@ -4,10 +4,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Liveness probe for Cloud Run / local checks. */
+export function healthPayload(
+  env: NodeJS.ProcessEnv = process.env,
+  now = new Date(),
+) {
+  return {
+    ok: true as const,
+    service: env.K_SERVICE?.trim() || "regi",
+    environment:
+      env.SENTRY_ENVIRONMENT?.trim() ||
+      env.NEXT_PUBLIC_SENTRY_ENVIRONMENT?.trim() ||
+      "unknown",
+    timestamp: now.toISOString(),
+  };
+}
+
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    service: "regi",
-    timestamp: new Date().toISOString(),
-  });
+  return NextResponse.json(healthPayload());
 }

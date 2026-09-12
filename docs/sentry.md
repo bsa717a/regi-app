@@ -47,7 +47,7 @@ gcloud secrets add-iam-policy-binding regi-sentry-dsn \
 SENTRY_DSN=regi-sentry-dsn:latest,NEXT_PUBLIC_SENTRY_DSN=regi-sentry-dsn:latest
 ```
 
-`SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` are already set to `production` in Cloud Build. For a staging service, set both to `staging`.
+`SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` are already set to `production` in Cloud Build. Staging Cloud Run (`regi-staging`) sets both to `staging` via [docs/preview.md](preview.md).
 
 Optional: pass `_NEXT_PUBLIC_SENTRY_DSN` as a Cloud Build substitution so the client DSN is also inlined at `next build` (same value; not required if the Cloud Run secret is set).
 
