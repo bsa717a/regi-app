@@ -3,6 +3,7 @@ import { createNotificationService } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { verifyCronSecret } from "@/lib/reminders/cronAuth";
 import { runReminderTick } from "@/lib/reminders/tick";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, result });
   } catch (err) {
+    captureRouteException(err, "POST /api/cron/reminders");
     const message = err instanceof Error ? err.message : String(err);
     console.error("[cron/reminders] tick failed", message);
     return NextResponse.json(

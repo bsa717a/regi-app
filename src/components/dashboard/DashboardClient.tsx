@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
 import { AddRegistrationFlow } from "@/components/garage/AddRegistrationFlow";
 import { RenewalCard } from "@/components/dashboard/RenewalCard";
 import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
@@ -40,7 +41,8 @@ function renewTargetLabel(vehicle: RegistrationDto): string {
 
 export function DashboardClient() {
   const router = useRouter();
-  const { idToken, getIdToken, loading: authLoading } = useAuth();
+  const { user, idToken, getIdToken, loading: authLoading } = useAuth();
+  const showVerifyEmail = Boolean(user && !user.emailVerified);
   const [vehicles, setVehicles] = useState<RegistrationDto[]>([]);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,14 +104,22 @@ export function DashboardClient() {
     return (
       <AppShell title="Renewals">
         {emptyGarage ? (
-          <div className="mb-6">
-            <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
-              Renewals inbox
-            </p>
-            <p className="mt-2 max-w-md text-base leading-relaxed text-slate-600 dark:text-slate-400">
-              Your garage is empty — add a registration first, then we&apos;ll
-              track renewals here.
-            </p>
+          <div className="mb-6 space-y-4">
+            <div>
+              <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+                Renewals inbox
+              </p>
+              <p className="mt-2 max-w-md text-base leading-relaxed text-slate-600 dark:text-slate-400">
+                Your garage is empty — add a registration first, then we&apos;ll
+                track renewals here.
+              </p>
+            </div>
+            {showVerifyEmail ? (
+              <VerifyEmailCallout
+                email={user?.email}
+                testId="dashboard-verify-email"
+              />
+            ) : null}
           </div>
         ) : null}
         <AddRegistrationFlow
@@ -171,6 +181,13 @@ export function DashboardClient() {
 
       {!loading && !error ? (
         <div className="space-y-8">
+          {showVerifyEmail ? (
+            <VerifyEmailCallout
+              email={user?.email}
+              testId="dashboard-verify-email"
+            />
+          ) : null}
+
           <section aria-labelledby="renewals-summary-heading">
             <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
               Renewal inbox

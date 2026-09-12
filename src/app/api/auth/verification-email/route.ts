@@ -11,6 +11,7 @@ import {
 import { verifyRequest } from "@/lib/auth/verifyRequest";
 import { resolveAppOrigin } from "@/lib/household/appOrigin";
 import { createEmailProviderFromEnv } from "@/lib/notifications/SendGridEmailProvider";
+import { captureRouteException } from "@/lib/sentry/report";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
     if (err instanceof EmailDeliveryNotConfiguredError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
+    captureRouteException(err, "POST /api/auth/verification-email");
     console.error("[verification-email] Failed to send:", err);
     return NextResponse.json(
       { error: "Could not send a verification email. Please try again." },

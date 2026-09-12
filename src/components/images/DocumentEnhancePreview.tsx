@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
+import { FeatureErrorBoundary } from "@/components/sentry/FeatureErrorBoundary";
 import type { PreparedScanImage } from "@/lib/images/compress";
 
 export type DocumentEnhancePreviewProps = {
@@ -20,7 +21,15 @@ export type DocumentEnhancePreviewProps = {
  * Before/after chooser for document scan enhancement.
  * Defaults to the enhanced scan when available.
  */
-export function DocumentEnhancePreview({
+export function DocumentEnhancePreview(props: DocumentEnhancePreviewProps) {
+  return (
+    <FeatureErrorBoundary feature="scan-preview">
+      <DocumentEnhancePreviewView {...props} />
+    </FeatureErrorBoundary>
+  );
+}
+
+function DocumentEnhancePreviewView({
   open,
   title = "Review scan",
   original,

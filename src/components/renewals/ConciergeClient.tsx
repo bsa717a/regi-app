@@ -9,8 +9,8 @@ import {
   primaryButtonClassName,
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
-import { ResendVerificationEmailButton } from "@/components/auth/ResendVerificationEmailButton";
 import { AppShell } from "@/components/shell/AppShell";
+import { SubmitBlockingReasons } from "@/components/renewals/SubmitBlockingReasons";
 import { useVaultDocumentPreview } from "@/components/documents/useVaultDocumentPreview";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
 import { ProgressTracker } from "@/components/renewals/ProgressTracker";
@@ -25,6 +25,11 @@ import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import type { DocumentDto } from "@/lib/documents/types";
 import type { RenewalDto, RequiredDocumentStatus } from "@/lib/renewals/types";
 import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
+import {
+  getSubmitBlockingReasons,
+  isSubmitRenewalBlocked,
+  submitDisabledTitle,
+} from "@/lib/renewals/submitBlockingReasons";
 
 function vehicleLabel(renewal: RenewalDto): string {
   const v = renewal.registration;
@@ -378,6 +383,21 @@ function DraftView({
 }) {
   const missingCount = renewal.missingDocumentTypes.length;
   const county = renewal.feeBreakdown.county ?? "";
+  const blockingInput = {
+    emailVerified,
+    documentsComplete: renewal.documentsComplete,
+    needsCounty: renewal.needsCounty,
+    countySelected: Boolean(county),
+    missingDocumentLabels: renewal.requiredDocuments
+      .filter((doc) => !doc.uploaded)
+      .map((doc) => doc.label),
+  };
+  const blockingReasons = getSubmitBlockingReasons(blockingInput);
+  const submitDisabled =
+    submitting || isSubmitRenewalBlocked(blockingInput);
+  const disabledTitle = submitDisabled
+    ? submitDisabledTitle(blockingReasons)
+    : undefined;
 
   const documentsById = useMemo(
     () => new Map(renewal.documents.map((doc) => [doc.id, doc])),
@@ -479,15 +499,7 @@ function DraftView({
 
       <FeeEstimate fees={renewal.feeBreakdown} />
 
-      <SubmitBlockingReasons
-        emailVerified={emailVerified}
-        documentsComplete={renewal.documentsComplete}
-        needsCounty={renewal.needsCounty}
-        countySelected={Boolean(county)}
-        missingDocumentLabels={renewal.requiredDocuments
-          .filter((doc) => !doc.uploaded)
-          .map((doc) => doc.label)}
-      />
+      <SubmitBlockingReasons {...blockingInput} />
 
       {submitError ? (
         <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
@@ -498,13 +510,12 @@ function DraftView({
       <button
         type="button"
         className={primaryButtonClassName}
-        disabled={
-          submitting ||
-          !renewal.documentsComplete ||
-          !emailVerified ||
-          (renewal.needsCounty && !county)
+        data-testid="submit-renewal-button"
+        disabled={submitDisabled}
+        title={disabledTitle}
+        aria-describedby={
+          blockingReasons.length > 0 ? "submit-blocking-reasons" : undefined
         }
-        aria-describedby="submit-blocking-reasons"
         onClick={() => {
           void onSubmit();
         }}
@@ -514,88 +525,6 @@ function DraftView({
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         No charge today — fees above are estimates only.
       </p>
-    </div>
-  );
-}
-
-function SubmitBlockingReasons({
-  emailVerified,
-  documentsComplete,
-  needsCounty,
-  countySelected,
-  missingDocumentLabels,
-}: {
-  emailVerified: boolean;
-  documentsComplete: boolean;
-  needsCounty: boolean;
-  countySelected: boolean;
-  missingDocumentLabels: string[];
-}) {
-  const reasons: Array<{ key: string; message: string }> = [];
-
-  if (!emailVerified) {
-    reasons.push({
-      key: "email",
-      message: "Verify your email first",
-    });
-  }
-
-  if (!documentsComplete && missingDocumentLabels.length > 0) {
-    if (missingDocumentLabels.length === 1) {
-      reasons.push({
-        key: "docs",
-        message: `Missing ${missingDocumentLabels[0]} document`,
-      });
-    } else {
-      reasons.push({
-        key: "docs",
-        message: `Missing documents: ${missingDocumentLabels.join(", ")}`,
-      });
-    }
-  }
-
-  if (needsCounty && !countySelected) {
-    reasons.push({
-      key: "county",
-      message: "Select a registration county",
-    });
-  }
-
-  if (reasons.length === 0) {
-    return null;
-  }
-
-  return (
-    <div
-      id="submit-blocking-reasons"
-      className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40"
-      role="status"
-      aria-live="polite"
-    >
-      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-        Complete these items to submit:
-      </p>
-      <ul className="space-y-1.5" aria-label="Blocking reasons">
-        {reasons.map((reason) => (
-          <li
-            key={reason.key}
-            className="flex items-start gap-2 text-sm text-amber-950 dark:text-amber-100"
-          >
-            <span
-              className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400"
-              aria-hidden="true"
-            >
-              •
-            </span>
-            <span>{reason.message}</span>
-          </li>
-        ))}
-      </ul>
-      {!emailVerified ? (
-        <div className="pt-1">
-          <ResendVerificationEmailButton variant="link" />
-        </div>
-      ) : null}
     </div>
   );
 }

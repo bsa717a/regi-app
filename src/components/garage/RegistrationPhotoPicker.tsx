@@ -3,20 +3,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { labelClassName } from "@/components/auth/AuthFormStyles";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
+import { FeatureErrorBoundary } from "@/components/sentry/FeatureErrorBoundary";
 import { inferImageContentType } from "@/lib/images/compress";
 import { isAllowedPhotoContentType } from "@/lib/registrations/photoTypes";
 
-export function RegistrationPhotoPicker({
-  currentPhotoUrl,
-  pendingFile,
-  onPendingFileChange,
-  disabled = false,
-}: {
+type RegistrationPhotoPickerProps = {
   currentPhotoUrl?: string | null;
   pendingFile: File | null;
   onPendingFileChange: (file: File | null) => void;
   disabled?: boolean;
-}) {
+};
+
+export function RegistrationPhotoPicker(props: RegistrationPhotoPickerProps) {
+  return (
+    <FeatureErrorBoundary feature="garage-upload">
+      <RegistrationPhotoPickerView {...props} />
+    </FeatureErrorBoundary>
+  );
+}
+
+function RegistrationPhotoPickerView({
+  currentPhotoUrl,
+  pendingFile,
+  onPendingFileChange,
+  disabled = false,
+}: RegistrationPhotoPickerProps) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
