@@ -28,6 +28,12 @@ export const PROD_EMAIL_PROVIDER = "resend";
 export const PROD_MAX_INSTANCES = "5";
 export const PROD_CLOUD_SQL_INSTANCE = "regi-app-v1:us-central1:regi-db";
 export const PROD_DATABASE_NAME = "regi";
+export const PROD_FIREBASE_PROJECT_ID = "regi-app-v1";
+export const PROD_FIREBASE_AUTH_DOMAIN = "regi-app-v1.firebaseapp.com";
+export const PROD_FIREBASE_STORAGE_BUCKET = "regi-app-v1.firebasestorage.app";
+export const PROD_FIREBASE_MESSAGING_SENDER_ID = GCP_PROJECT_NUMBER;
+export const PROD_FIREBASE_APP_ID = "1:90502049802:web:aab2f43102d0658a516ff3";
+export const PROD_SECRET_FIREBASE_WEB_API_KEY = "regi-firebase-web-api-key";
 
 export const STAGING_SERVICE = "regi-staging";
 export const STAGING_DATABASE_SECRET = "regi-staging-database-url";
@@ -40,10 +46,19 @@ export const STAGING_MAX_INSTANCES = "1";
 export const STAGING_DATABASE_NAME = "regi_staging";
 export const STAGING_APP_URL = `https://${STAGING_SERVICE}-${GCP_PROJECT_NUMBER}.${GCP_REGION}.run.app`;
 
+/** Separate Firebase / GCP project — never regi-app-v1 Auth or users. */
+export const STAGING_FIREBASE_PROJECT_ID = "regi-app-staging";
+export const STAGING_FIREBASE_AUTH_DOMAIN = "regi-app-staging.firebaseapp.com";
+export const STAGING_FIREBASE_STORAGE_BUCKET =
+  "regi-app-staging.firebasestorage.app";
+export const STAGING_SECRET_FIREBASE_WEB_API_KEY =
+  "regi-staging-firebase-web-api-key";
+
 /** Secret names Cloud Build / Cloud Run may reuse across environments. */
 export const SHARED_SECRET_GEMINI = "regi-gemini-api-key";
-export const SHARED_SECRET_FIREBASE_WEB_API_KEY = "regi-firebase-web-api-key";
 export const SHARED_SECRET_RESEND = "regi-resend-api-key";
+const FIREBASE_APP_ID_RE = /^1:[0-9]+:web:[a-f0-9]+$/;
+const FIREBASE_SENDER_ID_RE = /^[1-9][0-9]+$/;
 
 const NON_PROD_SERVICE_RE = /^(regi-staging|regi-pr-[1-9][0-9]*)$/;
 const IMAGE_TAG_PREFIX_RE = /^(staging|pr-[1-9][0-9]*)$/;
@@ -95,11 +110,12 @@ export function prodSubstitutionDefaults() {
     _CLOUD_SQL_INSTANCE: PROD_CLOUD_SQL_INSTANCE,
     _RUNTIME_SA: "regi-admin@regi-app-v1.iam.gserviceaccount.com",
     _COMMIT_SHA: "latest",
-    _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "regi-app-v1.firebaseapp.com",
-    _NEXT_PUBLIC_FIREBASE_PROJECT_ID: GCP_PROJECT_ID,
-    _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "regi-app-v1.firebasestorage.app",
-    _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: GCP_PROJECT_NUMBER,
-    _NEXT_PUBLIC_FIREBASE_APP_ID: "1:90502049802:web:aab2f43102d0658a516ff3",
+    _FIREBASE_PROJECT_ID: PROD_FIREBASE_PROJECT_ID,
+    _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: PROD_FIREBASE_AUTH_DOMAIN,
+    _NEXT_PUBLIC_FIREBASE_PROJECT_ID: PROD_FIREBASE_PROJECT_ID,
+    _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: PROD_FIREBASE_STORAGE_BUCKET,
+    _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: PROD_FIREBASE_MESSAGING_SENDER_ID,
+    _NEXT_PUBLIC_FIREBASE_APP_ID: PROD_FIREBASE_APP_ID,
     _NEXT_PUBLIC_FIREBASE_VAPID_KEY: "",
     _NEXT_PUBLIC_APP_URL: PROD_APP_URL,
     _NEXT_PUBLIC_SENTRY_DSN: "",
@@ -109,7 +125,7 @@ export function prodSubstitutionDefaults() {
     _SECRET_DATABASE_URL: PROD_DATABASE_SECRET,
     _SECRET_CRON: PROD_CRON_SECRET,
     _SECRET_GEMINI: SHARED_SECRET_GEMINI,
-    _SECRET_FIREBASE_WEB_API_KEY: SHARED_SECRET_FIREBASE_WEB_API_KEY,
+    _SECRET_FIREBASE_WEB_API_KEY: PROD_SECRET_FIREBASE_WEB_API_KEY,
     _SECRET_RESEND: SHARED_SECRET_RESEND,
     _GCS_BUCKET: PROD_GCS_BUCKET,
     _NOTIFICATION_EMAIL_PROVIDER: PROD_EMAIL_PROVIDER,
@@ -153,6 +169,12 @@ export function isNonProdService(service) {
  *   sentryEnvironment: string,
  *   purgeHosting: string,
  *   emailProvider: string,
+ *   firebaseProjectId: string,
+ *   firebaseAuthDomain: string,
+ *   firebaseStorageBucket: string,
+ *   firebaseMessagingSenderId: string,
+ *   firebaseAppId: string,
+ *   firebaseApiKeySecret: string,
  * }} input
  */
 export function assertCloudBuildTarget(input) {
@@ -165,6 +187,14 @@ export function assertCloudBuildTarget(input) {
   const sentryEnvironment = String(input.sentryEnvironment || "").trim();
   const purgeHosting = String(input.purgeHosting || "").trim();
   const emailProvider = String(input.emailProvider || "").trim();
+  const firebaseProjectId = String(input.firebaseProjectId || "").trim();
+  const firebaseAuthDomain = String(input.firebaseAuthDomain || "").trim();
+  const firebaseStorageBucket = String(input.firebaseStorageBucket || "").trim();
+  const firebaseMessagingSenderId = String(
+    input.firebaseMessagingSenderId || "",
+  ).trim();
+  const firebaseAppId = String(input.firebaseAppId || "").trim();
+  const firebaseApiKeySecret = String(input.firebaseApiKeySecret || "").trim();
 
   if (service === PROD_SERVICE) {
     const mismatches = [];
@@ -191,6 +221,24 @@ export function assertCloudBuildTarget(input) {
     }
     if (emailProvider !== PROD_EMAIL_PROVIDER) {
       mismatches.push(`email provider ${emailProvider}`);
+    }
+    if (firebaseProjectId !== PROD_FIREBASE_PROJECT_ID) {
+      mismatches.push(`Firebase project ${firebaseProjectId}`);
+    }
+    if (firebaseAuthDomain !== PROD_FIREBASE_AUTH_DOMAIN) {
+      mismatches.push(`Firebase auth domain ${firebaseAuthDomain}`);
+    }
+    if (firebaseStorageBucket !== PROD_FIREBASE_STORAGE_BUCKET) {
+      mismatches.push(`Firebase storage bucket ${firebaseStorageBucket}`);
+    }
+    if (firebaseMessagingSenderId !== PROD_FIREBASE_MESSAGING_SENDER_ID) {
+      mismatches.push(`Firebase sender ${firebaseMessagingSenderId}`);
+    }
+    if (firebaseAppId !== PROD_FIREBASE_APP_ID) {
+      mismatches.push(`Firebase app id ${firebaseAppId}`);
+    }
+    if (firebaseApiKeySecret !== PROD_SECRET_FIREBASE_WEB_API_KEY) {
+      mismatches.push(`Firebase API key secret ${firebaseApiKeySecret}`);
     }
     if (mismatches.length) {
       throw new Error(
@@ -256,6 +304,59 @@ export function assertCloudBuildTarget(input) {
       `Non-prod deploys must not send via ${PROD_EMAIL_PROVIDER}; use ${STAGING_EMAIL_PROVIDER} (Stripe/email can stay yellow)`,
     );
   }
+  if (
+    !firebaseProjectId ||
+    firebaseProjectId === PROD_FIREBASE_PROJECT_ID ||
+    firebaseProjectId !== STAGING_FIREBASE_PROJECT_ID
+  ) {
+    throw new Error(
+      `Non-prod deploys must use separate Firebase project ${STAGING_FIREBASE_PROJECT_ID}, not ${PROD_FIREBASE_PROJECT_ID} (got ${firebaseProjectId || "(empty)"})`,
+    );
+  }
+  if (
+    firebaseAuthDomain === PROD_FIREBASE_AUTH_DOMAIN ||
+    firebaseAuthDomain !== STAGING_FIREBASE_AUTH_DOMAIN
+  ) {
+    throw new Error(
+      `Non-prod deploys must use Firebase auth domain ${STAGING_FIREBASE_AUTH_DOMAIN}`,
+    );
+  }
+  if (
+    firebaseStorageBucket === PROD_FIREBASE_STORAGE_BUCKET ||
+    firebaseStorageBucket !== STAGING_FIREBASE_STORAGE_BUCKET
+  ) {
+    throw new Error(
+      `Non-prod deploys must use Firebase storage bucket ${STAGING_FIREBASE_STORAGE_BUCKET}`,
+    );
+  }
+  if (firebaseApiKeySecret === PROD_SECRET_FIREBASE_WEB_API_KEY) {
+    throw new Error(
+      `Refusing non-prod service "${service}" with prod Firebase web API key secret ${PROD_SECRET_FIREBASE_WEB_API_KEY}`,
+    );
+  }
+  if (firebaseApiKeySecret !== STAGING_SECRET_FIREBASE_WEB_API_KEY) {
+    throw new Error(
+      `Non-prod deploys must use Secret Manager ${STAGING_SECRET_FIREBASE_WEB_API_KEY}`,
+    );
+  }
+  if (
+    !firebaseAppId ||
+    firebaseAppId === PROD_FIREBASE_APP_ID ||
+    !FIREBASE_APP_ID_RE.test(firebaseAppId)
+  ) {
+    throw new Error(
+      `Non-prod deploys need a distinct Firebase web app id from project ${STAGING_FIREBASE_PROJECT_ID} (GitHub variable STAGING_FIREBASE_APP_ID)`,
+    );
+  }
+  if (
+    !firebaseMessagingSenderId ||
+    firebaseMessagingSenderId === PROD_FIREBASE_MESSAGING_SENDER_ID ||
+    !FIREBASE_SENDER_ID_RE.test(firebaseMessagingSenderId)
+  ) {
+    throw new Error(
+      `Non-prod deploys need the staging Firebase messagingSenderId (GitHub variable STAGING_FIREBASE_MESSAGING_SENDER_ID), not prod ${PROD_FIREBASE_MESSAGING_SENDER_ID}`,
+    );
+  }
 }
 
 /**
@@ -294,6 +395,9 @@ export function assertMigrateDatabaseName(input) {
  *   imageTagPrefix?: string,
  *   commitSha: string,
  *   appUrl?: string,
+ *   firebaseAppId?: string,
+ *   firebaseMessagingSenderId?: string,
+ *   firebaseVapidKey?: string,
  * }} input
  */
 export function buildNonProdSubstitutions(input) {
@@ -328,6 +432,18 @@ export function buildNonProdSubstitutions(input) {
   }
 
   const appUrl = (input.appUrl || STAGING_APP_URL).trim().replace(/\/$/, "");
+  const firebaseAppId = String(
+    input.firebaseAppId || process.env.STAGING_FIREBASE_APP_ID || "",
+  ).trim();
+  const firebaseMessagingSenderId = String(
+    input.firebaseMessagingSenderId ||
+      process.env.STAGING_FIREBASE_MESSAGING_SENDER_ID ||
+      "",
+  ).trim();
+  const firebaseVapidKey = String(
+    input.firebaseVapidKey || process.env.STAGING_FIREBASE_VAPID_KEY || "",
+  ).trim();
+
   const map = {
     _SERVICE: service,
     _COMMIT_SHA: `${imageTagPrefix}-${shortSha}`,
@@ -336,13 +452,20 @@ export function buildNonProdSubstitutions(input) {
     _SECRET_DATABASE_URL: STAGING_DATABASE_SECRET,
     _SECRET_CRON: STAGING_CRON_SECRET,
     _SECRET_GEMINI: SHARED_SECRET_GEMINI,
-    _SECRET_FIREBASE_WEB_API_KEY: SHARED_SECRET_FIREBASE_WEB_API_KEY,
+    _SECRET_FIREBASE_WEB_API_KEY: STAGING_SECRET_FIREBASE_WEB_API_KEY,
     _SECRET_RESEND: SHARED_SECRET_RESEND,
     _GCS_BUCKET: STAGING_GCS_BUCKET,
     _NOTIFICATION_EMAIL_PROVIDER: STAGING_EMAIL_PROVIDER,
     _NEXT_PUBLIC_APP_URL: appUrl,
     _NEXT_PUBLIC_SENTRY_ENVIRONMENT: STAGING_SENTRY_ENVIRONMENT,
     _MAX_INSTANCES: STAGING_MAX_INSTANCES,
+    _FIREBASE_PROJECT_ID: STAGING_FIREBASE_PROJECT_ID,
+    _NEXT_PUBLIC_FIREBASE_PROJECT_ID: STAGING_FIREBASE_PROJECT_ID,
+    _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: STAGING_FIREBASE_AUTH_DOMAIN,
+    _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: STAGING_FIREBASE_STORAGE_BUCKET,
+    _NEXT_PUBLIC_FIREBASE_APP_ID: firebaseAppId,
+    _NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: firebaseMessagingSenderId,
+    _NEXT_PUBLIC_FIREBASE_VAPID_KEY: firebaseVapidKey,
   };
 
   assertCloudBuildTarget({
@@ -355,6 +478,12 @@ export function buildNonProdSubstitutions(input) {
     sentryEnvironment: map._NEXT_PUBLIC_SENTRY_ENVIRONMENT,
     purgeHosting: map._PURGE_HOSTING,
     emailProvider: map._NOTIFICATION_EMAIL_PROVIDER,
+    firebaseProjectId: map._FIREBASE_PROJECT_ID,
+    firebaseAuthDomain: map._NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    firebaseStorageBucket: map._NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    firebaseMessagingSenderId: map._NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    firebaseAppId: map._NEXT_PUBLIC_FIREBASE_APP_ID,
+    firebaseApiKeySecret: map._SECRET_FIREBASE_WEB_API_KEY,
   });
 
   return map;
@@ -417,6 +546,12 @@ export function runCli(argv, io = process) {
         sentryEnvironment: args["sentry-environment"],
         purgeHosting: args["purge-hosting"],
         emailProvider: args["email-provider"],
+        firebaseProjectId: args["firebase-project-id"],
+        firebaseAuthDomain: args["firebase-auth-domain"],
+        firebaseStorageBucket: args["firebase-storage-bucket"],
+        firebaseMessagingSenderId: args["firebase-messaging-sender-id"],
+        firebaseAppId: args["firebase-app-id"],
+        firebaseApiKeySecret: args["firebase-api-key-secret"],
       });
       io.stdout?.write(`Cloud Build target OK for ${args.service}\n`);
       return 0;
@@ -439,6 +574,9 @@ export function runCli(argv, io = process) {
         imageTagPrefix: args["image-tag-prefix"],
         commitSha: args["commit-sha"],
         appUrl: args["app-url"],
+        firebaseAppId: args["firebase-app-id"],
+        firebaseMessagingSenderId: args["firebase-messaging-sender-id"],
+        firebaseVapidKey: args["firebase-vapid-key"],
       });
       const encoded = formatGcloudSubstitutions(map);
       if (args["github-output"] === "true") {

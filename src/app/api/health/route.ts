@@ -15,6 +15,10 @@ export function healthPayload(
       env.SENTRY_ENVIRONMENT?.trim() ||
       env.NEXT_PUBLIC_SENTRY_ENVIRONMENT?.trim() ||
       "unknown",
+    firebaseProjectId:
+      env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() ||
+      env.FIREBASE_PROJECT_ID?.trim() ||
+      "unknown",
     timestamp: now.toISOString(),
   };
 }

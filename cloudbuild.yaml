@@ -7,8 +7,9 @@
 #   scripts/cloudbuild-target.mjs `prodSubstitutionDefaults()`.
 #
 # Staging / Approach B hook: .github/workflows/deploy-staging.yml passes
-#   isolated substitutions (service, image tag, secrets, bucket). Guard steps
-#   refuse any mix that would touch prod data or overwrite `:latest`.
+#   isolated substitutions (service, image tag, secrets, bucket, Firebase
+#   project regi-app-staging). Guard steps refuse any mix that would touch
+#   prod data, prod Firebase, or overwrite `:latest`.
 #
 # NEXT_PUBLIC_* are public client values inlined at build time.
 # Firebase web API key comes from Secret Manager (never commit it).
@@ -22,6 +23,7 @@ substitutions:
   _CLOUD_SQL_INSTANCE: regi-app-v1:us-central1:regi-db
   _RUNTIME_SA: regi-admin@regi-app-v1.iam.gserviceaccount.com
   _COMMIT_SHA: latest
+  _FIREBASE_PROJECT_ID: regi-app-v1
   _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: regi-app-v1.firebaseapp.com
   _NEXT_PUBLIC_FIREBASE_PROJECT_ID: regi-app-v1
   _NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: regi-app-v1.firebasestorage.app
@@ -74,7 +76,13 @@ steps:
           --app-url="${_NEXT_PUBLIC_APP_URL}" \
           --sentry-environment="${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}" \
           --purge-hosting="${_PURGE_HOSTING}" \
-          --email-provider="${_NOTIFICATION_EMAIL_PROVIDER}"
+          --email-provider="${_NOTIFICATION_EMAIL_PROVIDER}" \
+          --firebase-project-id="${_FIREBASE_PROJECT_ID}" \
+          --firebase-auth-domain="${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}" \
+          --firebase-storage-bucket="${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}" \
+          --firebase-messaging-sender-id="${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}" \
+          --firebase-app-id="${_NEXT_PUBLIC_FIREBASE_APP_ID}" \
+          --firebase-api-key-secret="${_SECRET_FIREBASE_WEB_API_KEY}"
 
   - name: gcr.io/cloud-builders/docker
     id: Build
@@ -157,7 +165,7 @@ steps:
       - --max-instances=${_MAX_INSTANCES}
       - --timeout=300
       - --set-secrets=DATABASE_URL=${_SECRET_DATABASE_URL}:latest,CRON_SECRET=${_SECRET_CRON}:latest,GEMINI_API_KEY=${_SECRET_GEMINI}:latest,NEXT_PUBLIC_FIREBASE_API_KEY=${_SECRET_FIREBASE_WEB_API_KEY}:latest,RESEND_API_KEY=${_SECRET_RESEND}:latest
-      - --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=${_PROJECT_ID},GCS_BUCKET=${_GCS_BUCKET},FIREBASE_PROJECT_ID=${_PROJECT_ID},GOOGLE_CLOUD_PROJECT=${_PROJECT_ID},NOTIFICATION_EMAIL_PROVIDER=${_NOTIFICATION_EMAIL_PROVIDER},RESEND_FROM_EMAIL=noreply@regireg.com,RESEND_FROM_NAME=REGI,NOTIFICATION_PUSH_PROVIDER=fcm,GEMINI_MODEL=gemini-2.5-flash,NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL},NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN},NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID},NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET},NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID},NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID},NEXT_PUBLIC_FIREBASE_VAPID_KEY=${_NEXT_PUBLIC_FIREBASE_VAPID_KEY},SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT},NEXT_PUBLIC_SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}
+      - --set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=${_PROJECT_ID},GCS_BUCKET=${_GCS_BUCKET},FIREBASE_PROJECT_ID=${_FIREBASE_PROJECT_ID},GOOGLE_CLOUD_PROJECT=${_PROJECT_ID},NOTIFICATION_EMAIL_PROVIDER=${_NOTIFICATION_EMAIL_PROVIDER},RESEND_FROM_EMAIL=noreply@regireg.com,RESEND_FROM_NAME=REGI,NOTIFICATION_PUSH_PROVIDER=fcm,GEMINI_MODEL=gemini-2.5-flash,NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL},NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN},NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID},NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET},NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID},NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID},NEXT_PUBLIC_FIREBASE_VAPID_KEY=${_NEXT_PUBLIC_FIREBASE_VAPID_KEY},SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT},NEXT_PUBLIC_SENTRY_ENVIRONMENT=${_NEXT_PUBLIC_SENTRY_ENVIRONMENT}
 
   - name: gcr.io/cloud-builders/gcloud
     id: Purge-Hosting-CDN

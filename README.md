@@ -270,11 +270,11 @@ Production URL: https://regi-90502049802.us-central1.run.app
 
 ### Staging (pre-merge UI walks)
 
-Durable Cloud Run service `regi-staging` — **separate database, secrets, and GCS bucket**. Production `Deploy main` is unchanged.
+Durable Cloud Run service `regi-staging` — **separate Postgres database**, **separate Firebase project** (`regi-app-staging`, not `regi-app-v1` demo users), plus isolated secrets and GCS bucket. Production `Deploy main` is unchanged.
 
 Staging URL: https://regi-staging-90502049802.us-central1.run.app
 
-See [docs/preview.md](docs/preview.md) for deploy, Secret Manager / IAM / Cloud SQL checklist (Derek-only), Firebase demo users, and how Hub/Regi walks should use the URL.
+See [docs/preview.md](docs/preview.md) for deploy, Secret Manager / IAM / Cloud SQL / Firebase project checklist (Derek-only), and how Hub/Regi walks should use the URL.
 
 ### Firebase web API key (Secret Manager)
 

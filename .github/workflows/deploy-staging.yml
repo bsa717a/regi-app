@@ -4,7 +4,7 @@
 # Approach A (this workflow): service `regi-staging`, image tags `staging-<sha>`
 # and `staging` — never `:latest`.
 # Approach B hook: workflow_dispatch can pass service `regi-pr-<n>` + tag
-# prefix `pr-<n>` against the same isolated staging DB / bucket / secrets.
+# prefix `pr-<n>` against the same isolated staging DB / bucket / Firebase.
 name: Deploy staging
 
 on:
@@ -57,7 +57,10 @@ jobs:
             node scripts/cloudbuild-target.mjs substitutions \
               --service="${SERVICE_NAME}" \
               --image-tag-prefix="${IMAGE_TAG_PREFIX}" \
-              --commit-sha="${SHORT_SHA}"
+              --commit-sha="${SHORT_SHA}" \
+              --firebase-app-id="${{ vars.STAGING_FIREBASE_APP_ID }}" \
+              --firebase-messaging-sender-id="${{ vars.STAGING_FIREBASE_MESSAGING_SENDER_ID }}" \
+              --firebase-vapid-key="${{ vars.STAGING_FIREBASE_VAPID_KEY }}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Authenticate to Google Cloud

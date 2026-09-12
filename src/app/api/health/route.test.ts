@@ -20,6 +20,7 @@ describe("healthPayload", () => {
       ok: true,
       service: "regi",
       environment: "unknown",
+      firebaseProjectId: "unknown",
       timestamp: "2026-09-12T00:00:00.000Z",
     });
   });
@@ -29,11 +30,13 @@ describe("healthPayload", () => {
       healthPayload({
         K_SERVICE: "regi-staging",
         SENTRY_ENVIRONMENT: "staging",
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID: "regi-app-staging",
       }),
     ).toMatchObject({
       ok: true,
       service: "regi-staging",
       environment: "staging",
+      firebaseProjectId: "regi-app-staging",
     });
   });
 });

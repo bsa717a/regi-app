@@ -43,6 +43,8 @@ describe("deploy-staging.yml is isolated from prod", () => {
     expect(yaml).toContain("service_name");
     expect(yaml).toContain("image_tag_prefix");
     expect(yaml).toContain("regi-pr-");
+    expect(yaml).toContain("STAGING_FIREBASE_APP_ID");
+    expect(yaml).toContain("STAGING_FIREBASE_MESSAGING_SENDER_ID");
   });
 
   it("does not hardcode prod database secret or :latest", () => {
@@ -58,7 +60,9 @@ describe("cloudbuild.yaml keeps prod deploy flags", () => {
 
   it("still deploys service regi with prod secrets by default", () => {
     expect(yaml).toContain("  _SERVICE: regi");
+    expect(yaml).toContain("  _FIREBASE_PROJECT_ID: regi-app-v1");
     expect(yaml).toContain("  _SECRET_DATABASE_URL: regi-database-url");
+    expect(yaml).toContain("FIREBASE_PROJECT_ID=${_FIREBASE_PROJECT_ID}");
     expect(yaml).toContain("  _GCS_BUCKET: regi-app-v1-documents");
     expect(yaml).toContain("  _STABLE_TAG: latest");
     expect(yaml).toContain("  _PURGE_HOSTING: \"true\"");
