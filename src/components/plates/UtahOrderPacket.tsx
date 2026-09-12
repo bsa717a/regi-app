@@ -94,7 +94,7 @@ export function UtahOrderPacket({
     <section
       aria-labelledby="utah-order-packet-heading"
       data-testid="utah-order-packet"
-      className="sticky top-[5.25rem] z-[5] max-h-[min(28rem,calc(100dvh-9rem))] overflow-y-auto rounded-3xl border border-teal-200 bg-teal-50/95 px-3 py-3 shadow-md shadow-slate-200/50 backdrop-blur dark:border-teal-900/70 dark:bg-teal-950/80 dark:shadow-none"
+      className="sticky top-[calc(4.5rem+max(0.75rem,env(safe-area-inset-top)))] z-[5] max-h-[min(28rem,calc(100dvh-8.25rem-max(0.75rem,env(safe-area-inset-top))))] overflow-y-auto rounded-3xl border border-teal-200 bg-teal-50/95 px-3 py-3 shadow-md shadow-slate-200/50 backdrop-blur dark:border-teal-900/70 dark:bg-teal-950/80 dark:shadow-none"
     >
       <h2
         id="utah-order-packet-heading"
