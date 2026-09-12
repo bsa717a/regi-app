@@ -220,6 +220,7 @@ export function UtahPersonalizedPlateFlow({
                 return (
                   <label
                     key={option.optionId}
+                    data-testid={`utah-plate-type-${option.optionId}`}
                     className={`flex cursor-pointer flex-col gap-3 rounded-2xl border px-4 py-3 transition ${
                       selected
                         ? "border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/40"
