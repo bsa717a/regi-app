@@ -40,7 +40,10 @@ export function UtahMvpCopyCard({ draft }: { draft: UtahPlateDraft }) {
       >
         Enter this in MVP
       </h2>
-      <pre className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-white px-3 py-3 text-sm leading-relaxed text-slate-800 dark:bg-slate-900 dark:text-slate-100">
+      <pre
+        data-testid="utah-mvp-copy-text"
+        className="mt-3 overflow-x-auto whitespace-pre-wrap rounded-2xl bg-white px-3 py-3 text-sm leading-relaxed text-slate-800 dark:bg-slate-900 dark:text-slate-100"
+      >
         {text}
       </pre>
       <button

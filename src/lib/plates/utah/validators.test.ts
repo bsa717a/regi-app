@@ -52,6 +52,37 @@ describe("validatePlateCombo", () => {
     });
   });
 
+  it("uses the selected special-group design limit (5 vs Historic B&W 7)", () => {
+    expect(
+      validatePlateCombo("ELK01", "special_group", "special_group_wildlife_elk"),
+    ).toEqual({ ok: true, value: "ELK01" });
+    expect(
+      validatePlateCombo("ELK012", "special_group", "special_group_wildlife_elk")
+        .ok,
+    ).toBe(false);
+    expect(
+      validatePlateCombo("JAZZ1", "special_group", "special_group_utah_jazz"),
+    ).toEqual({ ok: true, value: "JAZZ1" });
+    expect(
+      validatePlateCombo("JAZZ12", "special_group", "special_group_utah_jazz").ok,
+    ).toBe(false);
+    expect(
+      validatePlateCombo(
+        "HISTOR1",
+        "special_group",
+        "special_group_historic_bw",
+      ),
+    ).toEqual({ ok: true, value: "HISTOR1" });
+    expect(
+      validatePlateCombo(
+        "HISTOR12",
+        "special_group",
+        "special_group_historic_bw",
+      ).ok,
+    ).toBe(false);
+    expect(validatePlateCombo("ELK012", "special_group").ok).toBe(false);
+  });
+
   it("bans punctuation and other special characters", () => {
     const cases = ["REGI-1", "REGI.1", "O'REGI", "REGI!", "REGI_1", "REGI#1"];
     for (const value of cases) {

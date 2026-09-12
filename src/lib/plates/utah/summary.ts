@@ -8,6 +8,9 @@ export function formatMvpEntryCard(draft: UtahPlateDraft): string {
     "Enter this in Utah MVP",
     "",
     `Plate type: ${draft.plateDesignLabel?.trim() || plateType.label}`,
+    ...(draft.plateDesignId?.trim()
+      ? [`Design id: ${draft.plateDesignId.trim()}`]
+      : []),
     ...draft.combos.map(
       (combo, index) => `Choice ${index + 1}: ${combo}`,
     ),

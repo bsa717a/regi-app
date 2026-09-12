@@ -1,4 +1,4 @@
-import { getUtahPlateType } from "./plateTypes";
+import { resolveUtahPlateMaxCharacters } from "./specialGroupDesigns";
 import type {
   PlateComboValidation,
   PlateSoftWarning,
@@ -60,6 +60,7 @@ export function plateComboCharacterCount(value: string): number {
 export function validatePlateCombo(
   raw: string,
   plateTypeId: UtahPlateTypeId,
+  plateDesignId?: string | null,
 ): PlateComboValidation {
   const value = normalizePlateCombo(raw).trim();
   if (!value) {
@@ -84,7 +85,10 @@ export function validatePlateCombo(
     };
   }
 
-  const { maxCharacters } = getUtahPlateType(plateTypeId);
+  const maxCharacters = resolveUtahPlateMaxCharacters(
+    plateTypeId,
+    plateDesignId,
+  );
   if (value.length > maxCharacters) {
     return {
       ok: false,
@@ -98,6 +102,7 @@ export function validatePlateCombo(
 export function validatePlateCombos(
   rawCombos: string[],
   plateTypeId: UtahPlateTypeId,
+  plateDesignId?: string | null,
 ):
   | { ok: true; values: string[] }
   | { ok: false; errors: Array<string | null> } {
@@ -114,7 +119,7 @@ export function validatePlateCombos(
       }
       return;
     }
-    const result = validatePlateCombo(raw, plateTypeId);
+    const result = validatePlateCombo(raw, plateTypeId, plateDesignId);
     if (!result.ok) {
       errors[index] = result.error;
       hasError = true;

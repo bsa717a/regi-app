@@ -77,16 +77,23 @@ export function UtahPersonalizedPlateFlow({
   const [meaningError, setMeaningError] = useState<string | null>(null);
 
   const plateType = getUtahPlateType(plateTypeId);
+  const plateDesignId = selectedOption.optionId;
+  const maxCharacters = selectedOption.maxCharacters;
   const stepIndex = STEPS.findIndex((item) => item.id === step);
   const fees = estimateUtahPersonalizedPlateFees({
     specialGroup: plateType.isSpecialGroup,
   });
-  const validatedCombos = validatePlateCombos(combos, plateTypeId);
+  const validatedCombos = validatePlateCombos(
+    combos,
+    plateTypeId,
+    plateDesignId,
+  );
   const comboValues = validatedCombos.ok ? validatedCombos.values : [];
   const warnings = collectSoftWarnings(comboValues);
 
   const draft = {
     plateTypeId,
+    plateDesignId,
     plateDesignLabel: selectedOption.label,
     combos: comboValues,
     meaning: meaning.trim(),
@@ -102,7 +109,7 @@ export function UtahPersonalizedPlateFlow({
       return;
     }
     if (step === "combos") {
-      const result = validatePlateCombos(combos, plateTypeId);
+      const result = validatePlateCombos(combos, plateTypeId, plateDesignId);
       if (!result.ok) {
         setComboErrors(result.errors);
         return;
@@ -138,7 +145,7 @@ export function UtahPersonalizedPlateFlow({
   }
 
   function updateCombo(index: number, raw: string) {
-    const next = normalizePlateCombo(raw).slice(0, plateType.maxCharacters + 4);
+    const next = normalizePlateCombo(raw).slice(0, maxCharacters + 4);
     const updated = [...combos];
     updated[index] = next;
     setCombos(updated);
@@ -148,7 +155,7 @@ export function UtahPersonalizedPlateFlow({
       setComboErrors(errors);
       return;
     }
-    const result = validatePlateCombo(next, plateTypeId);
+    const result = validatePlateCombo(next, plateTypeId, plateDesignId);
     const errors = [...comboErrors];
     errors[index] = result.ok ? null : result.error;
     setComboErrors(errors);
@@ -214,59 +221,77 @@ export function UtahPersonalizedPlateFlow({
           <fieldset data-testid="plate-type-picker">
             <legend className={labelClassName}>Plate type</legend>
             <div className="mt-2 space-y-3">
-              {pickerOptions.map((option) => {
+              {pickerOptions.map((option, index) => {
                 const selected = option.optionId === optionId;
                 const multi = option.previews.length > 1;
+                const startSpecialGroup =
+                  option.plateTypeId === "special_group" &&
+                  pickerOptions[index - 1]?.plateTypeId !== "special_group";
+                const endSpecialGroup =
+                  option.plateTypeId === "special_group" &&
+                  pickerOptions[index + 1]?.plateTypeId !== "special_group";
                 return (
-                  <label
-                    key={option.optionId}
-                    data-testid={`utah-plate-type-${option.optionId}`}
-                    className={`flex cursor-pointer flex-col gap-3 rounded-2xl border px-4 py-3 transition ${
-                      selected
-                        ? "border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/40"
-                        : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900"
-                    }`}
-                  >
-                    <span className="flex gap-3">
-                      <input
-                        type="radio"
-                        name="utah-plate-type"
-                        className="mt-1"
-                        checked={selected}
-                        onChange={() => {
-                          setSelectedOptionId(option.optionId);
-                          setComboErrors([null, null, null]);
-                        }}
-                      />
-                      <span>
-                        <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {option.label}
-                        </span>
-                        <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">
-                          {option.description}
-                        </span>
-                      </span>
-                    </span>
-                    <span
-                      className={
-                        multi
-                          ? "grid grid-cols-2 gap-2 sm:grid-cols-3"
-                          : "block"
-                      }
-                    >
-                      {option.previews.map((preview) => (
-                        <UtahPlatePreviewImage
-                          key={preview.src}
-                          preview={preview}
-                        />
-                      ))}
-                    </span>
-                    {option.previewCaption ? (
-                      <span className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                        {option.previewCaption}
-                      </span>
+                  <div key={option.optionId} className="space-y-3">
+                    {startSpecialGroup ? (
+                      <p className="pt-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                        Special group designs
+                      </p>
                     ) : null}
-                  </label>
+                    <label
+                      data-testid={`utah-plate-type-${option.optionId}`}
+                      className={`flex cursor-pointer flex-col gap-3 rounded-2xl border px-4 py-3 transition ${
+                        selected
+                          ? "border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950/40"
+                          : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900"
+                      }`}
+                    >
+                      <span className="flex gap-3">
+                        <input
+                          type="radio"
+                          name="utah-plate-type"
+                          className="mt-1"
+                          checked={selected}
+                          onChange={() => {
+                            setSelectedOptionId(option.optionId);
+                            setComboErrors([null, null, null]);
+                          }}
+                        />
+                        <span>
+                          <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {option.label}
+                          </span>
+                          <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">
+                            {option.description}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        className={
+                          multi
+                            ? "grid grid-cols-2 gap-2 sm:grid-cols-3"
+                            : "block"
+                        }
+                      >
+                        {option.previews.map((preview) => (
+                          <UtahPlatePreviewImage
+                            key={preview.src}
+                            preview={preview}
+                          />
+                        ))}
+                      </span>
+                      {option.previewCaption ? (
+                        <span className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                          {option.previewCaption}
+                        </span>
+                      ) : null}
+                    </label>
+                    {endSpecialGroup ? (
+                      <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                        More special group designs can be added from the Utah
+                        DMV catalog.
+                      </p>
+                    ) : null}
+                  </div>
                 );
               })}
             </div>
@@ -286,6 +311,16 @@ export function UtahPersonalizedPlateFlow({
         </div>
       ) : null}
 
+      {step !== "type" ? (
+        <p
+          data-testid="selected-plate-design"
+          className="rounded-2xl bg-slate-100 px-3 py-2 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        >
+          Selected design: {selectedOption.label} · up to {maxCharacters}{" "}
+          characters
+        </p>
+      ) : null}
+
       {step === "combos" ? (
         <div className="space-y-4">
           {livePreview ? (
@@ -296,7 +331,7 @@ export function UtahPersonalizedPlateFlow({
           ) : null}
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Enter up to three letter/number choices in preference order.{" "}
-            {plateType.shortLabel} allows up to {plateType.maxCharacters}{" "}
+            {selectedOption.label} allows up to {maxCharacters}{" "}
             characters, including spaces. Letters and numbers only.
           </p>
           {[0, 1, 2].map((index) => (
@@ -312,7 +347,7 @@ export function UtahPersonalizedPlateFlow({
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
-                maxLength={plateType.maxCharacters + 4}
+                maxLength={maxCharacters + 4}
                 aria-invalid={Boolean(comboErrors[index])}
                 aria-describedby={
                   comboErrors[index] ? `utah-combo-${index}-error` : undefined

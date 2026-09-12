@@ -73,9 +73,100 @@ describe("UtahPersonalizedPlateFlow", () => {
     expect(view.querySelector('img[alt="Utah Search and Rescue specialty license plate"]')).toBeTruthy();
     expect(view.querySelector('img[alt="Utah disabled person license plate"]')).toBeTruthy();
     expect(
-      view.querySelector('img[alt="Example Utah special group plate: Wildlife Elk"]'),
+      view.querySelector('img[alt="Utah Wildlife Elk special group license plate"]'),
     ).toBeTruthy();
+    expect(
+      view.querySelector('img[alt="Utah Jazz special group license plate"]'),
+    ).toBeTruthy();
+    expect(
+      view.querySelector(
+        'img[alt="Utah Historic Black and White special group license plate"]',
+      ),
+    ).toBeTruthy();
+    expect(view.textContent).toContain("Special group designs");
     expect(view.textContent).toContain("Plate images are official Utah DMV catalog art.");
+  });
+
+  it("lets Derek pick a specific special-group design instead of one example bucket", async () => {
+    const view = await renderFlow();
+
+    expect(
+      view.querySelector('[data-testid="utah-plate-type-special_group"]'),
+    ).toBeNull();
+
+    const elk = view.querySelector(
+      '[data-testid="utah-plate-type-special_group_wildlife_elk"]',
+    ) as HTMLElement;
+    const historic = view.querySelector(
+      '[data-testid="utah-plate-type-special_group_historic_bw"]',
+    ) as HTMLElement;
+    expect(elk).toBeTruthy();
+    expect(historic).toBeTruthy();
+
+    await click(elk);
+    expect(
+      elk.querySelector<HTMLInputElement>('input[name="utah-plate-type"]')
+        ?.checked,
+    ).toBe(true);
+    expect(
+      historic.querySelector<HTMLInputElement>('input[name="utah-plate-type"]')
+        ?.checked,
+    ).toBe(false);
+
+    await click(historic);
+    expect(
+      historic.querySelector<HTMLInputElement>('input[name="utah-plate-type"]')
+        ?.checked,
+    ).toBe(true);
+    expect(
+      elk.querySelector<HTMLInputElement>('input[name="utah-plate-type"]')
+        ?.checked,
+    ).toBe(false);
+
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(/Historic B&W allows up to 7 characters/i);
+    expect(
+      view.querySelector('[data-testid="selected-plate-design"]')?.textContent,
+    ).toMatch(/Historic B&W/);
+  });
+
+  it("enforces Wildlife Elk 5-character and Historic B&W 7-character limits", async () => {
+    const view = await renderFlow();
+
+    await click(
+      view.querySelector(
+        '[data-testid="utah-plate-type-special_group_wildlife_elk"]',
+      ) as HTMLElement,
+    );
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(/Wildlife Elk allows up to 5 characters/i);
+
+    const firstChoice = () =>
+      view.querySelector("#utah-combo-0") as HTMLInputElement;
+    await act(async () => {
+      setFieldValue(firstChoice(), "ELK012");
+    });
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(/up to 5 characters/i);
+    expect(view.querySelector("#utah-combo-0")).toBeTruthy();
+
+    const back = Array.from(view.querySelectorAll("button")).find((button) =>
+      /back/i.test(button.textContent ?? ""),
+    );
+    await click(back as HTMLElement);
+    await click(
+      view.querySelector(
+        '[data-testid="utah-plate-type-special_group_historic_bw"]',
+      ) as HTMLElement,
+    );
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.textContent).toMatch(/Historic B&W allows up to 7 characters/i);
+
+    await act(async () => {
+      setFieldValue(firstChoice(), "HISTOR1");
+    });
+    await click(view.querySelector('[data-testid="plates-continue"]') as HTMLElement);
+    expect(view.querySelector("#utah-plate-meaning")).toBeTruthy();
   });
 
   it("keeps plate-type selection working after choosing a preview card", async () => {
@@ -159,6 +250,7 @@ describe("UtahPersonalizedPlateFlow", () => {
     await click(continueButtons()[0] as HTMLButtonElement);
     expect(view.textContent).toContain("Enter this in Utah MVP");
     expect(view.textContent).toContain("Choice 1: REGI01");
+    expect(view.textContent).toContain("Design id: standard_life_elevated_arches");
     expect(view.textContent).toContain("Family nickname");
     expect(view.innerHTML).toContain("https://dmv.utah.gov/plates/personalized/");
     expect(view.innerHTML).toContain("https://mvp.tax.utah.gov/");

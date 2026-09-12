@@ -22,16 +22,21 @@ export {
   utahPlateTypePickerOptions,
   UTAH_PLATE_PREVIEW_ATTRIBUTION,
 } from "./previews";
-export type {
-  UtahPlatePreview,
-  UtahPlateTypePickerOption,
-} from "./previews";
+export type { UtahPlateTypePickerOption } from "./previews";
+export {
+  getUtahSpecialGroupDesign,
+  isUtahSpecialGroupDesignId,
+  resolveUtahPlateMaxCharacters,
+  UTAH_SPECIAL_GROUP_DESIGNS,
+} from "./specialGroupDesigns";
+export type { UtahSpecialGroupDesign } from "./specialGroupDesigns";
 export { formatMvpEntryCard } from "./summary";
 export type {
   PlateComboValidation,
   PlateSoftWarning,
   UtahPlateDraft,
   UtahPlateFeeEstimate,
+  UtahPlatePreview,
   UtahPlateType,
   UtahPlateTypeId,
 } from "./types";

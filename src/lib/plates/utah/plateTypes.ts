@@ -29,7 +29,7 @@ export const UTAH_PLATE_TYPES: readonly UtahPlateType[] = [
     shortLabel: "Special group",
     maxCharacters: 5,
     description:
-      "Most special group plates allow up to 5 characters. A few designs (such as B&W Historical Support) may allow more — confirm on MVP.",
+      "Most special group plates allow up to 5 characters. Historic B&W (Historical Support) allows up to 7.",
     isSpecialGroup: true,
     typicalVehicleKinds: ["any"],
   },

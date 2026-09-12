@@ -19,6 +19,13 @@ export type UtahPlateType = {
   >;
 };
 
+export type UtahPlatePreview = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 export type PlateComboValidation =
   | { ok: true; value: string }
   | { ok: false; error: string };
@@ -41,6 +48,8 @@ export type UtahPlateFeeEstimate = {
 
 export type UtahPlateDraft = {
   plateTypeId: UtahPlateTypeId;
+  /** Catalog design id when the customer picked a specific plate, not a type bucket. */
+  plateDesignId?: string | null;
   /** Specific design name when a type has more than one catalog preview. */
   plateDesignLabel?: string | null;
   combos: string[];

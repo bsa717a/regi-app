@@ -16,5 +16,5 @@ npm run capture:plates-evidence
 | `type_step_arches_preview.png` | Life Elevated Arches card (default selected) |
 | `type_step_skier_preview.png` | Life Elevated Skier card |
 | `type_step_specialty_igwt_selected.png` | In God We Trust after click |
-| `type_step_specialty_special_group.png` | Special group examples (Elk, Jazz, Historic B&W) |
+| `type_step_specialty_special_group.png` | Pre-fix Special group bucket (Elk, Jazz, Historic B&W as static examples). Selectable cards: `docs/evidence/plates-special-group/` |
 | `type_step_full_arches_skier_specialty.png` | Full type-step scroll (mobile width) |

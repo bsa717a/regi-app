@@ -1,18 +1,15 @@
 import { UTAH_PLATE_CATALOG_URL } from "./constants";
-import type { UtahPlateType, UtahPlateTypeId } from "./types";
+import { UTAH_SPECIAL_GROUP_DESIGNS } from "./specialGroupDesigns";
+import type { UtahPlatePreview, UtahPlateType, UtahPlateTypeId } from "./types";
 
-export type UtahPlatePreview = {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-};
+export type { UtahPlatePreview };
 
 export type UtahPlateTypePickerOption = {
   optionId: string;
   plateTypeId: UtahPlateTypeId;
   label: string;
   description: string;
+  maxCharacters: number;
   previews: UtahPlatePreview[];
   previewCaption?: string;
 };
@@ -61,27 +58,6 @@ const DISABLED_PERSON: UtahPlatePreview = {
   height: 200,
 };
 
-const SPECIAL_GROUP_EXAMPLES: UtahPlatePreview[] = [
-  {
-    src: `${CATALOG}/special-group-wildlife-elk.png`,
-    alt: "Example Utah special group plate: Wildlife Elk",
-    width: 400,
-    height: 200,
-  },
-  {
-    src: `${CATALOG}/special-group-utah-jazz.png`,
-    alt: "Example Utah special group plate: Utah Jazz",
-    width: 400,
-    height: 200,
-  },
-  {
-    src: `${CATALOG}/special-group-historic-bw.png`,
-    alt: "Example Utah special group plate: Historic Black and White",
-    width: 400,
-    height: 200,
-  },
-];
-
 export const UTAH_PLATE_PREVIEW_ATTRIBUTION = {
   catalogUrl: UTAH_PLATE_CATALOG_URL,
   note: "Plate images are official Utah DMV catalog art.",
@@ -91,7 +67,10 @@ function option(
   type: UtahPlateType,
   previews: UtahPlatePreview[],
   extras?: Partial<
-    Pick<UtahPlateTypePickerOption, "optionId" | "label" | "description" | "previewCaption">
+    Pick<
+      UtahPlateTypePickerOption,
+      "optionId" | "label" | "description" | "previewCaption" | "maxCharacters"
+    >
   >,
 ): UtahPlateTypePickerOption {
   return {
@@ -99,6 +78,7 @@ function option(
     plateTypeId: type.id,
     label: extras?.label ?? type.label,
     description: extras?.description ?? type.description,
+    maxCharacters: extras?.maxCharacters ?? type.maxCharacters,
     previews,
     previewCaption: extras?.previewCaption,
   };
@@ -134,12 +114,16 @@ export function utahPlateTypePickerOptions(
         options.push(option(type, [IN_GOD_WE_TRUST]));
         break;
       case "special_group":
-        options.push(
-          option(type, SPECIAL_GROUP_EXAMPLES, {
-            previewCaption:
-              "Examples from the Utah DMV catalog — many other special group designs exist.",
-          }),
-        );
+        for (const design of UTAH_SPECIAL_GROUP_DESIGNS) {
+          options.push(
+            option(type, [design.preview], {
+              optionId: design.id,
+              label: design.label,
+              description: design.description,
+              maxCharacters: design.maxCharacters,
+            }),
+          );
+        }
         break;
       case "motorcycle_standard":
         options.push(
@@ -151,7 +135,7 @@ export function utahPlateTypePickerOptions(
         break;
       case "motorcycle_special_or_igwt":
         options.push(
-          option(type, [IN_GOD_WE_TRUST, SPECIAL_GROUP_EXAMPLES[0]!], {
+          option(type, [IN_GOD_WE_TRUST, UTAH_SPECIAL_GROUP_DESIGNS[0]!.preview], {
             previewCaption:
               "Motorcycle specialty and In God We Trust plates use these catalog designs (up to 4 characters).",
           }),
