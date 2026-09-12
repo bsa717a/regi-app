@@ -268,6 +268,14 @@ Manual re-run: Actions → **Deploy main** → **Run workflow**.
 
 Production URL: https://regi-90502049802.us-central1.run.app
 
+### Staging (pre-merge UI walks)
+
+Durable Cloud Run service `regi-staging` — **separate Postgres** (`regi_staging`) and a **separate Firebase project** (`regi-app-staging`). Same-project `regi-app-v1` demo users were considered (cheaper) and rejected. Production `Deploy main` is unchanged.
+
+Staging URL: https://regi-staging-90502049802.us-central1.run.app
+
+See [docs/preview.md](docs/preview.md) for deploy, Secret Manager / IAM / Cloud SQL / Firebase project checklist (Derek-only), and how Hub/Regi walks should use the URL.
+
 ### Firebase web API key (Secret Manager)
 
 `NEXT_PUBLIC_FIREBASE_API_KEY` is client-visible after build, but must **not** live in git. Cloud Build loads it from Secret Manager (`regi-firebase-web-api-key`) for the Docker build-arg and Cloud Run env.
