@@ -1006,7 +1006,11 @@ export function AddRegistrationFlow({
                 </div>
               </div>
 
-              <form onSubmit={onVinLookupSubmit} className="space-y-3">
+              <form
+                onSubmit={onVinLookupSubmit}
+                className="space-y-3"
+                data-testid="vin-lookup-form"
+              >
                 <div>
                   <label htmlFor="pick-type-vin" className={labelClassName}>
                     VIN
@@ -1026,12 +1030,14 @@ export function AddRegistrationFlow({
                       placeholder="17-character VIN"
                       disabled={scanning || enhancing || busy}
                       className={`${fieldClassName} !mt-0 pr-12`}
+                      data-testid="vin-input"
                     />
                     <button
                       type="submit"
                       disabled={scanning || enhancing || busy || !vin.trim()}
                       aria-label={busy ? "Looking up VIN" : "Look up VIN"}
                       className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-teal-700 text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-teal-600 dark:hover:bg-teal-500 dark:focus-visible:outline-teal-400"
+                      data-testid="vin-lookup-submit"
                     >
                       {busy ? (
                         <span
@@ -1069,6 +1075,7 @@ export function AddRegistrationFlow({
                   disabled={scanning || enhancing || busy}
                   onClick={() => setShowManualTypePicker(true)}
                   className={`${linkClassName} text-sm`}
+                  data-testid="add-manually-button"
                 >
                   Or add manually
                 </button>
@@ -1145,7 +1152,7 @@ export function AddRegistrationFlow({
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3" data-testid="type-picker-grid">
                 {typeCards.map((card) => (
                   <button
                     key={card.type}
@@ -1153,6 +1160,7 @@ export function AddRegistrationFlow({
                     disabled={scanning || enhancing || busy}
                     onClick={() => selectType(card.type)}
                     className="flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white text-left shadow-sm transition hover:border-teal-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal-600"
+                    data-testid={`type-picker-${card.type}`}
                   >
                     <div className="relative h-32 w-full">
                       <VehicleIllustration
@@ -1433,6 +1441,7 @@ export function AddRegistrationFlow({
             type="button"
             className={primaryButtonClassName}
             onClick={confirmDecoded}
+            data-testid="confirm-vehicle-button"
           >
             Yes, that&apos;s mine
           </button>
@@ -1666,6 +1675,7 @@ export function AddRegistrationFlow({
             type="submit"
             className={primaryButtonClassName}
             disabled={busy}
+            data-testid="save-registration-button"
           >
             {busy ? "Adding…" : "Add to garage"}
           </button>

@@ -192,7 +192,11 @@ function SettingsForm({
             </div>
           </div>
         ) : null}
-        <form onSubmit={saveProfile} className="mt-4 space-y-4">
+        <form
+          onSubmit={saveProfile}
+          className="mt-4 space-y-4"
+          data-testid="applicant-profile-form"
+        >
           <div>
             <label htmlFor="settings-name" className={labelClassName}>
               Name
@@ -203,6 +207,7 @@ function SettingsForm({
               onChange={(e) => setName(e.target.value)}
               className={fieldClassName}
               autoComplete="name"
+              data-testid="applicant-name"
             />
           </div>
           <div>
@@ -227,6 +232,7 @@ function SettingsForm({
             type="submit"
             className={primaryButtonClassName}
             disabled={savingProfile}
+            data-testid="save-profile-button"
           >
             {savingProfile ? "Saving…" : "Save profile"}
           </button>

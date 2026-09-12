@@ -90,6 +90,10 @@ gcloud builds submit \
 
 Walks can target a feature branch by running **Deploy staging** with that ref (workflow_dispatch), then walking the durable URL.
 
+## Playwright E2E (staging)
+
+Real browser tests live in [`e2e/`](../e2e/README.md). Default `PLAYWRIGHT_BASE_URL` is this staging URL. Demo password is Secret Manager `regi-staging-demo-applicant` (expose as `REGI_STAGING_DEMO_PASSWORD` — never commit). The Test workflow job **Playwright staging** skips when that GitHub secret is missing so unit CI / Deploy main stay green. **Do not** point Playwright at production.
+
 ## Firebase (SEPARATE project — required)
 
 **Decision: separate.** Not same-project demo users, and not left open.

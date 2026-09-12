@@ -102,7 +102,12 @@ export function GarageDoorLogin() {
                   Sign in to check expirations and renewals.
                 </p>
 
-                <form onSubmit={onSubmit} className="mt-5 space-y-4" noValidate>
+                <form
+                  onSubmit={onSubmit}
+                  className="mt-5 space-y-4"
+                  noValidate
+                  data-testid="login-form"
+                >
                   <div>
                     <label
                       htmlFor="email"
@@ -121,6 +126,7 @@ export function GarageDoorLogin() {
                       className={`${fieldClassName} border-neutral-500/50 bg-white/95`}
                       placeholder="you@email.com"
                       disabled={busy}
+                      data-testid="login-email"
                     />
                   </div>
                   <div>
@@ -149,6 +155,7 @@ export function GarageDoorLogin() {
                       className={`${fieldClassName} border-neutral-500/50 bg-white/95`}
                       placeholder="Your password"
                       disabled={busy}
+                      data-testid="login-password"
                     />
                   </div>
 
@@ -156,6 +163,7 @@ export function GarageDoorLogin() {
                     <p
                       className="rounded-xl bg-red-950/85 px-3 py-2 text-sm text-red-100 ring-1 ring-red-400/40"
                       role="alert"
+                      data-testid="login-error"
                     >
                       {error}
                     </p>
@@ -165,6 +173,7 @@ export function GarageDoorLogin() {
                     type="submit"
                     className={primaryButtonClassName}
                     disabled={busy}
+                    data-testid="login-submit"
                   >
                     {revealing
                       ? "Opening…"

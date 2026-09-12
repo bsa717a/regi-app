@@ -211,7 +211,7 @@ export function UtahPersonalizedPlateFlow({
       {step === "type" ? (
         <div className="space-y-4">
           <UtahPlateRequirementsChecklist />
-          <fieldset>
+          <fieldset data-testid="plate-type-picker">
             <legend className={labelClassName}>Plate type</legend>
             <div className="mt-2 space-y-3">
               {pickerOptions.map((option) => {
@@ -424,6 +424,7 @@ export function UtahPersonalizedPlateFlow({
             type="button"
             onClick={goNext}
             className={`${primaryButtonClassName} flex-1`}
+            data-testid="plates-continue"
           >
             {step === "fees" ? "See MVP summary" : "Continue"}
           </button>

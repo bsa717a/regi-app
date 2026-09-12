@@ -228,6 +228,7 @@ export function DashboardClient() {
                   type="button"
                   className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                   disabled={!groups.renewTarget}
+                  data-testid="renew-now-button"
                   onClick={() => {
                     if (!groups.renewTarget) return;
                     router.push(

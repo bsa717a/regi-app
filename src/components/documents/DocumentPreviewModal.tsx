@@ -167,6 +167,7 @@ function DocumentPreviewModalView({
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      data-testid="document-preview-modal"
       onClick={(event) => {
         if (event.target === event.currentTarget && !closeBlocked) {
           onClose();

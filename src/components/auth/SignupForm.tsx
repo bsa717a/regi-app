@@ -78,7 +78,12 @@ export function SignupForm() {
         </>
       }
     >
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <form
+        onSubmit={onSubmit}
+        className="space-y-4"
+        noValidate
+        data-testid="signup-form"
+      >
         <div>
           <label htmlFor="name" className={labelClassName}>
             Name
@@ -92,6 +97,7 @@ export function SignupForm() {
             onChange={(e) => setName(e.target.value)}
             className={fieldClassName}
             placeholder="Alex Rivera"
+            data-testid="signup-name"
           />
         </div>
         <div>
@@ -108,6 +114,7 @@ export function SignupForm() {
             onChange={(e) => setEmail(e.target.value)}
             className={fieldClassName}
             placeholder="you@email.com"
+            data-testid="signup-email"
           />
         </div>
         <div>
@@ -124,6 +131,7 @@ export function SignupForm() {
             onChange={(e) => setPhone(e.target.value)}
             className={fieldClassName}
             placeholder="(801) 555-0100"
+            data-testid="signup-phone"
           />
         </div>
         <div>
@@ -141,6 +149,7 @@ export function SignupForm() {
             onChange={(e) => setPassword(e.target.value)}
             className={fieldClassName}
             placeholder="At least 6 characters"
+            data-testid="signup-password"
           />
         </div>
 
@@ -152,6 +161,7 @@ export function SignupForm() {
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
             className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+            data-testid="signup-agree"
           />
           <span>
             I agree to the{" "}
@@ -167,7 +177,11 @@ export function SignupForm() {
         </label>
 
         {error ? (
-          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          <p
+            className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800"
+            role="alert"
+            data-testid="signup-error"
+          >
             {error}
           </p>
         ) : null}
@@ -176,6 +190,7 @@ export function SignupForm() {
           type="submit"
           className={primaryButtonClassName}
           disabled={submitting || !agreed}
+          data-testid="signup-submit"
         >
           {submitting ? "Creating account…" : "Create account"}
         </button>
