@@ -14,8 +14,7 @@ npm run capture:plates-evidence
 | File | What it shows |
 | --- | --- |
 | `before_special_group_bucket.png` | Before: one Special group bucket with static Elk / Jazz / Historic B&W examples (from #65) |
-| `special_group_cards_before_selection.png` | After: three separate special-group cards before one is picked |
-| `special_group_wildlife_elk_selected.png` | Wildlife Elk selected |
+| `special_group_wildlife_elk_selected.png` | After: Wildlife Elk selected as its own card |
 | `special_group_utah_jazz_selected.png` | Utah Jazz selected |
 | `special_group_historic_bw_selected.png` | Historic B&W selected |
 | `historic_bw_combos_7_character_limit.png` | Later step carries Historic B&W and the 7-character limit |

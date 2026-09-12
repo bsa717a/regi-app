@@ -82,12 +82,6 @@ try {
   const historic = page.getByTestId("utah-plate-type-special_group_historic_bw");
 
   await elk.scrollIntoViewIfNeeded();
-  await writeShot(
-    page,
-    null,
-    specialGroupDir,
-    "special_group_cards_before_selection.png",
-  );
 
   await elk.click();
   await expectSelected(page, "utah-plate-type-special_group_wildlife_elk");
