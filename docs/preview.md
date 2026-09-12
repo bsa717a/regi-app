@@ -4,6 +4,16 @@ Durable **non-prod** REGI environment for smart UI walks **before** merging to `
 
 This is **Approach A**. Per-PR preview services (Approach B) are a follow-up; this file documents the hook.
 
+## Isolation decisions (locked — not undecided)
+
+| Concern | Decision | Why |
+| --- | --- | --- |
+| **Postgres / staging DB** | **SEPARATE** from prod (hard requirement) | Staging must never read or migrate production data. Database name `regi_staging` on instance `regi-db`; secret `regi-staging-database-url`. Migrate-guard refuses DB name `regi`. |
+| **Firebase** | **SEPARATE** project `regi-app-staging` | Chosen. Walks must not share `regi-app-v1` Auth. |
+| Stripe | Sandbox / yellow | Do not block walks or this PR. |
+
+**Firebase — alternative considered, then rejected.** The cheaper default would have been the **same** Firebase project `regi-app-v1` with clearly labeled demo users only (authorized domain + referrer for the staging Cloud Run URL, no live customer accounts). Derek (via Dina) corrected that: staging must **not** use `regi-app-v1` even for demo users. Auth, UIDs, and the web API key are therefore a distinct Firebase/GCP project `regi-app-staging`. Cloud Build refuses any non-prod deploy that still points at `regi-app-v1` Firebase config.
+
 ## Why Approach A (not B) first
 
 | | Approach A — durable `regi-staging` | Approach B — per-PR Cloud Run |
@@ -82,7 +92,9 @@ Walks can target a feature branch by running **Deploy staging** with that ref (w
 
 ## Firebase (SEPARATE project — required)
 
-Derek (via Dina): staging must **not** share `regi-app-v1` Auth, even with “demo users”. Walks use a **distinct Firebase project**.
+**Decision: separate.** Not same-project demo users, and not left open.
+
+The cheaper path (same `regi-app-v1` + demo-only accounts) was considered and **rejected**. Derek (via Dina) locked staging to its own Firebase project so walk Auth cannot touch production users, even accidentally.
 
 | | Production | Staging |
 | --- | --- | --- |

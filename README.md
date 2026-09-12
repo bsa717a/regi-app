@@ -270,7 +270,7 @@ Production URL: https://regi-90502049802.us-central1.run.app
 
 ### Staging (pre-merge UI walks)
 
-Durable Cloud Run service `regi-staging` — **separate Postgres database**, **separate Firebase project** (`regi-app-staging`, not `regi-app-v1` demo users), plus isolated secrets and GCS bucket. Production `Deploy main` is unchanged.
+Durable Cloud Run service `regi-staging` — **separate Postgres** (`regi_staging`) and a **separate Firebase project** (`regi-app-staging`). Same-project `regi-app-v1` demo users were considered (cheaper) and rejected. Production `Deploy main` is unchanged.
 
 Staging URL: https://regi-staging-90502049802.us-central1.run.app
 
