@@ -40,6 +40,29 @@ describe("utahPlateTypePickerOptions", () => {
     }
   });
 
+  it("splits special group into individually selectable catalog designs", () => {
+    const specials = options.filter(
+      (option) => option.plateTypeId === "special_group",
+    );
+    expect(specials.map((option) => option.optionId)).toEqual([
+      "special_group_wildlife_elk",
+      "special_group_utah_jazz",
+      "special_group_historic_bw",
+    ]);
+    expect(specials.every((option) => option.previews.length === 1)).toBe(true);
+    expect(options.some((option) => option.optionId === "special_group")).toBe(
+      false,
+    );
+    expect(
+      specials.find((option) => option.optionId === "special_group_historic_bw")
+        ?.maxCharacters,
+    ).toBe(7);
+    expect(
+      specials.find((option) => option.optionId === "special_group_wildlife_elk")
+        ?.maxCharacters,
+    ).toBe(5);
+  });
+
   it("keeps motorcycle default on the motorcycle standard option", () => {
     expect(defaultUtahPlatePickerOptionId("motorcycle")).toBe(
       "motorcycle_standard",
