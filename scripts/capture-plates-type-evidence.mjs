@@ -9,6 +9,7 @@ const repo = path.resolve(root, "..");
 const plates65Dir = path.join(repo, "docs/evidence/plates-65");
 const specialGroupDir = path.join(repo, "docs/evidence/plates-special-group");
 const selectableDir = path.join(repo, "docs/evidence/plates-selectable-designs");
+const handoffDir = path.join(repo, "docs/evidence/plates-orderplates-handoff");
 const artifactDir = "/opt/cursor/artifacts";
 const configFile = path.join(root, "plates-evidence/vite.config.ts");
 
@@ -85,6 +86,7 @@ try {
   await mkdir(plates65Dir, { recursive: true });
   await mkdir(specialGroupDir, { recursive: true });
   await mkdir(selectableDir, { recursive: true });
+  await mkdir(handoffDir, { recursive: true });
   await mkdir(artifactDir, { recursive: true }).catch(() => {});
 
   await page.goto("http://127.0.0.1:4177/", { waitUntil: "networkidle" });
@@ -144,6 +146,33 @@ try {
   await page.getByTestId("plates-continue").click();
   await page.getByTestId("utah-mvp-copy-text").waitFor();
   await writeShot(page, null, specialGroupDir, "historic_bw_mvp_copy_design_id.png");
+
+  await writeShot(page, null, handoffDir, "end_screen_packet_and_checklist.png");
+  await writeShot(
+    page,
+    page.getByTestId("utah-order-packet"),
+    handoffDir,
+    "order_packet_sticky.png",
+  );
+  await writeShot(
+    page,
+    page.getByTestId("utah-get-to-payment"),
+    handoffDir,
+    "get_to_payment_checklist.png",
+  );
+
+  const orderPlatesHref = await page
+    .getByTestId("utah-open-order-plates")
+    .getAttribute("href");
+  if (orderPlatesHref !== "https://mvp.tax.utah.gov/?Link=OrderPlates") {
+    throw new Error(`Order Plates href was ${orderPlatesHref}`);
+  }
+  const statusHref = await page
+    .getByTestId("utah-plate-status-link")
+    .getAttribute("href");
+  if (statusHref !== "https://mvp.tax.utah.gov/?link=WhereIsYourPlate") {
+    throw new Error(`Plate status href was ${statusHref}`);
+  }
 
   await resetToTypeStep(page);
 
@@ -223,8 +252,24 @@ try {
   await walkToMvp(page, { combo: "K7ABC", meaning: "Call sign" });
   await writeShot(page, null, selectableDir, "radio_amateur_mvp_copy_design_id.png");
 
+  await resetToTypeStep(page);
+  await selectCard(page, "standard_life_elevated_arches");
+  await page.getByTestId("plates-continue").click();
+  await page.getByLabel("First choice (required)").fill("REGI01");
+  await page.getByLabel("Choice 2 (optional)").fill("REGI02");
+  await page.getByLabel("Choice 3 (optional)").fill("REGI03");
+  await page.getByTestId("plates-continue").click();
+  await page.getByLabel(/What does this combination mean/i).fill("Family nickname");
+  await page.getByTestId("plates-continue").click();
+  await page.getByText("Soft content check").waitFor();
+  await page.getByTestId("plates-continue").click();
+  await page.getByText("Fee estimate").waitFor();
+  await page.getByTestId("plates-continue").click();
+  await page.getByTestId("utah-order-packet").waitFor();
+  await writeShot(page, null, handoffDir, "standard_packet_three_combos.png");
+
   console.log(
-    `Wrote evidence to ${plates65Dir}, ${specialGroupDir}, and ${selectableDir}`,
+    `Wrote evidence to ${plates65Dir}, ${specialGroupDir}, ${selectableDir}, and ${handoffDir}`,
   );
 } finally {
   await browser.close();
