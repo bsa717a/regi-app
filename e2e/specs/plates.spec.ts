@@ -61,4 +61,47 @@ test.describe("Utah plate type picker on staging", () => {
       "Wildlife Elk",
     );
   });
+
+  test("selects motorcycle and radio designs when catalog cards are deployed", async ({
+    page,
+  }) => {
+    await signInDemoApplicant(page);
+    await page.goto("/garage/plates");
+
+    await expect(
+      page.getByRole("heading", { name: /Plan your request/i }),
+    ).toBeVisible({ timeout: 25_000 });
+
+    const motoArches = page.getByTestId(
+      "utah-plate-type-motorcycle_life_elevated_arches",
+    );
+    const amateur = page.getByTestId("utah-plate-type-radio_amateur");
+    test.skip(
+      !(await motoArches.isVisible().catch(() => false)) ||
+        !(await amateur.isVisible().catch(() => false)),
+      "Selectable motorcycle/radio designs are not on this staging deploy yet. Hub should re-walk after this PR is on regi-staging.",
+    );
+
+    await motoArches.scrollIntoViewIfNeeded();
+    await motoArches.click();
+    await expect(motoArches.locator('input[name="utah-plate-type"]')).toBeChecked();
+    await platesContinue(page).click();
+    await expect(
+      page.getByText(/Motorcycle Life Elevated Arches allows up to 5 characters/i),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("selected-plate-design")).toContainText(
+      "Motorcycle Life Elevated Arches",
+    );
+
+    await page.getByRole("button", { name: /back/i }).click();
+    await amateur.scrollIntoViewIfNeeded();
+    await amateur.click();
+    await platesContinue(page).click();
+    await expect(
+      page.getByText(/Amateur Radio allows up to 6 characters/i),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("selected-plate-design")).toContainText(
+      "Amateur Radio",
+    );
+  });
 });
