@@ -1,9 +1,9 @@
 # Garage empty-state illustration evidence
 
 Screenshots of `GarageEmptyState` (first-run garage, no vehicles) with a
-**soft painted** empty-bay WebP (not SVG, not the rejected dashed-stall /
-ghost-car icon look). `/garage` is auth-gated, so these were captured from
-the Vite harness that mounts the same component.
+**realistic empty-bay** WebP that matches REGI product-art materials (not
+watercolor, not SVG, not dashed-stall / ghost-car icon look). `/garage` is
+auth-gated, so these were captured from the Vite harness.
 
 Regenerate:
 
@@ -13,8 +13,8 @@ npm run capture:garage-empty-evidence
 
 What this evidence is meant to show:
 
-- Painted open-bay raster (`/images/garage/empty-bay-{light,dark}.webp`)
-- No dashed stall lines, ghost sedan, or wall doodads
+- Realistic open-bay raster (`/images/garage/empty-bay-{light,dark}.webp`)
+- Empty residential garage, no cars, clutter, people, or icon-pack doodads
 - Heading **Add your first registration**
 - Primary CTA **Add a registration** (`data-testid="add-first-registration-button"`)
 - Light and dark treatments
@@ -28,9 +28,9 @@ Use this harness, or a walk account with zero registrations.
 | File | What it shows |
 | --- | --- |
 | `empty_garage_light.png` | Full first-run empty state, light theme |
-| `empty_garage_illustration_light.png` | Painted empty-bay crop, light |
+| `empty_garage_illustration_light.png` | Empty-bay crop, light |
 | `empty_garage_cta_light.png` | Add a registration CTA |
 | `empty_garage_dark.png` | Full first-run empty state, dark theme |
-| `empty_garage_illustration_dark.png` | Painted empty-bay crop, dark |
+| `empty_garage_illustration_dark.png` | Empty-bay crop, dark |
 | `empty_garage_light_mobile.png` | Phone-width light empty state |
 | `empty_garage_light_desktop.png` | Desktop-width light empty state |
