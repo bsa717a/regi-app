@@ -4,7 +4,9 @@ import { signInDemoApplicant } from "../helpers/auth";
 import {
   plateType,
   plateTypeLegend,
+  platesBackToGarage,
   platesContinue,
+  utahGetToPayment,
   utahOpenOrderPlates,
   utahOrderPacket,
 } from "../helpers/selectors";
@@ -140,13 +142,23 @@ test.describe("Utah plate type picker on staging", () => {
 
     await expect(utahOrderPacket(page)).toContainText("Your order packet");
     await expect(utahOrderPacket(page)).toContainText("REGI01");
-    await expect(page.getByText("Get to payment")).toBeVisible();
+    await expect(utahGetToPayment(page).getByText("Get to payment")).toBeVisible();
     await expect(utahOpenOrderPlates(page)).toHaveAttribute(
       "href",
       "https://mvp.tax.utah.gov/?Link=OrderPlates",
     );
+    // Same sentence is in the packet, sr-only copy, and this checklist.
     await expect(
-      page.getByTestId("utah-get-to-payment").getByText(/does not prefill MVP or skip payment/i),
+      utahGetToPayment(page).getByText(/does not prefill MVP or skip payment/i),
     ).toBeVisible();
+
+    const garageExit = platesBackToGarage(page);
+    test.skip(
+      !(await garageExit.isVisible().catch(() => false)),
+      "Back to garage end-screen exit is not on this staging deploy yet. Hub should re-walk after this PR is on regi-staging.",
+    );
+    await expect(garageExit).toHaveAttribute("href", "/garage");
+    await garageExit.click();
+    await expect(page).toHaveURL(/\/garage\/?$/);
   });
 });

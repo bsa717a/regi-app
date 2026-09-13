@@ -6,6 +6,7 @@ import {
   labelClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
+import { UtahBackToGarageLink } from "@/components/plates/UtahBackToGarageLink";
 import { UtahDmvHandoff } from "@/components/plates/UtahDmvHandoff";
 import { UtahOrderPacket } from "@/components/plates/UtahOrderPacket";
 import { UtahPlateFeeEstimateCard } from "@/components/plates/UtahPlateFeeEstimate";
@@ -166,6 +167,7 @@ export function UtahPersonalizedPlateFlow({
 
   return (
     <div className="space-y-5">
+      <UtahBackToGarageLink />
       <header className="space-y-2">
         <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
           Utah personalized / specialty plates
@@ -463,7 +465,12 @@ export function UtahPersonalizedPlateFlow({
           >
             {step === "fees" ? "See MVP summary" : "Continue"}
           </button>
-        ) : null}
+        ) : (
+          <UtahBackToGarageLink
+            variant="button"
+            testId="plates-back-to-garage-end"
+          />
+        )}
       </div>
     </div>
   );
