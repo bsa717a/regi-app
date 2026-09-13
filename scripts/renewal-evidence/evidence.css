@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@source "../../src/components/renewals/**/*.{ts,tsx}";
+@source "../../src/components/auth/AuthFormStyles.tsx";
+@source "./**/*.{ts,tsx}";

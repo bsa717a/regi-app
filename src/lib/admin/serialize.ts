@@ -7,6 +7,10 @@ import type {
 } from "@prisma/client";
 import { serializeDocument } from "@/lib/documents/serialize";
 import { parseFeeBreakdown } from "@/lib/renewals/fees";
+import {
+  buildRenewalStatusHistory,
+  timestampsFromRenewalDates,
+} from "@/lib/renewals/history";
 import { RENEWAL_STATUS_ORDER } from "@/lib/renewals/status";
 import type { FeeBreakdown } from "@/lib/renewals/types";
 
@@ -68,20 +72,9 @@ function toDateOnly(d: Date): string {
 }
 
 export function buildStatusHistory(renewal: Renewal): AdminStatusHistoryEntry[] {
-  const map: Record<RenewalStatus, Date | null> = {
-    Requested: renewal.requestedAt,
-    DocumentsReceived: renewal.documentsReceivedAt,
-    Reviewing: renewal.reviewingAt,
-    Processing: renewal.processingAt,
-    Submitted: renewal.submittedAt,
-    Completed: renewal.completedAt,
-    StickerMailed: renewal.stickerMailedAt,
-  };
-
-  return RENEWAL_STATUS_ORDER.map((status) => ({
-    status,
-    at: map[status]?.toISOString() ?? null,
-  }));
+  return buildRenewalStatusHistory(timestampsFromRenewalDates(renewal)).map(
+    ({ status, at }) => ({ status, at }),
+  );
 }
 
 export function nextStatusAfter(current: RenewalStatus): RenewalStatus | null {

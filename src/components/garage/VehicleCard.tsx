@@ -700,6 +700,13 @@ export function VehicleCard({
                 </button>
               )}
               <Link
+                href={`/garage/${encodeURIComponent(vehicle.id)}/renewals`}
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                data-testid={`renewal-history-${vehicle.id}`}
+              >
+                Renewal history
+              </Link>
+              <Link
                 href={`/garage/${encodeURIComponent(vehicle.id)}/maintenance`}
                 className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70"
               >

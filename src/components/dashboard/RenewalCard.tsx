@@ -76,6 +76,13 @@ export function RenewalCard({
           </span>
         ) : null}
         <Link
+          href={`/garage/${encodeURIComponent(vehicle.id)}/renewals`}
+          className="text-sm font-semibold text-slate-600 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-300"
+          data-testid={`renewal-history-${vehicle.id}`}
+        >
+          Renewal history
+        </Link>
+        <Link
           href="/garage"
           className="text-sm font-semibold text-slate-600 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-300"
         >

@@ -3,8 +3,30 @@ export type {
   FeeBreakdown,
   RequiredDocumentStatus,
   RenewalDto,
+  RenewalStatusHistoryEntry,
   RenewalTimestamps,
 } from "./types";
+
+export {
+  buildRenewalStatusHistory,
+  isTerminalRenewalSuccess,
+  TERMINAL_RENEWAL_SUCCESS_STATUSES,
+  timestampsFromRenewalDates,
+  type TerminalRenewalSuccessStatus,
+} from "./history";
+
+export {
+  buildRenewalProof,
+  buildRenewalReceiptHtml,
+  buildRenewalReceiptText,
+  RENEWAL_PROOF_PAYMENT_NOTE,
+  renewalReceiptFilename,
+  type RenewalProof,
+  type RenewalProofDocument,
+  type RenewalProofSource,
+} from "./proof";
+
+export { renewalStatusLabel, renewalVehicleLabel } from "./labels";
 
 export { computeFeeBreakdown, parseFeeBreakdown } from "./fees";
 
