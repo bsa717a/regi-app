@@ -52,6 +52,9 @@ export const selectClassName =
 export const labelClassName =
   "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
+/** Field labels on always-dark surfaces (garage-door login). Theme-independent. */
+export const onDarkLabelClassName = "block text-sm font-medium text-white";
+
 export const primaryButtonClassName =
   "inline-flex w-full items-center justify-center rounded-xl bg-teal-700 px-4 py-3.5 text-base font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-teal-600 dark:hover:bg-teal-500 dark:focus-visible:outline-teal-400";
 

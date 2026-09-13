@@ -24,7 +24,16 @@ export function loginSubmit(page: Page) {
 }
 
 export function loginError(page: Page) {
-  return page.getByTestId("login-error").or(page.getByRole("alert"));
+  // Prefer the form alert only. Next.js also mounts
+  // `#__next-route-announcer__[role=alert]`, which makes a bare getByRole("alert")
+  // strict-mode fail on login.
+  return page.getByTestId("login-error");
+}
+
+export function loginForgotPassword(page: Page) {
+  return page
+    .getByTestId("login-forgot-password")
+    .or(page.getByRole("link", { name: "Forgot password?" }));
 }
 
 export function signupForm(page: Page) {
