@@ -6,6 +6,7 @@ import {
   plateTypeLegend,
   platesBackToGarage,
   platesContinue,
+  utahGetToPayment,
   utahOpenOrderPlates,
   utahOrderPacket,
 } from "../helpers/selectors";
@@ -141,12 +142,15 @@ test.describe("Utah plate type picker on staging", () => {
 
     await expect(utahOrderPacket(page)).toContainText("Your order packet");
     await expect(utahOrderPacket(page)).toContainText("REGI01");
-    await expect(page.getByText("Get to payment")).toBeVisible();
+    await expect(utahGetToPayment(page).getByText("Get to payment")).toBeVisible();
     await expect(utahOpenOrderPlates(page)).toHaveAttribute(
       "href",
       "https://mvp.tax.utah.gov/?Link=OrderPlates",
     );
-    await expect(page.getByText(/does not prefill MVP or skip payment/i)).toBeVisible();
+    // Same sentence is in the packet, sr-only copy, and this checklist.
+    await expect(
+      utahGetToPayment(page).getByText(/does not prefill MVP or skip payment/i),
+    ).toBeVisible();
 
     const garageExit = platesBackToGarage(page);
     test.skip(
