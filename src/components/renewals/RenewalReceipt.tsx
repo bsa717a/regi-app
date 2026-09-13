@@ -27,8 +27,14 @@ function downloadProof(proof: RenewalProof) {
   const link = document.createElement("a");
   link.href = url;
   link.download = renewalReceiptFilename(proof);
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  // Safari / iOS WebView start the download after this turn; revoking now
+  // can cancel it or save an empty file. Keep the mounted blob URL briefly.
+  window.setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 function printProof(proof: RenewalProof) {
