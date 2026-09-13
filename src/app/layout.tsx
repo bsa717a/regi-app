@@ -10,6 +10,10 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { PwaRegister } from "@/components/PwaRegister";
 import { SentryClientInit } from "@/components/sentry/SentryClientInit";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import {
+  APP_NAME,
+  DOCUMENT_TITLE_TEMPLATE,
+} from "@/lib/seo/pageTitle";
 import { themeInitScript } from "@/lib/theme/script";
 import "./globals.css";
 
@@ -24,14 +28,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "REGI",
+  title: {
+    default: APP_NAME,
+    template: DOCUMENT_TITLE_TEMPLATE,
+  },
   description: "Never forget a vehicle registration again.",
-  applicationName: "REGI",
+  applicationName: APP_NAME,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "REGI",
+    title: APP_NAME,
   },
   other: {
     "mobile-web-app-capable": "yes",

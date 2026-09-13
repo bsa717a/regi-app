@@ -1,5 +1,8 @@
 import { Suspense } from "react";
 import { AdminPortalClient } from "@/components/admin/AdminPortalClient";
+import { pageMetadata } from "@/lib/seo/pageTitle";
+
+export const metadata = pageMetadata("Admin");
 
 export default function AdminHomePage() {
   return (

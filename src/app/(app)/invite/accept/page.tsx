@@ -1,5 +1,8 @@
 import { Suspense } from "react";
 import { AcceptInviteClient } from "@/components/household/AcceptInviteClient";
+import { pageMetadata } from "@/lib/seo/pageTitle";
+
+export const metadata = pageMetadata("Accept invite");
 
 export default function AcceptInvitePage() {
   return (

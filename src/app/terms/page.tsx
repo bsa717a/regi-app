@@ -4,9 +4,10 @@ import {
   LEGAL_LAST_UPDATED,
   legalContactEmail,
 } from "@/lib/legal/constants";
+import { pageMetadata } from "@/lib/seo/pageTitle";
 
 export const metadata: Metadata = {
-  title: "Terms of Use · REGI",
+  ...pageMetadata("Terms of Use"),
   description: "Terms for using the REGI vehicle registration app.",
 };
 

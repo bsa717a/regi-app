@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EmailActionHandler } from "@/components/auth/EmailActionHandler";
+import { pageMetadata } from "@/lib/seo/pageTitle";
 
-export const metadata: Metadata = {
-  title: "Email confirmation · REGI",
+export const metadata = pageMetadata("Email confirmation", {
   robots: { index: false, follow: false },
-};
+});
 
 export default function EmailActionPage() {
   return (

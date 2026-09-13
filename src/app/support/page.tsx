@@ -6,9 +6,10 @@ import {
   TERMS_PATH,
   legalContactEmail,
 } from "@/lib/legal/constants";
+import { pageMetadata } from "@/lib/seo/pageTitle";
 
 export const metadata: Metadata = {
-  title: "Support · REGI",
+  ...pageMetadata("Support"),
   description: "How to get help with REGI, including account and privacy questions.",
 };
 

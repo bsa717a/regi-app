@@ -1,5 +1,8 @@
 import { ConciergeClient } from "@/components/renewals/ConciergeClient";
 import { FeatureErrorBoundary } from "@/components/sentry/FeatureErrorBoundary";
+import { pageMetadata } from "@/lib/seo/pageTitle";
+
+export const metadata = pageMetadata("Renewal");
 
 export default async function RenewalDetailPage({
   params,
