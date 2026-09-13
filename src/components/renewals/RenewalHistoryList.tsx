@@ -15,14 +15,6 @@ function formatWhen(iso: string | null): string {
   }).format(date);
 }
 
-function historyDate(renewal: RenewalDto): string {
-  return (
-    renewal.timestamps.stickerMailedAt ??
-    renewal.timestamps.completedAt ??
-    renewal.timestamps.requestedAt
-  );
-}
-
 export function RenewalHistoryList({ renewals }: { renewals: RenewalDto[] }) {
   if (renewals.length === 0) {
     return (
@@ -53,7 +45,7 @@ export function RenewalHistoryList({ renewals }: { renewals: RenewalDto[] }) {
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 {renewal.proofAvailable
                   ? `Sticker mailed ${formatWhen(renewal.timestamps.stickerMailedAt)}`
-                  : `Started ${formatWhen(historyDate(renewal))}`}
+                  : `Started ${formatWhen(renewal.timestamps.requestedAt)}`}
               </p>
               <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">
                 {renewal.id}

@@ -32,12 +32,21 @@ function downloadProof(proof: RenewalProof) {
 }
 
 function printProof(proof: RenewalProof) {
-  const popup = window.open("", "_blank", "noopener,noreferrer,width=720,height=900");
+  // `noopener`/`noreferrer` in window features make window.open return null.
+  const popup = window.open("", "_blank", "width=720,height=900");
   if (!popup) return;
+  popup.opener = null;
   popup.document.write(buildRenewalReceiptHtml(proof));
   popup.document.close();
-  popup.focus();
-  popup.print();
+  const triggerPrint = () => {
+    popup.focus();
+    popup.print();
+  };
+  if (popup.document.readyState === "complete") {
+    triggerPrint();
+    return;
+  }
+  popup.addEventListener("load", triggerPrint, { once: true });
 }
 
 export function RenewalReceipt({

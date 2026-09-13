@@ -216,11 +216,12 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
               documents={renewal.documents}
               onViewDocument={documentPreview.open}
             />
-          ) : null}
-          <UploadedDocumentsSection
-            documents={renewal.documents}
-            onView={documentPreview.open}
-          />
+          ) : (
+            <UploadedDocumentsSection
+              documents={renewal.documents}
+              onView={documentPreview.open}
+            />
+          )}
           <section aria-labelledby="viewer-progress-heading">
             <h2
               id="viewer-progress-heading"
