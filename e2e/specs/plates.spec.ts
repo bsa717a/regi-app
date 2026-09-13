@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { hasDemoPassword, missingPasswordMessage } from "../env";
 import { signInDemoApplicant } from "../helpers/auth";
-import { plateType, plateTypeLegend, platesContinue } from "../helpers/selectors";
+import {
+  plateType,
+  plateTypeLegend,
+  platesContinue,
+  utahOpenOrderPlates,
+  utahOrderPacket,
+} from "../helpers/selectors";
 
 test.describe("Utah plate type picker on staging", () => {
   test.beforeEach(() => {
@@ -103,5 +109,42 @@ test.describe("Utah plate type picker on staging", () => {
     await expect(page.getByTestId("selected-plate-design")).toContainText(
       "Amateur Radio",
     );
+  });
+
+  test("end screen uses Order Plates handoff when this branch is on staging", async ({
+    page,
+  }) => {
+    await signInDemoApplicant(page);
+    await page.goto("/garage/plates");
+
+    await expect(
+      page.getByRole("heading", { name: /Plan your request/i }),
+    ).toBeVisible({ timeout: 25_000 });
+
+    await platesContinue(page).click();
+    await page.getByLabel("First choice (required)").fill("REGI01");
+    await platesContinue(page).click();
+    await page.getByLabel(/What does this combination mean/i).fill("Family nickname");
+    await platesContinue(page).click();
+    await expect(page.getByText("Soft content check")).toBeVisible({
+      timeout: 10_000,
+    });
+    await platesContinue(page).click();
+    await expect(page.getByText("Fee estimate")).toBeVisible();
+    await platesContinue(page).click();
+
+    test.skip(
+      !(await utahOrderPacket(page).isVisible().catch(() => false)),
+      "Order packet end screen is not on this staging deploy yet. Hub should re-walk after this PR is on regi-staging.",
+    );
+
+    await expect(utahOrderPacket(page)).toContainText("Your order packet");
+    await expect(utahOrderPacket(page)).toContainText("REGI01");
+    await expect(page.getByText("Get to payment")).toBeVisible();
+    await expect(utahOpenOrderPlates(page)).toHaveAttribute(
+      "href",
+      "https://mvp.tax.utah.gov/?Link=OrderPlates",
+    );
+    await expect(page.getByText(/does not prefill MVP or skip payment/i)).toBeVisible();
   });
 });

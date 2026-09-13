@@ -56,4 +56,6 @@ export type UtahPlateDraft = {
   meaning: string;
   vehicleLabel?: string | null;
   vehiclePlate?: string | null;
+  /** Last four VIN characters when REGI has the vehicle VIN — for MVP entry, not prefill. */
+  last4Vin?: string | null;
 };

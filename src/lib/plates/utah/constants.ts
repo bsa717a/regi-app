@@ -6,8 +6,19 @@ export const UTAH_PERSONALIZED_PLATES_INFO_URL =
 export const UTAH_PLATE_CATALOG_URL =
   "https://dmv.utah.gov/plates/license-plates/";
 
-/** Utah Motor Vehicle Portal — customer enters the request themselves. */
+/** Utah Motor Vehicle Portal root — not the plate-order handoff. */
 export const UTAH_MVP_URL = "https://mvp.tax.utah.gov/";
+
+/**
+ * Public Order Plates instructions (VIN last-4, payment method, reCAPTCHA).
+ * No combo/design query params — do not invent deep-link prefill.
+ */
+export const UTAH_MVP_ORDER_PLATES_URL =
+  "https://mvp.tax.utah.gov/?Link=OrderPlates";
+
+/** Optional public status lookup after an order. */
+export const UTAH_MVP_PLATE_STATUS_URL =
+  "https://mvp.tax.utah.gov/?link=WhereIsYourPlate";
 
 /** Utah Code §41-1a-1211 amounts — treat as estimates; DMV is final. */
 export const UTAH_PLATE_APPLICATION_FEE_CENTS = 5000;
@@ -41,4 +52,35 @@ export const UTAH_PLATE_REQUIREMENTS = [
 ] as const;
 
 export const UTAH_NO_PREFILL_NOTE =
-  "REGI does not send this to the DMV or prefill MVP. Copy the summary, then enter it yourself.";
+  "REGI does not send this to the DMV, prefill MVP, or skip payment. Copy the packet, then enter it yourself.";
+
+export const UTAH_PACKET_STAYS_OPEN_NOTE =
+  "Keep this packet available while you work in the other tab. REGI does not prefill MVP or skip payment.";
+
+export const UTAH_GET_TO_PAYMENT_STEPS = [
+  {
+    id: "open-order-plates",
+    title: "Open Order Plates",
+    body: "Open the Order Plates link. It lands on license plate order instructions — last 4 VIN, payment method, and reCAPTCHA — not the MVP homepage.",
+  },
+  {
+    id: "enter-vehicle",
+    title: "Enter your vehicle",
+    body: "Enter the vehicle using the last 4 characters of the VIN.",
+  },
+  {
+    id: "recaptcha",
+    title: "Complete reCAPTCHA",
+    body: "Complete the reCAPTCHA on MVP before you continue.",
+  },
+  {
+    id: "enter-choices",
+    title: "Enter personalized choices from the packet",
+    body: "Type the plate design, combinations, and meaning from your order packet. REGI does not prefill these fields.",
+  },
+  {
+    id: "pay-on-mvp",
+    title: "Complete payment on MVP",
+    body: "Finish payment on Utah MVP. Paying does not mean your combination is approved, and REGI does not skip this step.",
+  },
+] as const;

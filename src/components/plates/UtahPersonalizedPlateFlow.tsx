@@ -7,7 +7,7 @@ import {
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
 import { UtahDmvHandoff } from "@/components/plates/UtahDmvHandoff";
-import { UtahMvpCopyCard } from "@/components/plates/UtahMvpCopyCard";
+import { UtahOrderPacket } from "@/components/plates/UtahOrderPacket";
 import { UtahPlateFeeEstimateCard } from "@/components/plates/UtahPlateFeeEstimate";
 import { UtahPlateRequirementsChecklist } from "@/components/plates/UtahPlateRequirementsChecklist";
 import { UtahPlatePreviewImage } from "@/components/plates/UtahPlatePreviewImage";
@@ -22,6 +22,7 @@ import {
   utahPlateTypePickerOptions,
   UTAH_PLATE_CATALOG_URL,
   UTAH_PLATE_PREVIEW_ATTRIBUTION,
+  utahVinLast4,
   validatePlateCombo,
   validatePlateCombos,
   validatePlateMeaning,
@@ -45,6 +46,7 @@ export type UtahPlateVehicleContext = {
   state: string;
   type: string;
   status: string;
+  vin?: string | null;
 };
 
 export function UtahPersonalizedPlateFlow({
@@ -99,6 +101,7 @@ export function UtahPersonalizedPlateFlow({
     meaning: meaning.trim(),
     vehicleLabel: vehicle?.label ?? null,
     vehiclePlate: vehicle?.plate ?? null,
+    last4Vin: utahVinLast4(vehicle?.vin),
   };
   const liveCharacters = combos[0]?.trim() ?? "";
   const livePreview = selectedOption.previews[0];
@@ -431,14 +434,11 @@ export function UtahPersonalizedPlateFlow({
 
       {step === "summary" ? (
         <div className="space-y-4">
-          {livePreview ? (
-            <UtahPlatePreviewImage
-              preview={livePreview}
-              characters={comboValues[0] ?? liveCharacters}
-              compact
-            />
-          ) : null}
-          <UtahMvpCopyCard draft={draft} />
+          <UtahOrderPacket
+            draft={draft}
+            fees={fees}
+            preview={livePreview ?? null}
+          />
           <UtahDmvHandoff />
           <UtahPlateRequirementsChecklist heading="Remember" />
         </div>

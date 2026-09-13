@@ -162,6 +162,16 @@ export function platesContinue(page: Page) {
     .or(page.getByRole("button", { name: /Continue|See MVP summary/ }));
 }
 
+export function utahOrderPacket(page: Page) {
+  return page.getByTestId("utah-order-packet");
+}
+
+export function utahOpenOrderPlates(page: Page) {
+  return page
+    .getByTestId("utah-open-order-plates")
+    .or(page.getByRole("link", { name: /Open Order Plates/i }));
+}
+
 export function plateType(page: Page, optionId: string, label: string) {
   return page
     .getByTestId(`utah-plate-type-${optionId}`)

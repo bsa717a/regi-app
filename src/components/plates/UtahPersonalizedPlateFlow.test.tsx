@@ -14,12 +14,20 @@ beforeAll(() => {
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
-async function renderFlow() {
+async function renderFlow(vehicle?: {
+  id: string;
+  label: string;
+  plate: string | null;
+  state: string;
+  type: string;
+  status: string;
+  vin?: string | null;
+}) {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
-    root!.render(<UtahPersonalizedPlateFlow />);
+    root!.render(<UtahPersonalizedPlateFlow vehicle={vehicle} />);
   });
   return container;
 }
@@ -379,13 +387,82 @@ describe("UtahPersonalizedPlateFlow", () => {
     expect(view.textContent).toMatch(/does not mean/i);
 
     await click(continueButtons()[0] as HTMLButtonElement);
-    expect(view.textContent).toContain("Enter this in Utah MVP");
+    expect(view.textContent).toContain("Your order packet");
     expect(view.textContent).toContain("Choice 1: REGI01");
     expect(view.textContent).toContain("Design id: standard_life_elevated_arches");
     expect(view.textContent).toContain("Family nickname");
+    expect(view.textContent).toContain("Get to payment");
+    expect(view.textContent).toContain("Open Order Plates");
+    expect(view.textContent).toMatch(/does not prefill MVP or skip payment/i);
     expect(view.innerHTML).toContain("https://dmv.utah.gov/plates/personalized/");
-    expect(view.innerHTML).toContain("https://mvp.tax.utah.gov/");
+    expect(view.innerHTML).toContain("https://mvp.tax.utah.gov/?Link=OrderPlates");
+    expect(view.innerHTML).toContain("https://mvp.tax.utah.gov/?link=WhereIsYourPlate");
+    expect(view.innerHTML).not.toContain('href="https://mvp.tax.utah.gov/"');
     expect(view.textContent).toContain("TC-817 is not required");
+  });
+
+  it("keeps the sticky packet and numbered payment checklist on the end screen", async () => {
+    const view = await renderFlow(
+      {
+        id: "reg-1",
+        label: "2018 Outback",
+        plate: "A123BC",
+        state: "UT",
+        type: "passenger",
+        status: "Current",
+        vin: "1GNSKCKC8MR312456",
+      },
+    );
+
+    const continueBtn = () =>
+      view.querySelector('[data-testid="plates-continue"]') as HTMLElement;
+
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(
+        view.querySelector("#utah-combo-0") as HTMLInputElement,
+        "REGI01",
+      );
+      setFieldValue(
+        view.querySelector("#utah-combo-1") as HTMLInputElement,
+        "REGI02",
+      );
+      setFieldValue(
+        view.querySelector("#utah-combo-2") as HTMLInputElement,
+        "REGI03",
+      );
+    });
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(
+        view.querySelector("#utah-plate-meaning") as HTMLTextAreaElement,
+        "Family nickname",
+      );
+    });
+    await click(continueBtn());
+    await click(continueBtn());
+    await click(continueBtn());
+
+    const packet = view.querySelector('[data-testid="utah-order-packet"]');
+    expect(packet).toBeTruthy();
+    expect(packet?.className).toMatch(/sticky/);
+    expect(view.textContent).toContain("REGI01");
+    expect(view.textContent).toContain("REGI02");
+    expect(view.textContent).toContain("REGI03");
+    expect(view.textContent).toContain("Family nickname");
+    expect(view.textContent).toContain("2456");
+    expect(view.textContent).toContain("$75.00");
+    expect(view.querySelector('[data-testid="utah-copy-combo-0"]')).toBeTruthy();
+    expect(view.querySelector('[data-testid="utah-copy-meaning"]')).toBeTruthy();
+    expect(view.querySelector('[data-testid="utah-copy-fees"]')).toBeTruthy();
+    expect(view.querySelector('[data-testid="utah-copy-packet"]')).toBeTruthy();
+    expect(view.querySelector('[data-testid="utah-get-to-payment-steps"]')?.textContent).toMatch(
+      /reCAPTCHA/,
+    );
+    expect(view.querySelector('[data-testid="utah-open-order-plates"]')?.getAttribute("href")).toBe(
+      "https://mvp.tax.utah.gov/?Link=OrderPlates",
+    );
+    expect(view.textContent).not.toMatch(/we prefill|prefills MVP|skip(?:s|ping)? payment for you/i);
   });
 
   it("carries motorcycle specialty design id and special-group fee note to MVP", async () => {

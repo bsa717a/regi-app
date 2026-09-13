@@ -56,6 +56,7 @@ export function UtahPlatesPage({
           state: row.state,
           type: row.type,
           status: row.status,
+          vin: row.vin,
         });
         setLoadError(null);
       } catch (err) {
