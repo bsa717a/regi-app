@@ -338,6 +338,9 @@ describe("UtahPersonalizedPlateFlow", () => {
     expect(view.textContent).toContain("Payment is not approval");
     expect(view.textContent).toContain("Mailed in about 8 weeks");
     expect(view.textContent).toContain("Letters and numbers only");
+    expect(
+      view.querySelector('[data-testid="plates-back-to-garage"]')?.getAttribute("href"),
+    ).toBe("/garage");
 
     await click(view.querySelector("button") as HTMLButtonElement);
 
@@ -399,6 +402,10 @@ describe("UtahPersonalizedPlateFlow", () => {
     expect(view.innerHTML).toContain("https://mvp.tax.utah.gov/?link=WhereIsYourPlate");
     expect(view.innerHTML).not.toContain('href="https://mvp.tax.utah.gov/"');
     expect(view.textContent).toContain("TC-817 is not required");
+    expect(
+      view.querySelector('[data-testid="plates-back-to-garage-end"]')?.getAttribute("href"),
+    ).toBe("/garage");
+    expect(view.textContent).toContain("Back to garage");
   });
 
   it("keeps the sticky packet and numbered payment checklist on the end screen", async () => {
@@ -463,6 +470,57 @@ describe("UtahPersonalizedPlateFlow", () => {
       "https://mvp.tax.utah.gov/?Link=OrderPlates",
     );
     expect(view.textContent).not.toMatch(/we prefill|prefills MVP|skip(?:s|ping)? payment for you/i);
+    expect(
+      view.querySelector('[data-testid="plates-back-to-garage-end"]')?.getAttribute("href"),
+    ).toBe("/garage");
+  });
+
+  it("lets Derek leave the Order Plates end screen back to the garage", async () => {
+    const view = await renderFlow();
+    const continueBtn = () =>
+      view.querySelector('[data-testid="plates-continue"]') as HTMLElement;
+    const garageExit = () =>
+      view.querySelector('[data-testid="plates-back-to-garage-end"]') as HTMLAnchorElement | null;
+    const topGarage = () =>
+      view.querySelector('[data-testid="plates-back-to-garage"]') as HTMLAnchorElement | null;
+
+    expect(topGarage()?.getAttribute("href")).toBe("/garage");
+    expect(topGarage()?.textContent).toMatch(/Back to garage/i);
+    expect(garageExit()).toBeNull();
+
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(
+        view.querySelector("#utah-combo-0") as HTMLInputElement,
+        "REGI01",
+      );
+    });
+    await click(continueBtn());
+    await act(async () => {
+      setFieldValue(
+        view.querySelector("#utah-plate-meaning") as HTMLTextAreaElement,
+        "Family nickname",
+      );
+    });
+    await click(continueBtn());
+    await click(continueBtn());
+    await click(continueBtn());
+
+    expect(view.textContent).toContain("Your order packet");
+    expect(view.textContent).toContain("Open Order Plates");
+    expect(view.querySelector('[data-testid="utah-get-to-payment-steps"]')).toBeTruthy();
+    expect(garageExit()?.getAttribute("href")).toBe("/garage");
+    expect(garageExit()?.textContent).toMatch(/^Back to garage$/);
+    expect(topGarage()?.getAttribute("href")).toBe("/garage");
+
+    const stepBack = Array.from(view.querySelectorAll("button")).find((button) =>
+      /^Back$/i.test(button.textContent ?? ""),
+    );
+    expect(stepBack).toBeTruthy();
+    await click(stepBack as HTMLElement);
+    expect(view.textContent).toContain("Fee estimate");
+    expect(garageExit()).toBeNull();
+    expect(topGarage()?.getAttribute("href")).toBe("/garage");
   });
 
   it("carries motorcycle specialty design id and special-group fee note to MVP", async () => {
