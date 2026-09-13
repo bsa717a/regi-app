@@ -98,6 +98,20 @@ describe("GarageDoorLogin", () => {
     await unmount();
   });
 
+  it("uses high-contrast white labels on the dark garage card", async () => {
+    const { container, unmount } = await render(<GarageDoorLogin />);
+
+    for (const name of ["email", "password"] as const) {
+      const label = container.querySelector(`label[for="${name}"]`);
+      expect(label?.className).toMatch(/\btext-white\b/);
+      expect(label?.className).not.toMatch(/text-slate-300/);
+      expect(label?.className).not.toMatch(/text-neutral-200/);
+      expect(label?.className).not.toMatch(/text-slate-700/);
+    }
+
+    await unmount();
+  });
+
   it("shows a reset CTA after a wrong-password style failure", async () => {
     signIn.mockRejectedValue(
       new FirebaseError("auth/invalid-credential", "bad creds"),

@@ -10,7 +10,7 @@ import {
 } from "@/components/auth/GarageDoorReveal";
 import {
   fieldClassName,
-  labelClassName,
+  onDarkLabelClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
 import { LegalLinks } from "@/components/legal/LegalLinks";
@@ -69,7 +69,7 @@ export function GarageDoorLogin() {
           <p className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
             REGI
           </p>
-          <p className="mt-1.5 text-sm text-neutral-400 sm:text-base">
+          <p className="mt-1.5 text-sm text-slate-300 sm:text-base">
             Pull in. We&apos;ll keep the stickers honest.
           </p>
         </header>
@@ -88,7 +88,7 @@ export function GarageDoorLogin() {
                 <h1 className="text-xl font-semibold tracking-tight text-white">
                   Open the garage
                 </h1>
-                <p className="mt-1 text-sm text-neutral-300">
+                <p className="mt-1 text-sm text-slate-200">
                   Sign in to check expirations and renewals.
                 </p>
 
@@ -99,10 +99,7 @@ export function GarageDoorLogin() {
                   data-testid="login-form"
                 >
                   <div>
-                    <label
-                      htmlFor="email"
-                      className={`${labelClassName} text-neutral-200`}
-                    >
+                    <label htmlFor="email" className={onDarkLabelClassName}>
                       Email
                     </label>
                     <input
@@ -120,10 +117,7 @@ export function GarageDoorLogin() {
                     />
                   </div>
                   <div>
-                    <label
-                      htmlFor="password"
-                      className={`${labelClassName} text-neutral-200`}
-                    >
+                    <label htmlFor="password" className={onDarkLabelClassName}>
                       Password
                     </label>
                     <input
@@ -197,10 +191,10 @@ export function GarageDoorLogin() {
                 </form>
 
                 <div className="mt-6 pt-5 border-t border-white/10">
-                  <p className="text-center text-sm font-medium text-neutral-200">
+                  <p className="text-center text-sm font-medium text-white">
                     New to REGI?
                   </p>
-                  <p className="mt-1 text-center text-xs text-neutral-400">
+                  <p className="mt-1 text-center text-xs text-slate-300">
                     Track your registrations in under a minute
                   </p>
                   <Link
