@@ -1,6 +1,7 @@
 /**
  * Theme-aware empty-garage SVG (no people, not a photo).
- * Light/dark fills follow REGI teal + slate tokens used by AppShell empty states.
+ * Light/dark fills use REGI teal + slate tokens — solid Tailwind classes,
+ * not gradient stop-color, so `.dark` reliably flips the palette.
  */
 export function GarageEmptyIllustration({
   className = "",
@@ -26,76 +27,30 @@ export function GarageEmptyIllustration({
           and a blank plate on the wall.
         </desc>
 
-        <defs>
-          <linearGradient
-            id="garage-empty-sky"
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              className="[stop-color:#99f6e4] dark:[stop-color:#115e59]"
-            />
-            <stop
-              offset="100%"
-              className="[stop-color:#e0f2fe] dark:[stop-color:#0f172a]"
-            />
-          </linearGradient>
-          <linearGradient
-            id="garage-empty-floor"
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              className="[stop-color:#cbd5e1] dark:[stop-color:#1e293b]"
-            />
-            <stop
-              offset="100%"
-              className="[stop-color:#e2e8f0] dark:[stop-color:#0f172a]"
-            />
-          </linearGradient>
-          <linearGradient
-            id="garage-empty-daylight"
-            x1="0.5"
-            y1="0"
-            x2="0.5"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              className="[stop-color:#ecfdf5] dark:[stop-color:#042f2e]"
-            />
-            <stop
-              offset="70%"
-              stopOpacity="0"
-              className="[stop-color:#ecfdf5] dark:[stop-color:#042f2e]"
-            />
-          </linearGradient>
-        </defs>
-
         {/* Interior wash */}
         <rect
           width="400"
           height="240"
-          className="fill-slate-100 dark:fill-slate-900"
+          className="fill-slate-100 dark:fill-slate-950"
         />
 
         {/* Daylight through the open door */}
-        <rect x="78" y="36" width="244" height="104" fill="url(#garage-empty-sky)" />
+        <rect
+          x="78"
+          y="36"
+          width="244"
+          height="110"
+          className="fill-teal-100 dark:fill-teal-950"
+        />
         <ellipse
           cx="200"
-          cy="70"
-          rx="70"
-          ry="22"
-          className="fill-white/50 dark:fill-teal-200/10"
+          cy="72"
+          rx="78"
+          ry="24"
+          className="fill-white/60 dark:fill-teal-200/15"
         />
 
-        {/* Back wall under the opening */}
+        {/* Kick plate / back wall under the opening */}
         <rect
           x="78"
           y="128"
@@ -111,7 +66,7 @@ export function GarageEmptyIllustration({
         />
         <path
           d="M0 18 L78 36 L78 48 L0 36 Z"
-          className="fill-slate-300/80 dark:fill-slate-700"
+          className="fill-slate-300/90 dark:fill-slate-700"
         />
 
         {/* Right wall */}
@@ -121,52 +76,57 @@ export function GarageEmptyIllustration({
         />
         <path
           d="M400 18 L322 36 L322 48 L400 36 Z"
-          className="fill-slate-300/80 dark:fill-slate-700"
+          className="fill-slate-300/90 dark:fill-slate-700"
         />
 
         {/* Concrete floor */}
         <path
           d="M78 146 L322 146 L400 240 L0 240 Z"
-          fill="url(#garage-empty-floor)"
+          className="fill-slate-200 dark:fill-slate-800"
         />
-
-        {/* Soft daylight on the floor */}
         <path
-          d="M96 146 L304 146 L340 210 L60 210 Z"
-          fill="url(#garage-empty-daylight)"
+          d="M96 146 L304 146 L336 204 L64 204 Z"
+          className="fill-teal-50/90 dark:fill-teal-950/55"
         />
 
         {/* Parking stall */}
         <g
           fill="none"
-          className="stroke-teal-700/45 dark:stroke-teal-300/40"
+          className="stroke-teal-700/55 dark:stroke-teal-300/65"
           strokeWidth="2.5"
           strokeLinecap="round"
         >
-          <path d="M128 228 L158 158" strokeDasharray="7 6" />
-          <path d="M272 228 L242 158" strokeDasharray="7 6" />
-          <path d="M158 158 H242" />
+          <path d="M130 226 L160 160" strokeDasharray="7 6" />
+          <path d="M270 226 L240 160" strokeDasharray="7 6" />
+          <path d="M160 160 H240" />
         </g>
 
-        {/* Ghost vehicle — sedan silhouette, dashed, no people */}
+        {/* Ghost vehicle — top-down sedan in the stall */}
         <g
-          transform="translate(146 154) scale(1.5)"
-          className="fill-teal-700/15 stroke-teal-700/50 dark:fill-teal-200/10 dark:stroke-teal-200/45"
-          strokeWidth="1.4"
-          strokeDasharray="3.5 2.8"
+          fill="none"
+          className="stroke-teal-800/70 dark:stroke-teal-100/80"
+          strokeWidth="2.2"
           strokeLinejoin="round"
+          strokeLinecap="round"
+          strokeDasharray="5 4"
         >
-          <path d="M6 22h56v4H6z" />
-          <path d="M6 18h8l5-8h26l7 8h8v5H6v-5z" />
-          <path d="M20 11h20l4 6H17l3-6z" />
-          <circle cx="20" cy="24" r="3.6" className="fill-none" />
-          <circle cx="52" cy="24" r="3.6" className="fill-none" />
+          <path d="M186 174 C186 168 191 166 200 166 C209 166 214 168 214 174 L218 206 C218 214 211 218 200 218 C189 218 182 214 182 206 Z" />
+          <path d="M190 178 H210" />
+          <path d="M188 208 H212" />
+        </g>
+        <g
+          className="fill-teal-800/25 dark:fill-teal-100/20"
+        >
+          <rect x="176" y="180" width="5" height="12" rx="1.5" />
+          <rect x="219" y="180" width="5" height="12" rx="1.5" />
+          <rect x="176" y="198" width="5" height="12" rx="1.5" />
+          <rect x="219" y="198" width="5" height="12" rx="1.5" />
         </g>
 
         {/* Door frame */}
         <path
           d="M72 32 H328 V146 H322 V38 H78 V146 H72 Z"
-          className="fill-teal-800 dark:fill-teal-600"
+          className="fill-teal-800 dark:fill-teal-500"
         />
 
         {/* Sectional door stacked open at the header */}
@@ -177,7 +137,7 @@ export function GarageEmptyIllustration({
             width="252"
             height="22"
             rx="3"
-            className="fill-teal-700 dark:fill-teal-500"
+            className="fill-teal-700 dark:fill-teal-400"
           />
           {[0, 1, 2].map((i) => (
             <rect
@@ -187,7 +147,7 @@ export function GarageEmptyIllustration({
               width="240"
               height="3"
               rx="1"
-              className="fill-teal-900/35 dark:fill-teal-950/40"
+              className="fill-teal-950/30 dark:fill-teal-950/45"
             />
           ))}
           <rect
@@ -196,7 +156,7 @@ export function GarageEmptyIllustration({
             width="24"
             height="6"
             rx="1.5"
-            className="fill-amber-300/90 dark:fill-amber-200"
+            className="fill-amber-300 dark:fill-amber-200"
           />
         </g>
 
@@ -209,7 +169,6 @@ export function GarageEmptyIllustration({
             height="26"
             rx="4"
             className="fill-white dark:fill-slate-900"
-            strokeWidth="2"
           />
           <rect
             x="0"
@@ -217,7 +176,7 @@ export function GarageEmptyIllustration({
             width="46"
             height="26"
             rx="4"
-            className="fill-none stroke-teal-700 dark:stroke-teal-400"
+            className="fill-none stroke-teal-700 dark:stroke-teal-300"
             strokeWidth="2"
           />
           <rect
@@ -226,13 +185,13 @@ export function GarageEmptyIllustration({
             width="32"
             height="10"
             rx="2"
-            className="fill-none stroke-slate-300 dark:stroke-slate-600"
+            className="fill-none stroke-slate-400 dark:stroke-slate-500"
             strokeWidth="1.5"
             strokeDasharray="3 2"
           />
         </g>
 
-        {/* Empty hook / peg on the right wall */}
+        {/* Empty hook on the right wall */}
         <g transform="translate(354 96)">
           <path
             d="M10 0 v14"

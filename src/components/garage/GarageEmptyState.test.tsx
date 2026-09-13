@@ -70,8 +70,8 @@ describe("GarageEmptyState", () => {
     expect(html).toContain("dark:text-teal-300");
     expect(html).toContain("dark:text-slate-100");
     expect(html).toContain("dark:border-slate-700/80");
-    expect(html).toContain("dark:fill-slate-900");
-    expect(html).toContain("dark:stroke-teal-300/40");
+    expect(html).toContain("dark:fill-slate-950");
+    expect(html).toContain("dark:stroke-teal-300/65");
 
     await unmount();
   });
