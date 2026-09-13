@@ -166,10 +166,21 @@ export function utahOrderPacket(page: Page) {
   return page.getByTestId("utah-order-packet");
 }
 
+export function utahGetToPayment(page: Page) {
+  return page
+    .getByTestId("utah-get-to-payment")
+    .or(page.getByRole("heading", { name: /Get to payment/i }).locator("xpath=ancestor::section[1]"));
+}
+
 export function utahOpenOrderPlates(page: Page) {
   return page
     .getByTestId("utah-open-order-plates")
     .or(page.getByRole("link", { name: /Open Order Plates/i }));
+}
+
+/** End-screen exit only — not the header or top-of-flow “Back to garage” links. */
+export function platesBackToGarage(page: Page) {
+  return page.getByTestId("plates-back-to-garage-end");
 }
 
 export function plateType(page: Page, optionId: string, label: string) {
