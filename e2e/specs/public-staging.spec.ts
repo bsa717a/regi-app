@@ -2,7 +2,10 @@ import { expect, test } from "@playwright/test";
 import { STAGING_ORIGIN } from "../env";
 import {
   loginEmail,
+  loginError,
+  loginForgotPassword,
   loginForm,
+  loginPassword,
   loginSubmit,
 } from "../helpers/selectors";
 import {
@@ -49,10 +52,40 @@ test.describe("Staging public smoke (no demo password)", () => {
       "href",
       "/signup",
     );
-    await expect(page.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
+    const forgot = loginForgotPassword(page);
+    await expect(forgot).toBeVisible();
+    await expect(forgot).toHaveAttribute("href", "/forgot-password");
+  });
+
+  test("forgot-password page is reachable from login", async ({ page }) => {
+    await page.goto("/login");
+    await expect(loginForgotPassword(page)).toBeVisible({ timeout: 45_000 });
+    await loginForgotPassword(page).click();
+    await expect(page).toHaveURL(/\/forgot-password/);
+    await expect(
+      page.getByRole("heading", { name: "Reset your password" }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Back to sign in" })).toHaveAttribute(
       "href",
-      "/forgot-password",
+      "/login",
     );
+  });
+
+  test("failed login shows an inline error and keeps Forgot password visible", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await expect(loginForm(page)).toBeVisible({ timeout: 45_000 });
+    await loginEmail(page).fill("nobody@example.invalid");
+    await loginPassword(page).fill("definitely-not-the-password");
+    await loginSubmit(page).click();
+    await expect(loginError(page)).toBeVisible({ timeout: 20_000 });
+    await expect(loginError(page)).toHaveText(
+      /incorrect|doesn.t match|does not match|no regi account|could not sign in/i,
+    );
+    await expect(loginForgotPassword(page)).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test("empty login submit stays on the login page", async ({ page }) => {

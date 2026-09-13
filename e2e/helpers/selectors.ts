@@ -27,6 +27,12 @@ export function loginError(page: Page) {
   return page.getByTestId("login-error").or(page.getByRole("alert"));
 }
 
+export function loginForgotPassword(page: Page) {
+  return page
+    .getByTestId("login-forgot-password")
+    .or(page.getByRole("link", { name: "Forgot password?" }));
+}
+
 export function signupForm(page: Page) {
   return page.getByTestId("signup-form").or(page.locator("form").filter({ has: page.getByLabel("Name") }));
 }

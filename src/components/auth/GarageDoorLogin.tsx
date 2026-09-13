@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   GarageDoorPanels,
@@ -12,29 +11,20 @@ import {
 import {
   fieldClassName,
   labelClassName,
-  linkClassName,
   primaryButtonClassName,
 } from "@/components/auth/AuthFormStyles";
 import { LegalLinks } from "@/components/legal/LegalLinks";
+import {
+  mapLoginError,
+  type LoginErrorGuidance,
+} from "@/lib/auth/mapLoginError";
 import { DEFAULT_SIGNED_IN_HOME } from "@/lib/routes";
 
-function mapAuthError(error: unknown): string {
-  if (error instanceof FirebaseError) {
-    switch (error.code) {
-      case "auth/invalid-credential":
-      case "auth/wrong-password":
-      case "auth/user-not-found":
-      case "auth/invalid-email":
-        return "Email or password is incorrect.";
-      case "auth/too-many-requests":
-        return "Too many attempts. Try again in a few minutes.";
-      default:
-        return "Could not sign in. Please try again.";
-    }
-  }
-  if (error instanceof Error) return error.message;
-  return "Could not sign in. Please try again.";
-}
+const forgotPasswordLinkClassName =
+  "inline-flex min-h-11 items-center text-base font-semibold text-teal-200 underline decoration-teal-200/80 underline-offset-4 hover:text-teal-50 hover:decoration-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-300";
+
+const errorActionLinkClassName =
+  "font-semibold text-white underline decoration-white/80 underline-offset-4 hover:decoration-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 
 export function GarageDoorLogin() {
   const { signIn } = useAuth();
@@ -42,7 +32,7 @@ export function GarageDoorLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LoginErrorGuidance | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,7 +46,7 @@ export function GarageDoorLogin() {
       revealTo(DEFAULT_SIGNED_IN_HOME);
     } catch (err) {
       cancelReveal();
-      setError(mapAuthError(err));
+      setError(mapLoginError(err));
       setSubmitting(false);
     }
   }
@@ -130,20 +120,12 @@ export function GarageDoorLogin() {
                     />
                   </div>
                   <div>
-                    <div className="flex items-center justify-between gap-3">
-                      <label
-                        htmlFor="password"
-                        className={`${labelClassName} text-neutral-200`}
-                      >
-                        Password
-                      </label>
-                      <Link
-                        href="/forgot-password"
-                        className={`${linkClassName} text-sm text-teal-200 hover:text-teal-100`}
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
+                    <label
+                      htmlFor="password"
+                      className={`${labelClassName} text-neutral-200`}
+                    >
+                      Password
+                    </label>
                     <input
                       id="password"
                       name="password"
@@ -157,16 +139,47 @@ export function GarageDoorLogin() {
                       disabled={busy}
                       data-testid="login-password"
                     />
+                    <div className="mt-1.5">
+                      <Link
+                        href="/forgot-password"
+                        className={forgotPasswordLinkClassName}
+                        data-testid="login-forgot-password"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                   </div>
 
                   {error ? (
-                    <p
-                      className="rounded-xl bg-red-950/85 px-3 py-2 text-sm text-red-100 ring-1 ring-red-400/40"
+                    <div
+                      className="rounded-xl bg-red-950/85 px-3 py-2.5 text-sm text-red-100 ring-1 ring-red-400/40"
                       role="alert"
                       data-testid="login-error"
                     >
-                      {error}
-                    </p>
+                      <p>{error.message}</p>
+                      {error.offerPasswordReset ? (
+                        <p className="mt-2">
+                          <Link
+                            href="/forgot-password"
+                            className={errorActionLinkClassName}
+                            data-testid="login-error-forgot-password"
+                          >
+                            Reset your password
+                          </Link>
+                        </p>
+                      ) : null}
+                      {error.offerCreateAccount ? (
+                        <p className="mt-2">
+                          <Link
+                            href="/signup"
+                            className={errorActionLinkClassName}
+                            data-testid="login-error-create-account"
+                          >
+                            Create an account
+                          </Link>
+                        </p>
+                      ) : null}
+                    </div>
                   ) : null}
 
                   <button
