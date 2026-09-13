@@ -145,6 +145,8 @@ test.describe("Utah plate type picker on staging", () => {
       "href",
       "https://mvp.tax.utah.gov/?Link=OrderPlates",
     );
-    await expect(page.getByText(/does not prefill MVP or skip payment/i)).toBeVisible();
+    await expect(
+      page.getByTestId("utah-get-to-payment").getByText(/does not prefill MVP or skip payment/i),
+    ).toBeVisible();
   });
 });
