@@ -178,6 +178,11 @@ export function utahOpenOrderPlates(page: Page) {
     .or(page.getByRole("link", { name: /Open Order Plates/i }));
 }
 
+/** End-screen exit only — not the header or top-of-flow “Back to garage” links. */
+export function platesBackToGarage(page: Page) {
+  return page.getByTestId("plates-back-to-garage-end");
+}
+
 export function plateType(page: Page, optionId: string, label: string) {
   return page
     .getByTestId(`utah-plate-type-${optionId}`)

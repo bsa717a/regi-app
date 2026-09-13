@@ -4,6 +4,7 @@ import { signInDemoApplicant } from "../helpers/auth";
 import {
   plateType,
   plateTypeLegend,
+  platesBackToGarage,
   platesContinue,
   utahGetToPayment,
   utahOpenOrderPlates,
@@ -150,5 +151,14 @@ test.describe("Utah plate type picker on staging", () => {
     await expect(
       utahGetToPayment(page).getByText(/does not prefill MVP or skip payment/i),
     ).toBeVisible();
+
+    const garageExit = platesBackToGarage(page);
+    test.skip(
+      !(await garageExit.isVisible().catch(() => false)),
+      "Back to garage end-screen exit is not on this staging deploy yet. Hub should re-walk after this PR is on regi-staging.",
+    );
+    await expect(garageExit).toHaveAttribute("href", "/garage");
+    await garageExit.click();
+    await expect(page).toHaveURL(/\/garage\/?$/);
   });
 });
