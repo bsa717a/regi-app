@@ -7,6 +7,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
 import { AddRegistrationFlow } from "@/components/garage/AddRegistrationFlow";
+import { DashboardRenewalSummary } from "@/components/dashboard/DashboardRenewalSummary";
 import { RenewalCard } from "@/components/dashboard/RenewalCard";
 import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
 import {
@@ -188,25 +189,10 @@ export function DashboardClient() {
             />
           ) : null}
 
-          <section aria-labelledby="renewals-summary-heading">
-            <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
-              Renewal inbox
-            </p>
-            <h2
-              id="renewals-summary-heading"
-              className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
-            >
-              {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} in
-              your garage
-            </h2>
-            <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-              {groups.expired.length > 0
-                ? `${groups.expired.length} expired · renew soon`
-                : groups.renewTarget
-                  ? "Something needs attention soon"
-                  : "Everything looks current"}
-            </p>
-          </section>
+          <DashboardRenewalSummary
+            vehicleCount={vehicles.length}
+            groups={groups}
+          />
 
           <section aria-labelledby="quick-actions-heading">
             <h2

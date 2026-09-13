@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../../src/components/admin/AdminTable.tsx";
+@source "../../src/components/admin/AdminTabs.tsx";
+@source "../../src/components/auth/AuthFormStyles.tsx";
+@source "./**/*.{ts,tsx}";

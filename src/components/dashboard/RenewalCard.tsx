@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { RegistrationDto } from "@/lib/registrations/types";
+import { expirationCountdownClassName } from "@/lib/registrations/countdownStyle";
 import { identityLine, titleCaseMakeModel } from "@/lib/registrations/illustrations";
 import { StatusBadge } from "@/components/garage/StatusBadge";
 
@@ -50,13 +51,8 @@ export function RenewalCard({
         <StatusBadge status={vehicle.status} />
       </div>
       <p
-        className={`mt-3 text-sm font-semibold ${
-          expired
-            ? "text-rose-800 dark:text-rose-300"
-            : vehicle.status === "Due Soon"
-              ? "text-amber-900 dark:text-amber-200"
-              : "text-teal-800 dark:text-teal-300"
-        }`}
+        data-testid={`expiration-countdown-${vehicle.id}`}
+        className={`mt-3 text-base font-semibold ${expirationCountdownClassName(vehicle.status)}`}
       >
         {vehicle.countdown}
       </p>
