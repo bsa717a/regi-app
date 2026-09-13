@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AdminTable } from "@/components/admin/AdminTable";
+import { AdminTable, AdminTableSkeleton } from "@/components/admin/AdminTable";
 import { adminTabHref } from "@/components/admin/adminTabs";
 import { ApiError, adminListRenewals } from "@/lib/api/client";
 import type { AdminRenewalListItem } from "@/lib/admin/types";
@@ -84,9 +84,12 @@ export function RenewalQueueClient() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Loading queue…
-        </p>
+        <AdminTableSkeleton
+          headers={["Vehicle", "Status", "Owner", "Plate", "Expires", ""]}
+          rows={6}
+          label="Loading queue"
+          testId="admin-queue-skeleton"
+        />
       ) : null}
       {error ? (
         <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">

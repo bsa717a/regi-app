@@ -6,7 +6,7 @@ import {
   MailingAddressFields,
   mailingAddressFormValue,
 } from "@/components/account/MailingAddressFields";
-import { AdminTable } from "@/components/admin/AdminTable";
+import { AdminTable, AdminTableSkeleton } from "@/components/admin/AdminTable";
 import { DELETE_ACCOUNT_CONFIRMATION } from "@/lib/account/constants";
 import { formatMailingAddressShort } from "@/lib/account/mailingAddress";
 import type { AdminUserListItem } from "@/lib/admin/types";
@@ -126,17 +126,40 @@ export function AdminUsersClient() {
         />
       ) : null}
 
-      {!error ? (
+      {!error && !(loading && users.length === 0) ? (
         <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
-          {loading && users.length === 0
-            ? "Loading users…"
-            : appliedQuery
-              ? `${total} user${total === 1 ? "" : "s"} matching “${appliedQuery}”`
-              : `${total} user${total === 1 ? "" : "s"}`}
+          {appliedQuery
+            ? `${total} user${total === 1 ? "" : "s"} matching “${appliedQuery}”`
+            : `${total} user${total === 1 ? "" : "s"}`}
           {!loading && users.length < total
             ? ` · showing ${users.length} newest`
             : null}
         </p>
+      ) : null}
+
+      {loading && users.length === 0 ? (
+        <div>
+          <div
+            className="mb-3 h-4 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-700"
+            aria-hidden
+          />
+          <AdminTableSkeleton
+            headers={[
+              "Name",
+              "Email",
+              "Phone",
+              "Address",
+              "Role",
+              "Joined",
+              "Vehicles",
+              "Renewals",
+              "",
+            ]}
+            rows={8}
+            label="Loading users"
+            testId="admin-users-skeleton"
+          />
+        </div>
       ) : null}
 
       {!loading && !error && users.length === 0 ? (
