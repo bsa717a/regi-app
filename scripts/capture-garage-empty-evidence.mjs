@@ -44,6 +44,13 @@ try {
   await page.goto("http://127.0.0.1:4178/", { waitUntil: "networkidle" });
   await page.getByTestId("garage-empty-state").first().waitFor();
   await page.getByTestId("add-first-registration-button").first().waitFor();
+  await page.waitForFunction(() => {
+    const images = [...document.images];
+    return (
+      images.length > 0 &&
+      images.every((image) => image.complete && image.naturalWidth > 0)
+    );
+  });
 
   const light = page.locator("#garage-empty-light");
   const dark = page.locator("#garage-empty-dark");
