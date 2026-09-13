@@ -4,9 +4,10 @@ import {
   LEGAL_LAST_UPDATED,
   legalContactEmail,
 } from "@/lib/legal/constants";
+import { pageMetadata } from "@/lib/seo/pageTitle";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · REGI",
+  ...pageMetadata("Privacy Policy"),
   description:
     "How REGI collects, uses, and deletes account data, vehicle documents, and device tokens.",
 };

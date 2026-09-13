@@ -1,4 +1,7 @@
 import { RenewalDetailClient } from "@/components/admin/RenewalDetailClient";
+import { pageMetadata } from "@/lib/seo/pageTitle";
+
+export const metadata = pageMetadata("Admin renewal");
 
 type PageProps = { params: Promise<{ id: string }> };
 

@@ -1,4 +1,7 @@
 import { UtahPlatesPage } from "@/components/plates/UtahPlatesPage";
+import { pageMetadata } from "@/lib/seo/pageTitle";
+
+export const metadata = pageMetadata("Order plates");
 
 export default async function GaragePlatesPage({
   searchParams,

@@ -1,5 +1,8 @@
 import { StartRenewalClient } from "@/components/renewals/StartRenewalClient";
 import { FeatureErrorBoundary } from "@/components/sentry/FeatureErrorBoundary";
+import { pageMetadata } from "@/lib/seo/pageTitle";
+
+export const metadata = pageMetadata("Start renewal");
 
 export default async function NewRenewalPage({
   searchParams,
