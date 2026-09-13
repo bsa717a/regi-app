@@ -172,6 +172,13 @@ export function utahOpenOrderPlates(page: Page) {
     .or(page.getByRole("link", { name: /Open Order Plates/i }));
 }
 
+export function platesBackToGarage(page: Page) {
+  return page
+    .getByTestId("plates-back-to-garage-end")
+    .or(page.getByTestId("plates-back-to-garage"))
+    .or(page.getByRole("link", { name: /Back to garage/i }));
+}
+
 export function plateType(page: Page, optionId: string, label: string) {
   return page
     .getByTestId(`utah-plate-type-${optionId}`)
