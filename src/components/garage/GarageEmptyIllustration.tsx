@@ -6,8 +6,8 @@ export const EMPTY_GARAGE_ART = {
 const ALT = "Empty garage bay ready for a first registration";
 
 /**
- * Raster empty-garage art (WebP). REGI UI illustrations are never SVG.
- * Light + dark frames; `.dark` shows the dusk bay.
+ * Soft painted empty-bay WebP (never SVG). Light + dark; `.dark` shows dusk.
+ * No dashed stall lines, ghost vehicle, or wall doodads.
  */
 export function GarageEmptyIllustration({
   className = "",
