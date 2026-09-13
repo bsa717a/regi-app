@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../../src/components/garage/GarageEmptyState.tsx";
+@source "../../src/components/garage/GarageEmptyIllustration.tsx";
+@source "./**/*.{ts,tsx}";
