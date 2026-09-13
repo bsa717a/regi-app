@@ -14,6 +14,7 @@ import { SubmitBlockingReasons } from "@/components/renewals/SubmitBlockingReaso
 import { useVaultDocumentPreview } from "@/components/documents/useVaultDocumentPreview";
 import { FeeEstimate } from "@/components/renewals/FeeEstimate";
 import { ProgressTracker } from "@/components/renewals/ProgressTracker";
+import { RenewalReceipt } from "@/components/renewals/RenewalReceipt";
 import {
   ApiError,
   createRenewal,
@@ -23,8 +24,10 @@ import {
 import { DOCUMENT_TYPE_LABELS, MAX_UPLOAD_BYTES } from "@/lib/documents/constants";
 import { uploadDocumentToVault } from "@/lib/documents/clientUpload";
 import type { DocumentDto } from "@/lib/documents/types";
+import { isTerminalRenewalSuccess } from "@/lib/renewals/history";
+import { renewalVehicleLabel } from "@/lib/renewals/labels";
+import { buildRenewalProof } from "@/lib/renewals/proof";
 import type { RenewalDto, RequiredDocumentStatus } from "@/lib/renewals/types";
-import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 import {
   getSubmitBlockingReasons,
   isSubmitRenewalBlocked,
@@ -32,16 +35,7 @@ import {
 } from "@/lib/renewals/submitBlockingReasons";
 
 function vehicleLabel(renewal: RenewalDto): string {
-  const v = renewal.registration;
-  if (v.nickname?.trim()) return v.nickname.trim();
-  const parts = [
-    v.year,
-    titleCaseMakeModel(v.make),
-    titleCaseMakeModel(v.model),
-  ]
-    .filter(Boolean)
-    .join(" ");
-  return parts || "Registration";
+  return renewalVehicleLabel(renewal.registration);
 }
 
 function isPostSubmit(status: RenewalDto["status"]): boolean {
@@ -207,7 +201,22 @@ export function ConciergeClient({ renewalId }: { renewalId: string }) {
             >
               Refresh status
             </button>
+            {isTerminalRenewalSuccess(renewal.status) ? (
+              <Link
+                href={`/renewals/${encodeURIComponent(renewal.id)}/receipt`}
+                className="ml-4 text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
+              >
+                View confirmation
+              </Link>
+            ) : null}
           </section>
+          {isTerminalRenewalSuccess(renewal.status) ? (
+            <RenewalReceipt
+              proof={buildRenewalProof(renewal)}
+              documents={renewal.documents}
+              onViewDocument={documentPreview.open}
+            />
+          ) : null}
           <UploadedDocumentsSection
             documents={renewal.documents}
             onView={documentPreview.open}
@@ -314,6 +323,51 @@ function SubmittedView({
   onRefresh: () => void;
   onView: (doc: DocumentDto) => void;
 }) {
+  if (isTerminalRenewalSuccess(renewal.status)) {
+    return (
+      <div className="space-y-6">
+        <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 px-4 py-5 dark:border-teal-800 dark:from-teal-950/60 dark:via-slate-900 dark:to-slate-950">
+          <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
+            Sticker mailed
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            {vehicleLabel(renewal)} is done
+          </h2>
+          <p className="mt-2 text-base leading-relaxed text-slate-600 dark:text-slate-400">
+            Your sticker is on the way. Confirmation and status history are
+            below — this is REGI proof, not a card-payment receipt.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
+            <button
+              type="button"
+              className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
+              onClick={onRefresh}
+            >
+              Refresh status
+            </button>
+            <Link
+              href={`/renewals/${encodeURIComponent(renewal.id)}/receipt`}
+              className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
+            >
+              Open confirmation
+            </Link>
+            <Link
+              href={`/garage/${encodeURIComponent(renewal.registrationId)}/renewals`}
+              className="text-sm font-semibold text-slate-600 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-300"
+            >
+              All history
+            </Link>
+          </div>
+        </section>
+        <RenewalReceipt
+          proof={buildRenewalProof(renewal)}
+          documents={renewal.documents}
+          onViewDocument={onView}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 px-4 py-5 dark:border-teal-800 dark:bg-gradient-to-br dark:from-teal-950/60 dark:via-slate-900 dark:to-slate-950">
@@ -325,7 +379,8 @@ function SubmittedView({
         </h2>
         <p className="mt-2 text-base leading-relaxed text-slate-600 dark:text-slate-400">
           Sit back — REGI&apos;s concierge will handle the rest. Watch the
-          tracker below for updates.
+          tracker below for updates. Confirmation and a downloadable proof
+          appear after the sticker is mailed.
         </p>
         <button
           type="button"

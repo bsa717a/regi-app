@@ -40,6 +40,12 @@ export type RenewalTimestamps = {
   stickerMailedAt: string | null;
 };
 
+export type RenewalStatusHistoryEntry = {
+  status: RenewalStatus;
+  label: string;
+  at: string | null;
+};
+
 export type RenewalDto = {
   id: string;
   registrationId: string;
@@ -48,6 +54,10 @@ export type RenewalDto = {
   feeBreakdown: FeeBreakdown;
   staffNotes: string | null;
   timestamps: RenewalTimestamps;
+  /** Derived from timestamp columns — same order as the concierge workflow. */
+  statusHistory: RenewalStatusHistoryEntry[];
+  /** True after StickerMailed (or another terminal success status). */
+  proofAvailable: boolean;
   createdAt: string;
   updatedAt: string;
   registration: RegistrationDto;

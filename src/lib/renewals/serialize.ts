@@ -5,6 +5,10 @@ import { getRequiredDocumentsForType } from "@/lib/stateEngine/registrationTypes
 import type { StateRulesConfig } from "@/lib/stateEngine/types";
 import { parseFeeBreakdown } from "./fees";
 import {
+  buildRenewalStatusHistory,
+  isTerminalRenewalSuccess,
+} from "./history";
+import {
   buildRequiredDocumentStatus,
   configNeedsCounty,
   countiesFromConfig,
@@ -31,6 +35,15 @@ export function serializeRenewal(
     renewal.documents,
     feeBreakdown.county,
   );
+  const timestamps = {
+    requestedAt: renewal.requestedAt.toISOString(),
+    documentsReceivedAt: renewal.documentsReceivedAt?.toISOString() ?? null,
+    reviewingAt: renewal.reviewingAt?.toISOString() ?? null,
+    processingAt: renewal.processingAt?.toISOString() ?? null,
+    submittedAt: renewal.submittedAt?.toISOString() ?? null,
+    completedAt: renewal.completedAt?.toISOString() ?? null,
+    stickerMailedAt: renewal.stickerMailedAt?.toISOString() ?? null,
+  };
 
   return {
     id: renewal.id,
@@ -39,15 +52,9 @@ export function serializeRenewal(
     requestedBy: renewal.requestedBy,
     feeBreakdown,
     staffNotes: renewal.staffNotes,
-    timestamps: {
-      requestedAt: renewal.requestedAt.toISOString(),
-      documentsReceivedAt: renewal.documentsReceivedAt?.toISOString() ?? null,
-      reviewingAt: renewal.reviewingAt?.toISOString() ?? null,
-      processingAt: renewal.processingAt?.toISOString() ?? null,
-      submittedAt: renewal.submittedAt?.toISOString() ?? null,
-      completedAt: renewal.completedAt?.toISOString() ?? null,
-      stickerMailedAt: renewal.stickerMailedAt?.toISOString() ?? null,
-    },
+    timestamps,
+    statusHistory: buildRenewalStatusHistory(timestamps),
+    proofAvailable: isTerminalRenewalSuccess(renewal.status),
     createdAt: renewal.createdAt.toISOString(),
     updatedAt: renewal.updatedAt.toISOString(),
     registration: serializeRegistration(

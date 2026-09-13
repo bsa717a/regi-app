@@ -443,6 +443,56 @@ async function main() {
     });
   }
 
+  // 5b) Terminal StickerMailed renewal on the current registration (history + proof)
+  const currentRegistration = registrationsByKey.current;
+  const mailedFeeBreakdown = {
+    currency: "USD",
+    registrationFeeCents: UTAH_STATE_RULES_CONFIG.fees.registrationFeeCents,
+    regiServiceFeeCents: UTAH_STATE_RULES_CONFIG.fees.regiServiceFeeCents,
+    lateFeeCents: 0,
+    totalCents:
+      UTAH_STATE_RULES_CONFIG.fees.registrationFeeCents +
+      UTAH_STATE_RULES_CONFIG.fees.regiServiceFeeCents,
+    isEstimate: true,
+  };
+  const existingMailed = await prisma.renewal.findFirst({
+    where: {
+      registrationId: currentRegistration.id,
+      requestedBy: user.id,
+      status: RenewalStatus.StickerMailed,
+    },
+  });
+  const mailedTimes = {
+    requestedAt: daysFromToday(-50),
+    documentsReceivedAt: daysFromToday(-48),
+    reviewingAt: daysFromToday(-47),
+    processingAt: daysFromToday(-46),
+    submittedAt: daysFromToday(-45),
+    completedAt: daysFromToday(-42),
+    stickerMailedAt: daysFromToday(-40),
+  };
+  if (existingMailed) {
+    await prisma.renewal.update({
+      where: { id: existingMailed.id },
+      data: {
+        feeBreakdown: mailedFeeBreakdown,
+        ...mailedTimes,
+        staffNotes: "Seed demo — sticker mailed; confirmation is available.",
+      },
+    });
+  } else {
+    await prisma.renewal.create({
+      data: {
+        registrationId: currentRegistration.id,
+        status: RenewalStatus.StickerMailed,
+        requestedBy: user.id,
+        feeBreakdown: mailedFeeBreakdown,
+        ...mailedTimes,
+        staffNotes: "Seed demo — sticker mailed; confirmation is available.",
+      },
+    });
+  }
+
   // 6) Demo viewer member (shared household access)
   const viewer = await prisma.user.upsert({
     where: { firebaseUid: DEMO_VIEWER_FIREBASE_UID },
