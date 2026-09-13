@@ -18,6 +18,7 @@ without a GitHub click-through.
 | `after_privacy_tab_title.png` | After: **Privacy Policy · REGI** (legal pages already used this form) |
 | `after_support_tab_title.png` | After: **Support · REGI** |
 | `after_terms_tab_title.png` | After: **Terms of Use · REGI** |
+| `after_two_tabs_login_and_privacy.png` | Two tabs at once: **Login · REGI** and **Privacy Policy · REGI** |
 
 Public routes that previously showed only `REGI` on staging (`/login`,
 `/signup`, `/forgot-password`) are the before/after pair. Legal pages already
