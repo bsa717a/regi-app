@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../../src/components/dashboard/**/*.{ts,tsx}";
+@source "../../src/components/garage/StatusBadge.tsx";
+@source "../../src/lib/registrations/countdownStyle.ts";
+@source "./**/*.{ts,tsx}";

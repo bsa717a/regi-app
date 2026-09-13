@@ -24,6 +24,7 @@ import { formatMotorhomeClass } from "@/lib/registrations/motorhome";
 import { stateName } from "@/lib/registrations/states";
 import { StatusBadge } from "@/components/garage/StatusBadge";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
+import { expirationCountdownClassName } from "@/lib/registrations/countdownStyle";
 
 function formatExpiresOn(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -499,13 +500,8 @@ export function VehicleCard({
               </h3>
             )}
             <p
-              className={`mt-2 text-sm font-medium ${
-                vehicle.status === "Expired"
-                  ? "text-rose-700 dark:text-rose-300"
-                  : vehicle.status === "Due Soon"
-                    ? "text-amber-800 dark:text-amber-200"
-                    : "text-teal-800 dark:text-teal-300"
-              }`}
+              data-testid={`expiration-countdown-${vehicle.id}`}
+              className={`mt-2 text-sm font-medium ${expirationCountdownClassName(vehicle.status)}`}
             >
               {vehicle.countdown}
             </p>
