@@ -15,6 +15,7 @@
     "capture:plates-evidence": "node scripts/capture-plates-type-evidence.mjs",
     "capture:garage-empty-evidence": "node scripts/capture-garage-empty-evidence.mjs",
     "capture:renewal-history-evidence": "node scripts/capture-renewal-history-evidence.mjs",
+    "capture:admin-skeleton-evidence": "node scripts/capture-admin-skeleton-evidence.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
