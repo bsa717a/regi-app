@@ -166,6 +166,12 @@ export function utahOrderPacket(page: Page) {
   return page.getByTestId("utah-order-packet");
 }
 
+export function utahGetToPayment(page: Page) {
+  return page
+    .getByTestId("utah-get-to-payment")
+    .or(page.getByRole("heading", { name: /Get to payment/i }).locator("xpath=ancestor::section[1]"));
+}
+
 export function utahOpenOrderPlates(page: Page) {
   return page
     .getByTestId("utah-open-order-plates")
