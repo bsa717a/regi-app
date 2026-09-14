@@ -227,7 +227,9 @@ export async function persistNewVehicle(
     } catch {
       /* keep status text */
     }
-    throw new Error(`Add to garage failed: ${detail} (${requestSummary})`);
+    throw new Error(
+      `Add to garage failed: ${detail} (${requestSummary}). Staging loadStateRules(UT) returned null — Cloud Build migrate does not seed state_rules.`,
+    );
   }
 
   await Promise.race([

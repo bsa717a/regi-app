@@ -4,12 +4,37 @@ import type { StateRulesConfig } from "@/lib/stateEngine/types";
  * Narrow unknown jsonb from `state_rules.config` into StateRulesConfig.
  * Returns null when the shape is unusable (missing due-soon threshold).
  */
-export function parseStateRulesConfig(value: unknown): StateRulesConfig | null {
+function asConfigRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value) as unknown;
+    } catch {
+      return null;
+    }
+  }
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
+  return value as Record<string, unknown>;
+}
 
-  const record = value as Record<string, unknown>;
+function readDueSoonThresholdDays(value: unknown): number | null {
+  const raw =
+    typeof value === "string" && value.trim() !== ""
+      ? Number(value)
+      : value;
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) {
+    return null;
+  }
+  return raw;
+}
+
+export function parseStateRulesConfig(value: unknown): StateRulesConfig | null {
+  const record = asConfigRecord(value);
+  if (!record) {
+    return null;
+  }
+
   const renewalWindow = record.renewalWindow;
   if (
     !renewalWindow ||
@@ -20,12 +45,10 @@ export function parseStateRulesConfig(value: unknown): StateRulesConfig | null {
   }
 
   const windowRecord = renewalWindow as Record<string, unknown>;
-  const dueSoonThresholdDays = windowRecord.dueSoonThresholdDays;
-  if (
-    typeof dueSoonThresholdDays !== "number" ||
-    !Number.isFinite(dueSoonThresholdDays) ||
-    dueSoonThresholdDays < 0
-  ) {
+  const dueSoonThresholdDays = readDueSoonThresholdDays(
+    windowRecord.dueSoonThresholdDays,
+  );
+  if (dueSoonThresholdDays == null) {
     return null;
   }
 
@@ -34,7 +57,11 @@ export function parseStateRulesConfig(value: unknown): StateRulesConfig | null {
     : [];
 
   return {
-    ...(value as StateRulesConfig),
+    ...(record as StateRulesConfig),
+    renewalWindow: {
+      ...(windowRecord as StateRulesConfig["renewalWindow"]),
+      dueSoonThresholdDays,
+    },
     registrationTypes: registrationTypes as StateRulesConfig["registrationTypes"],
   };
 }
