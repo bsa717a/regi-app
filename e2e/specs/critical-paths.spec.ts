@@ -37,7 +37,7 @@ test.describe("P1 critical paths against staging", () => {
     }
   });
 
-  test("persists a new vehicle from add-registration (not VIN picker only)", async ({
+  test("persists a new vehicle from add-registration (Utah, not VIN picker only)", async ({
     page,
   }) => {
     test.setTimeout(120_000);

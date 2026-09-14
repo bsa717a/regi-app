@@ -231,6 +231,16 @@ export function AddRegistrationFlow({
         const codes = states.map((s) => s.code.toUpperCase());
         if (codes.length > 0) {
           setAvailableStates(codes);
+          // Profile / OCR / a stale picker can sit on a closed state (e.g. OH
+          // from a sample VIN plant). Snap to an open state before create.
+          setState((current) =>
+            codes.includes(current.toUpperCase()) ? current : codes[0],
+          );
+          setDraft((current) =>
+            current && !codes.includes(current.state.toUpperCase())
+              ? { ...current, state: codes[0] }
+              : current,
+          );
         }
         setStateRules(new Map(states.map((s) => [s.code.toUpperCase(), s])));
       } catch {
@@ -795,11 +805,15 @@ export function AddRegistrationFlow({
         details.motorhomeClass = motorhomeClass;
       }
 
+      const createState = stateIsAvailable(draft.state)
+        ? draft.state.toUpperCase()
+        : (availableStates[0] ?? "UT");
+
       const vehicle = await createRegistration(token, {
         type: registrationType,
         vin: draft.vin,
         plate: draft.plate,
-        state: draft.state,
+        state: createState,
         year: draft.year,
         make: draft.make,
         model: draft.model,

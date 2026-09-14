@@ -88,7 +88,7 @@ GitHub: Settings → Secrets and variables → Actions → repository secret `RE
 
 1. **Public smoke** — health is `regi-staging` / `regi-app-staging`; login form + #58 testids; production host guard.
 2. **Applicant funnel** — real Firebase login; Settings applicant fields; add-registration VIN / type picker (does **not** save); document preview when a vault/card doc exists; renewal submit button + disabled-Submit reasons; Stripe skipped.
-3. **P1 critical paths** (`critical-paths.spec.ts`) — persist a new vehicle (VIN → Add to garage); vault document upload (PDF, not preview-only); start renewal + submit to DocumentsReceived without Stripe. Cleans up the E2E vehicle afterward.
+3. **P1 critical paths** (`critical-paths.spec.ts`) — persist a new vehicle (Utah profile + trailer identity → Add to garage; sample VIN is not used because decode/OCR can sit on a closed state); vault document upload (PDF, not preview-only); start renewal + submit to DocumentsReceived without Stripe. Cleans up the E2E vehicle afterward.
 4. **Plates** — `/garage/plates` type picker + previews (#65) and first-choice slice.
 
 Still parked: Stripe sandbox checkout, admin e2e, signup + email-verify (staging email is mock; needs a new verified fixture).

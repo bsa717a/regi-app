@@ -1,11 +1,14 @@
 import { expect, type Page } from "@playwright/test";
-import { openAddRegistration, waitForGarageList } from "./auth";
+import { expectGarage, openAddRegistration, waitForGarageList } from "./auth";
 import {
   addManually,
   confirmVehicle,
   expirationMonth,
   expirationYear,
+  navGarage,
+  navSettings,
   registrationNickname,
+  saveProfile,
   saveRegistration,
   typePickerPassenger,
   vehicleByNickname,
@@ -13,8 +16,11 @@ import {
   vinLookupSubmit,
 } from "./selectors";
 
-/** Well-known Honda Accord VIN — NHTSA decodes this reliably. */
+/** Well-known Honda Accord VIN — NHTSA decodes this reliably. Applicant-funnel only. */
 export const SAMPLE_VIN = "1HGCM82633A004352";
+
+/** Staging `state_rules` is Utah-only. Create must POST `UT`. */
+const STAGING_STATE = "UT";
 
 const MONTHS = [
   "January",
@@ -35,12 +41,59 @@ export function uniqueE2eNickname(stamp = Date.now()): string {
   return `E2E P1 ${stamp}`;
 }
 
+async function selectUtahOption(select: ReturnType<Page["locator"]>) {
+  await expect(select).toBeVisible({ timeout: 15_000 });
+  const utah = select.locator("option").filter({ hasText: /^Utah\b|^UT$/i }).first();
+  const value = (await utah.getAttribute("value")) || STAGING_STATE;
+  await select.selectOption(value);
+  await select.dispatchEvent("input");
+  await select.dispatchEvent("change");
+  await expect(select).toHaveValue(value);
+  const selected = (await select.inputValue()).trim().toUpperCase();
+  if (selected !== "UT" && selected !== "UTAH") {
+    throw new Error(`Could not pin state to Utah (got ${selected || "(empty)"})`);
+  }
+}
+
+/** Settings mailing state can be a non-open code; pin it to Utah before add. */
+async function ensureUtahProfile(page: Page) {
+  await navSettings(page).click();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  const state = page.locator("#settings-state");
+  await expect(state).toBeVisible({ timeout: 15_000 });
+  if ((await state.inputValue()).trim().toUpperCase() !== STAGING_STATE) {
+    await selectUtahOption(state);
+    const line1 = page.locator("#settings-line1");
+    if (!(await line1.inputValue()).trim()) {
+      await line1.fill("123 State St");
+      await page.locator("#settings-city").fill("Salt Lake City");
+      await page.locator("#settings-zip").fill("84111");
+    }
+    await saveProfile(page).click();
+    await expect(page.getByText("Profile updated.")).toBeVisible({
+      timeout: 20_000,
+    });
+  }
+
+  await navGarage(page).click();
+  await expectGarage(page);
+}
+
 /** Staging only has Utah state_rules. Pin the identity picker before the draft is created. */
 async function ensureUtah(page: Page) {
-  const state = page.locator("#state");
-  await expect(state).toBeVisible({ timeout: 15_000 });
-  await state.selectOption("UT");
-  await expect(state).toHaveValue("UT");
+  await selectUtahOption(page.locator("#state"));
+}
+
+async function leaveWaitlistIfNeeded(page: Page) {
+  const waitlist = page.getByText(/isn.t live yet/i);
+  if (!(await waitlist.isVisible().catch(() => false))) {
+    return;
+  }
+  await page.getByRole("button", { name: /use an available state/i }).click();
+  await ensureUtah(page);
 }
 
 /** Last calendar month so the vehicle is Expired and renewal can start. */
@@ -94,76 +147,14 @@ export async function lookUpVin(page: Page, vin = SAMPLE_VIN) {
 }
 
 /**
- * Persist via the identity form so we can set State = Utah before create.
- * Pick-type VIN → confirm skips #state; a decoded plant/OCR state is not
- * an open staging state and POST /api/registrations returns waitlist.
+ * Persist via trailer identity so we never VIN-decode a plant/OCR state.
+ * Trailer is `decode: none` — Continue copies #state (Utah) onto the draft.
  */
-async function reachDetailsViaUtahIdentity(page: Page) {
+async function reachDetailsViaUtahTrailer(page: Page) {
   const manual = addManually(page);
-  await expect(manual).toBeEnabled({ timeout: 20_000 });
-  await manual.click();
-
-  await expect(typePickerPassenger(page)).toBeVisible({ timeout: 15_000 });
-  await typePickerPassenger(page).click();
-
-  await ensureUtah(page);
-
-  const identityVin = page.locator("#vin");
-  await expect(identityVin).toBeVisible({ timeout: 10_000 });
-  await identityVin.fill(SAMPLE_VIN);
-
-  await page.getByRole("button", { name: /^Continue$/ }).click();
-
-  const confirm = confirmVehicle(page);
-  const year = page.locator("#year");
-  const ymmYear = page.locator("#ymm-year");
-  const waitlist = page.getByText(/isn.t live yet/i);
-
-  await Promise.race([
-    confirm.waitFor({ state: "visible", timeout: 45_000 }),
-    saveRegistration(page).waitFor({ state: "visible", timeout: 45_000 }),
-    year.waitFor({ state: "visible", timeout: 45_000 }),
-    ymmYear.waitFor({ state: "visible", timeout: 45_000 }),
-    waitlist.waitFor({ state: "visible", timeout: 45_000 }),
-  ]).catch(() => {
-    /* inspect below */
-  });
-
-  if (await waitlist.isVisible().catch(() => false)) {
-    throw new Error(
-      "Add-registration entered the waitlist. State must be Utah (UT) on staging.",
-    );
-  }
-
-  if (await confirm.isVisible().catch(() => false)) {
-    await confirm.click();
-  } else if (await year.isVisible().catch(() => false)) {
-    await year.fill("2003");
-    await page.locator("#make").fill("Honda");
-    await page.locator("#model").fill("Accord");
-    await page.getByRole("button", { name: /^Continue$/ }).click();
-  } else if (await ymmYear.isVisible().catch(() => false)) {
-    await persistViaManualTrailer(page);
-    return;
-  }
-
-  await expect(saveRegistration(page)).toBeVisible({ timeout: 20_000 });
-}
-
-async function persistViaManualTrailer(page: Page) {
-  const changeType = page.getByRole("button", { name: /change type|Back/i });
-  if (await changeType.isVisible().catch(() => false)) {
-    await changeType.click();
-  } else {
-    const back = page.getByRole("button", { name: /Back to garage/i });
-    if (await back.isVisible().catch(() => false)) {
-      await back.click();
-      await openAddRegistration(page);
-    }
-    const manual = addManually(page);
-    if (await manual.isEnabled().catch(() => false)) {
-      await manual.click();
-    }
+  if (await manual.isEnabled().catch(() => false)) {
+    await expect(manual).toBeEnabled({ timeout: 20_000 });
+    await manual.click();
   }
 
   const trailer = page
@@ -172,14 +163,16 @@ async function persistViaManualTrailer(page: Page) {
   await expect(trailer).toBeVisible({ timeout: 15_000 });
   await trailer.click();
 
-  if (await confirmVehicle(page).isVisible().catch(() => false)) {
-    await confirmVehicle(page).click();
-    await expect(saveRegistration(page)).toBeVisible({ timeout: 20_000 });
-    return;
-  }
-
+  await leaveWaitlistIfNeeded(page);
   await ensureUtah(page);
+
   await page.getByRole("button", { name: /^Continue$/ }).click();
+  await leaveWaitlistIfNeeded(page);
+
+  if (await page.locator("#state").isVisible().catch(() => false)) {
+    await ensureUtah(page);
+    await page.getByRole("button", { name: /^Continue$/ }).click();
+  }
 
   const year = page.locator("#year");
   await expect(year).toBeVisible({ timeout: 15_000 });
@@ -191,12 +184,19 @@ async function persistViaManualTrailer(page: Page) {
   await expect(saveRegistration(page)).toBeVisible({ timeout: 20_000 });
 }
 
+function postedCreateSummary(body: unknown): string {
+  if (!body || typeof body !== "object") return "POST body unreadable";
+  const record = body as Record<string, unknown>;
+  return `POST state=${String(record.state ?? "(missing)")} type=${String(record.type ?? "(missing)")}`;
+}
+
 export async function persistNewVehicle(
   page: Page,
   nickname: string,
 ): Promise<void> {
+  await ensureUtahProfile(page);
   await openAddRegistration(page);
-  await reachDetailsViaUtahIdentity(page);
+  await reachDetailsViaUtahTrailer(page);
 
   await registrationNickname(page).fill(nickname);
   await setExpirationLastMonth(page);
@@ -215,6 +215,9 @@ export async function persistNewVehicle(
 
   await saveRegistration(page).click();
   const posted = await createResponse.catch(() => null);
+  const requestSummary = posted
+    ? postedCreateSummary(posted.request().postDataJSON())
+    : "no POST /api/registrations";
 
   if (posted && !posted.ok()) {
     let detail = posted.statusText();
@@ -224,7 +227,7 @@ export async function persistNewVehicle(
     } catch {
       /* keep status text */
     }
-    throw new Error(`Add to garage failed: ${detail}`);
+    throw new Error(`Add to garage failed: ${detail} (${requestSummary})`);
   }
 
   await Promise.race([
@@ -238,7 +241,9 @@ export async function persistNewVehicle(
 
   if (await saveRegistration(page).isVisible().catch(() => false)) {
     const text = (await addError.textContent().catch(() => null))?.trim();
-    throw new Error(`Add to garage failed: ${text || "still on the add form"}`);
+    throw new Error(
+      `Add to garage failed: ${text || "still on the add form"} (${requestSummary})`,
+    );
   }
 
   await waitForGarageList(page);
