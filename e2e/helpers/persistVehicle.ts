@@ -35,9 +35,10 @@ export function uniqueE2eNickname(stamp = Date.now()): string {
   return `E2E P1 ${stamp}`;
 }
 
+/** Staging only has Utah state_rules. Pin the identity picker before the draft is created. */
 async function ensureUtah(page: Page) {
   const state = page.locator("#state");
-  if (!(await state.isVisible().catch(() => false))) return;
+  await expect(state).toBeVisible({ timeout: 15_000 });
   await state.selectOption("UT");
   await expect(state).toHaveValue("UT");
 }
@@ -93,48 +94,76 @@ export async function lookUpVin(page: Page, vin = SAMPLE_VIN) {
 }
 
 /**
- * Drive add-registration through VIN (preferred) or a manual trailer fallback
- * until the details step ("Add to garage") is visible.
+ * Persist via the identity form so we can set State = Utah before create.
+ * Pick-type VIN → confirm skips #state; a decoded plant/OCR state is not
+ * an open staging state and POST /api/registrations returns waitlist.
  */
-export async function reachRegistrationDetails(page: Page) {
-  await lookUpVin(page);
+async function reachDetailsViaUtahIdentity(page: Page) {
+  const manual = addManually(page);
+  await expect(manual).toBeEnabled({ timeout: 20_000 });
+  await manual.click();
+
+  await expect(typePickerPassenger(page)).toBeVisible({ timeout: 15_000 });
+  await typePickerPassenger(page).click();
+
+  await ensureUtah(page);
+
+  const identityVin = page.locator("#vin");
+  await expect(identityVin).toBeVisible({ timeout: 10_000 });
+  await identityVin.fill(SAMPLE_VIN);
+
+  await page.getByRole("button", { name: /^Continue$/ }).click();
 
   const confirm = confirmVehicle(page);
-  const passenger = typePickerPassenger(page);
+  const year = page.locator("#year");
+  const ymmYear = page.locator("#ymm-year");
+  const waitlist = page.getByText(/isn.t live yet/i);
+
+  await Promise.race([
+    confirm.waitFor({ state: "visible", timeout: 45_000 }),
+    saveRegistration(page).waitFor({ state: "visible", timeout: 45_000 }),
+    year.waitFor({ state: "visible", timeout: 45_000 }),
+    ymmYear.waitFor({ state: "visible", timeout: 45_000 }),
+    waitlist.waitFor({ state: "visible", timeout: 45_000 }),
+  ]).catch(() => {
+    /* inspect below */
+  });
+
+  if (await waitlist.isVisible().catch(() => false)) {
+    throw new Error(
+      "Add-registration entered the waitlist. State must be Utah (UT) on staging.",
+    );
+  }
 
   if (await confirm.isVisible().catch(() => false)) {
     await confirm.click();
-  } else if (await passenger.isVisible().catch(() => false)) {
-    await passenger.click();
-    await expect(confirm).toBeVisible({ timeout: 20_000 });
-    await confirm.click();
-  } else {
+  } else if (await year.isVisible().catch(() => false)) {
+    await year.fill("2003");
+    await page.locator("#make").fill("Honda");
+    await page.locator("#model").fill("Accord");
+    await page.getByRole("button", { name: /^Continue$/ }).click();
+  } else if (await ymmYear.isVisible().catch(() => false)) {
     await persistViaManualTrailer(page);
-    await ensureUtah(page);
     return;
   }
 
-  if (!(await saveRegistration(page).isVisible().catch(() => false))) {
-    await ensureUtah(page);
-    const continueBtn = page.getByRole("button", { name: /^Continue$/ });
-    if (await continueBtn.isVisible().catch(() => false)) {
-      await continueBtn.click();
-    }
-  }
-
   await expect(saveRegistration(page)).toBeVisible({ timeout: 20_000 });
-  await ensureUtah(page);
 }
 
 async function persistViaManualTrailer(page: Page) {
-  const lookingUp = page.getByRole("button", { name: "Looking up VIN" });
-  await lookingUp.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {
-    /* already idle */
-  });
-
-  const manual = addManually(page);
-  if (await manual.isEnabled().catch(() => false)) {
-    await manual.click();
+  const changeType = page.getByRole("button", { name: /change type|Back/i });
+  if (await changeType.isVisible().catch(() => false)) {
+    await changeType.click();
+  } else {
+    const back = page.getByRole("button", { name: /Back to garage/i });
+    if (await back.isVisible().catch(() => false)) {
+      await back.click();
+      await openAddRegistration(page);
+    }
+    const manual = addManually(page);
+    if (await manual.isEnabled().catch(() => false)) {
+      await manual.click();
+    }
   }
 
   const trailer = page
@@ -150,18 +179,14 @@ async function persistViaManualTrailer(page: Page) {
   }
 
   await ensureUtah(page);
-  const continueBtn = page.getByRole("button", { name: /^Continue$/ });
-  await expect(continueBtn).toBeVisible({ timeout: 15_000 });
-  await continueBtn.click();
+  await page.getByRole("button", { name: /^Continue$/ }).click();
 
   const year = page.locator("#year");
-  if (await year.isVisible().catch(() => false)) {
-    await year.fill("2019");
-    await page.locator("#make").fill("E2E");
-    await page.locator("#model").fill("Trailer");
-    await ensureUtah(page);
-    await page.getByRole("button", { name: /^Continue$/ }).click();
-  }
+  await expect(year).toBeVisible({ timeout: 15_000 });
+  await year.fill("2019");
+  await page.locator("#make").fill("E2E");
+  await page.locator("#model").fill("Trailer");
+  await page.getByRole("button", { name: /^Continue$/ }).click();
 
   await expect(saveRegistration(page)).toBeVisible({ timeout: 20_000 });
 }
@@ -171,11 +196,10 @@ export async function persistNewVehicle(
   nickname: string,
 ): Promise<void> {
   await openAddRegistration(page);
-  await reachRegistrationDetails(page);
+  await reachDetailsViaUtahIdentity(page);
 
   await registrationNickname(page).fill(nickname);
   await setExpirationLastMonth(page);
-  await ensureUtah(page);
 
   const addError = page
     .locator("section")
