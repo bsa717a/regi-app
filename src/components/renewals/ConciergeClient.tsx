@@ -370,7 +370,7 @@ function SubmittedView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="renewal-submitted">
       <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-slate-50 px-4 py-5 dark:border-teal-800 dark:bg-gradient-to-br dark:from-teal-950/60 dark:via-slate-900 dark:to-slate-950">
         <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
           You&apos;re all set
@@ -498,6 +498,7 @@ function DraftView({
             className={selectClassName}
             value={county}
             disabled={countySaving}
+            data-testid="renewal-county"
             onChange={(e) => {
               void onCountyChange(e.target.value);
             }}

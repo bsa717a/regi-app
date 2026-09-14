@@ -161,6 +161,135 @@ export function saveProfile(page: Page) {
     .or(page.getByRole("button", { name: /Save profile|Saving/ }));
 }
 
+export function registrationNickname(page: Page) {
+  return page.getByTestId("registration-nickname").or(page.locator("#nickname"));
+}
+
+export function saveRegistration(page: Page) {
+  return page
+    .getByTestId("save-registration-button")
+    .or(page.getByRole("button", { name: /Add to garage|Adding/ }));
+}
+
+export function expirationMonth(page: Page) {
+  return page.getByLabel("Expiration month");
+}
+
+export function expirationYear(page: Page) {
+  return page.getByLabel("Expiration year");
+}
+
+export function uploadDocumentButton(page: Page) {
+  return page
+    .getByTestId("upload-document-button")
+    .or(page.getByRole("button", { name: "Upload", exact: true }));
+}
+
+export function uploadDocumentEmptyButton(page: Page) {
+  return page
+    .getByTestId("upload-document-empty-button")
+    .or(page.getByRole("button", { name: "Upload a document" }));
+}
+
+export function uploadVaultDialog(page: Page) {
+  return page
+    .getByTestId("upload-vault-dialog")
+    .or(page.getByRole("dialog").filter({ hasText: /Document vault/i }));
+}
+
+export function uploadVehicleSelect(page: Page) {
+  return page.getByTestId("upload-vehicle").or(page.locator("#upload-vehicle"));
+}
+
+export function uploadDocTypeSelect(page: Page) {
+  return page.getByTestId("upload-doc-type").or(page.locator("#doc-type"));
+}
+
+export function uploadVaultFile(page: Page) {
+  return page
+    .getByTestId("upload-vault-file")
+    .or(uploadVaultDialog(page).locator('input[type="file"][accept*="pdf"]'));
+}
+
+export function uploadVaultSubmit(page: Page) {
+  return page
+    .getByTestId("upload-vault-submit")
+    .or(page.getByRole("button", { name: /Upload to vault|Uploading/ }));
+}
+
+export function vaultVehicleFilter(page: Page) {
+  return page.locator("#vault-vehicle-filter");
+}
+
+export function vehicleByNickname(page: Page, nickname: string) {
+  return page
+    .locator("[data-testid^='vehicle-item-']")
+    .filter({ hasText: nickname })
+    .or(page.locator("ul.space-y-4 > li").filter({ hasText: nickname }));
+}
+
+export function editRegistration(page: Page, vehicleId?: string) {
+  if (vehicleId) {
+    return page
+      .getByTestId(`edit-registration-${vehicleId}`)
+      .or(page.getByRole("button", { name: "Edit registration" }));
+  }
+  return page.getByRole("button", { name: "Edit registration" });
+}
+
+export function removeRegistration(page: Page) {
+  return page
+    .getByTestId("remove-registration-button")
+    .or(page.getByRole("button", { name: "Remove registration from garage" }));
+}
+
+export function confirmRemoveRegistration(page: Page) {
+  return page
+    .getByTestId("confirm-remove-registration-button")
+    .or(page.getByRole("button", { name: /Yes, remove|Removing/ }));
+}
+
+export function renewalCounty(page: Page) {
+  return page.getByTestId("renewal-county").or(page.locator("#renewal-county"));
+}
+
+export function renewalSubmitted(page: Page) {
+  return page
+    .getByTestId("renewal-submitted")
+    .or(page.getByText(/You.re all set/i))
+    .or(page.getByText(/We.re on it/i));
+}
+
+const RENEWAL_DOC_LABEL: Record<string, RegExp> = {
+  registration: /Current registration/i,
+  insurance: /Proof of insurance/i,
+  emissions: /Emissions certificate/i,
+};
+
+export function renewalDocSlot(page: Page, type: string) {
+  const label = RENEWAL_DOC_LABEL[type] ?? new RegExp(type, "i");
+  return page
+    .locator("article")
+    .filter({ has: page.getByTestId(`upload-doc-${type}`) })
+    .or(page.locator("article").filter({ has: page.getByRole("heading", { name: label }) }));
+}
+
+export function uploadDocInput(page: Page, type: string) {
+  return page
+    .getByTestId(`upload-doc-input-${type}`)
+    .or(renewalDocSlot(page, type).locator('input[type="file"]').first());
+}
+
+export function uploadDocChoose(page: Page, type: string) {
+  return page
+    .getByTestId(`upload-doc-${type}`)
+    .or(
+      renewalDocSlot(page, type).getByRole("button", {
+        name: /Choose file|Replace \/ add/,
+      }),
+    );
+}
+
 export function plateTypePicker(page: Page) {
   return page.getByTestId("plate-type-picker").or(page.getByRole("group", { name: "Plate type" }));
 }

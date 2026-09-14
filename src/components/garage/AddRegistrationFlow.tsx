@@ -1662,6 +1662,7 @@ export function AddRegistrationFlow({
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               placeholder={nicknamePlaceholder(draft)}
+              data-testid="registration-nickname"
             />
           </div>
 

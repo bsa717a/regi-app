@@ -271,6 +271,7 @@ export function DocumentsClient() {
             type="button"
             onClick={() => setUploadOpen(true)}
             className="rounded-xl bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            data-testid="upload-document-button"
           >
             Upload
           </button>
@@ -498,6 +499,7 @@ function DocumentList({
             type="button"
             className={`${primaryButtonClassName} mt-8`}
             onClick={onUploadClick}
+            data-testid="upload-document-empty-button"
           >
             Upload a document
           </button>
@@ -800,8 +802,15 @@ function UploadSheet({
           onCancel={onEnhanceCancel}
         />
       ) : null}
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white shadow-xl sm:rounded-3xl">
-        <form onSubmit={handleSubmit} className="px-5 pb-6 pt-5">
+      <div
+        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white shadow-xl sm:rounded-3xl"
+        data-testid="upload-vault-dialog"
+      >
+        <form
+          onSubmit={handleSubmit}
+          className="px-5 pb-6 pt-5"
+          data-testid="upload-vault-form"
+        >
           <div className="mb-5 flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-800">
@@ -835,6 +844,7 @@ function UploadSheet({
                 value={vehicleId}
                 disabled={submitting || previewBlocking}
                 onChange={(e) => setVehicleId(e.target.value)}
+                data-testid="upload-vehicle"
               >
                 {vehicles.map((row) => (
                   <option key={row.id} value={row.id}>
@@ -858,6 +868,7 @@ function UploadSheet({
             value={type}
             disabled={submitting || previewBlocking}
             onChange={(e) => setType(e.target.value as DocumentType)}
+            data-testid="upload-doc-type"
           >
             {DOCUMENT_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -937,6 +948,7 @@ function UploadSheet({
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
               className="sr-only"
               disabled={submitting || previewBlocking}
+              data-testid="upload-vault-file"
               onChange={(e) => void acceptFile(e.target.files?.[0])}
             />
           </div>
@@ -966,6 +978,7 @@ function UploadSheet({
             type="submit"
             disabled={submitting || previewBlocking || !file || !vehicle}
             className={`${primaryButtonClassName} mt-6`}
+            data-testid="upload-vault-submit"
           >
             {submitting ? "Uploading…" : "Upload to vault"}
           </button>
