@@ -87,15 +87,19 @@ async function createDemoApplicant(page: Page, email: string, password: string) 
   await expectGarage(page);
 }
 
-export async function openAddRegistration(page: Page) {
-  // AppShell title "Garage" is visible while the list is still loading, so
-  // wait out the skeleton before looking for empty/non-empty CTAs.
+export async function waitForGarageList(page: Page) {
   await page
     .getByLabel("Loading registrations")
     .waitFor({ state: "hidden", timeout: 30_000 })
     .catch(() => {
       /* already settled */
     });
+}
+
+export async function openAddRegistration(page: Page) {
+  // AppShell title "Garage" is visible while the list is still loading, so
+  // wait out the skeleton before looking for empty/non-empty CTAs.
+  await waitForGarageList(page);
 
   const first = addFirstRegistration(page);
   const add = addVehicle(page);

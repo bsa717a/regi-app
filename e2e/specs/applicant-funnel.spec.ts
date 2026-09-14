@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { hasDemoPassword, missingPasswordMessage } from "../env";
 import { openAddRegistration, signInDemoApplicant } from "../helpers/auth";
+import { lookUpVin } from "../helpers/persistVehicle";
 import {
   addManually,
   applicantName,
@@ -19,11 +20,7 @@ import {
   submitRenewal,
   typePickerPassenger,
   vehicleItems,
-  vinInput,
-  vinLookupSubmit,
 } from "../helpers/selectors";
-
-const SAMPLE_VIN = "1HGCM82633A004352";
 
 test.describe("Applicant funnel against staging", () => {
   test.beforeEach(() => {
@@ -36,6 +33,8 @@ test.describe("Applicant funnel against staging", () => {
     await signInDemoApplicant(page);
 
     await fillApplicantProfileFields(page);
+    // VIN / type picker only — persist, vault upload, and submit success
+    // live in e2e/specs/critical-paths.spec.ts.
     await exerciseRegistrationForm(page);
     await exerciseDocumentPreview(page);
     await exerciseSubmitPath(page);
@@ -71,31 +70,10 @@ async function exerciseRegistrationForm(page: Page) {
   });
 
   await openAddRegistration(page);
-  await expect(vinInput(page)).toBeVisible();
-  await expect(vinLookupSubmit(page)).toBeVisible();
-
-  await vinInput(page).fill(SAMPLE_VIN);
-  await vinLookupSubmit(page).click();
+  await lookUpVin(page);
 
   const confirm = confirmVehicle(page);
   const passenger = typePickerPassenger(page);
-  const lookingUp = page.getByRole("button", { name: "Looking up VIN" });
-
-  // Wait until the VIN request starts (button disables) so we do not treat
-  // the still-idle "Look up VIN" label as done. Then wait for confirm, the
-  // type picker, or lookup idle. Do not race on a generic role=alert —
-  // AppShell/assistant may already have one. "Or add manually" stays
-  // visible-but-disabled while busy.
-  await lookingUp.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {
-    /* decode may finish before the busy label paints */
-  });
-  await Promise.race([
-    confirm.waitFor({ state: "visible", timeout: 45_000 }),
-    passenger.waitFor({ state: "visible", timeout: 45_000 }),
-    lookingUp.waitFor({ state: "hidden", timeout: 45_000 }),
-  ]).catch(() => {
-    /* continue to manual picker once lookup is idle */
-  });
 
   if (await confirm.isVisible().catch(() => false)) {
     await expect(confirm).toBeVisible();

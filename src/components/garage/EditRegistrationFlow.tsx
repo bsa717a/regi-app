@@ -556,6 +556,7 @@ export function EditRegistrationFlow({
               onClick={() => setConfirmDelete(true)}
               disabled={busy}
               className="text-sm font-semibold text-rose-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:opacity-60"
+              data-testid="remove-registration-button"
             >
               Remove registration from garage
             </button>
@@ -570,6 +571,7 @@ export function EditRegistrationFlow({
                   onClick={() => void onDelete()}
                   disabled={busy}
                   className="inline-flex flex-1 items-center justify-center rounded-xl bg-rose-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-800 disabled:opacity-60"
+                  data-testid="confirm-remove-registration-button"
                 >
                   {busy ? "Removing…" : "Yes, remove"}
                 </button>
