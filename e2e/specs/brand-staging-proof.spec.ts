@@ -23,7 +23,9 @@ test.describe("Staging brand UI phone proof", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await signInDemoApplicant(page);
 
-    await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Garage", exact: true }),
+    ).toBeVisible();
     await page
       .getByLabel("Loading registrations")
       .waitFor({ state: "hidden", timeout: 30_000 })
