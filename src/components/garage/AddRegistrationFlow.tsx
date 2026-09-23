@@ -143,6 +143,8 @@ export function AddRegistrationFlow({
   onCreated,
   cancelLabel = "← Back to garage",
   registrationType: initialType,
+  focusVin = false,
+  initialScanFile = null,
 }: {
   /** When omitted, the back control is hidden (e.g. empty garage). */
   onCancel?: () => void;
@@ -150,6 +152,10 @@ export function AddRegistrationFlow({
   cancelLabel?: string;
   /** Pre-select a type and skip the picker. */
   registrationType?: RegistrationType;
+  /** Empty-garage "Enter a VIN instead" focuses the VIN field. */
+  focusVin?: boolean;
+  /** Empty-garage scan hands the chosen card photo straight in. */
+  initialScanFile?: File | null;
 }) {
   const { getIdToken, profile, idToken } = useAuth();
   const [registrationType, setRegistrationType] = useState<RegistrationType | null>(
@@ -203,6 +209,7 @@ export function AddRegistrationFlow({
   const [showEnhancePreview, setShowEnhancePreview] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const scanGenerationRef = useRef(0);
+  const consumedScanFile = useRef<File | null>(null);
 
   async function tokenOrThrow(): Promise<string> {
     const token = await getIdToken();
@@ -544,10 +551,21 @@ export function AddRegistrationFlow({
     }
   }
 
-  async function onScanFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
+  useEffect(() => {
+    if (!focusVin) return;
+    const field = document.getElementById("pick-type-vin");
+    field?.focus();
+  }, [focusVin]);
+
+  useEffect(() => {
+    if (!initialScanFile || consumedScanFile.current === initialScanFile) return;
+    consumedScanFile.current = initialScanFile;
+    void processScanFile(initialScanFile);
+    // The file is consumed once; processScanFile is recreated each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialScanFile]);
+
+  async function processScanFile(file: File) {
 
     const generation = ++scanGenerationRef.current;
     setError(null);
@@ -580,6 +598,13 @@ export function AddRegistrationFlow({
         setEnhancing(false);
       }
     }
+  }
+
+  async function onScanFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    await processScanFile(file);
   }
 
   function onEnhanceConfirm(chosen: PreparedScanImage) {

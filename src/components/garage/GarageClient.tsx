@@ -1,16 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
+import { headerActionClassName, SectionLabel } from "@/components/brand/ui";
+import { GarageComplianceBanner } from "@/components/brand/GarageComplianceBanner";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AddRegistrationFlow } from "@/components/garage/AddRegistrationFlow";
 import { EditRegistrationFlow } from "@/components/garage/EditRegistrationFlow";
 import { GarageEmptyState } from "@/components/garage/GarageEmptyState";
 import { VehicleCard } from "@/components/garage/VehicleCard";
 import { ApiError, listRegistrations } from "@/lib/api/client";
+import {
+  garageComplianceBanner,
+  registrationCountLabel,
+} from "@/lib/registrations/brandCopy";
 import type { RegistrationDto } from "@/lib/registrations/types";
-import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
 
 type ViewState = "list" | "adding" | "editing";
 
@@ -25,6 +29,8 @@ export function GarageClient() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
+  const [addEntry, setAddEntry] = useState<"default" | "vin">("default");
+  const [scanFile, setScanFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -72,11 +78,23 @@ export function GarageClient() {
     setView("editing");
   }
 
+  function openAdd(entry: "default" | "vin", file: File | null = null) {
+    setAddEntry(entry);
+    setScanFile(file);
+    setView("adding");
+  }
+
   if (view === "adding") {
     return (
       <AppShell title="Garage">
         <AddRegistrationFlow
-          onCancel={() => setView("list")}
+          onCancel={() => {
+            setScanFile(null);
+            setAddEntry("default");
+            setView("list");
+          }}
+          focusVin={addEntry === "vin"}
+          initialScanFile={scanFile}
           onCreated={(vehicle, options) => {
             setVehicles((prev) =>
               [...prev, vehicle].sort((a, b) =>
@@ -135,7 +153,7 @@ export function GarageClient() {
           <button
             type="button"
             onClick={() => setView("adding")}
-            className="rounded-xl bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className={headerActionClassName}
             data-testid="add-vehicle-button"
           >
             Add
@@ -148,13 +166,12 @@ export function GarageClient() {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white dark:border-slate-700/80 dark:bg-slate-900"
+              className="overflow-hidden rounded-[10px] border border-regi-line bg-regi-surface"
             >
-              <div className="h-36 animate-pulse bg-gradient-to-br from-teal-100 via-slate-100 to-slate-200" />
+              <div className="h-40 animate-pulse bg-regi-raised" />
               <div className="space-y-3 px-4 py-4">
-                <div className="h-5 w-1/2 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
-                <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
-                <div className="h-4 w-1/3 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+                <div className="h-5 w-1/2 animate-pulse rounded bg-regi-raised" />
+                <div className="h-4 w-2/3 animate-pulse rounded bg-regi-raised" />
               </div>
             </div>
           ))}
@@ -194,27 +211,35 @@ export function GarageClient() {
       ) : null}
 
       {!loading && !error && vehicles.length === 0 ? (
-        <GarageEmptyState onAdd={() => setView("adding")} />
+        <GarageEmptyState
+          onScanCard={() => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.capture = "environment";
+            input.onchange = () => {
+              const file = input.files?.[0];
+              if (file) openAdd("default", file);
+            };
+            input.click();
+          }}
+          onEnterVin={() => openAdd("vin")}
+        />
       ) : null}
 
       {!loading && !error && vehicles.length > 0 ? (
-        <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {vehicles.length} registration{vehicles.length === 1 ? "" : "s"} ·
-            soonest expiration first
-          </p>
+        <div className="space-y-3">
+          {(() => {
+            const banner = garageComplianceBanner(vehicles);
+            return banner ? <GarageComplianceBanner banner={banner} /> : null;
+          })()}
+          <SectionLabel>{registrationCountLabel(vehicles.length)}</SectionLabel>
           {needsAttention > 0 ? (
-            <p>
-              <Link
-                href="/renewals"
-                className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
-              >
-                {needsAttention} need{needsAttention === 1 ? "s" : ""} attention
-                → Renewals
-              </Link>
+            <p className="text-sm text-regi-muted">
+              {needsAttention} need{needsAttention === 1 ? "s" : ""} a renewal.
             </p>
           ) : null}
-          <ul className="space-y-4" data-testid="vehicle-list">
+          <ul className="space-y-3" data-testid="vehicle-list">
             {vehicles.map((vehicle) => (
               <li key={vehicle.id} data-testid={`vehicle-item-${vehicle.id}`}>
                 <VehicleCard
@@ -232,18 +257,12 @@ export function GarageClient() {
           </ul>
           <button
             type="button"
-            className={`${primaryButtonClassName} mt-2`}
-            onClick={() => setView("adding")}
+            className="sr-only"
+            onClick={() => openAdd("default")}
             data-testid="add-another-registration-button"
           >
             Add another registration
           </button>
-          <Link
-            href="/garage/plates"
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
-            Utah personalized / specialty plates
-          </Link>
         </div>
       ) : null}
     </AppShell>

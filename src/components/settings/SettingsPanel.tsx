@@ -6,6 +6,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { updateMe } from "@/lib/api/client";
 import type { AuthUserProfile } from "@/lib/auth/getOrCreateUser";
 import type { NotificationPrefs } from "@/lib/auth/notificationPrefs";
+import { SectionLabel } from "@/components/brand/ui";
+import { BrandSwitch } from "@/components/brand/ui";
 import {
   fieldClassName,
   labelClassName,
@@ -133,16 +135,31 @@ function SettingsForm({
     }
   }
 
+  const initials = (name || userEmail || "R")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
   return (
     <div className="space-y-8">
-      <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Appearance
-        </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Choose light or dark mode, or follow your device setting.
-        </p>
-        <ThemeSetting />
+      <section className="flex items-center gap-3" data-testid="settings-profile">
+        <span
+          aria-hidden
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-regi-surface font-regi-display text-lg font-bold text-regi-text"
+        >
+          {initials || "R"}
+        </span>
+        <div className="min-w-0">
+          <h2 className="truncate font-regi-display text-xl font-medium tracking-[-0.005em] text-regi-text">
+            {name.trim() || "Your profile"}
+          </h2>
+          <p className="truncate text-sm text-regi-muted">{userEmail}</p>
+          <p className="mt-1 font-regi-data text-[11px] font-bold tracking-[0.14em] text-regi-current">
+            {emailVerified ? "VERIFIED" : "NOT VERIFIED"}
+          </p>
+        </div>
       </section>
 
       <NativeSecuritySection
@@ -151,33 +168,6 @@ function SettingsForm({
       />
 
       <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Profile</h2>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Signed in as {userEmail}
-          </p>
-          {emailVerified ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-800 dark:bg-teal-900/50 dark:text-teal-200">
-              <svg
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Verified
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
-              Not verified
-            </span>
-          )}
-        </div>
         {!emailVerified ? (
           <div
             className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40"
@@ -192,6 +182,10 @@ function SettingsForm({
             </div>
           </div>
         ) : null}
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm text-regi-muted">
+            Edit profile
+          </summary>
         <form
           onSubmit={saveProfile}
           className="mt-4 space-y-4"
@@ -237,25 +231,12 @@ function SettingsForm({
             {savingProfile ? "Saving…" : "Save profile"}
           </button>
         </form>
+        </details>
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Household</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Share your garage with a spouse or partner. They can view and get
-          reminders — only you can edit or renew.
-        </p>
-        <div className="mt-4">
-          <HouseholdPanel />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Notifications</h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Choose how REGI nudges you before a registration expires.
-        </p>
-        <ul className="mt-4 space-y-3">
+        <SectionLabel>Notifications</SectionLabel>
+        <ul className="mt-3 overflow-hidden rounded-[10px] border border-regi-line bg-regi-surface">
           <PushPrefToggle
             prefs={prefs}
             disabled={savingPrefs}
@@ -267,7 +248,7 @@ function SettingsForm({
           <PrefToggle
             id="pref-email"
             label="Email"
-            description="Friendly reminders in your inbox."
+            description="A reminder 30, 14 and 3 days out"
             checked={prefs.email}
             disabled={savingPrefs}
             onChange={(email) => void savePrefs({ ...prefs, email })}
@@ -275,13 +256,26 @@ function SettingsForm({
           <PrefToggle
             id="pref-sms"
             label="SMS"
-            description="Text reminders."
+            description="Text the owner only"
             checked={prefs.sms}
-            disabled
-            comingSoon
+            disabled={savingPrefs}
             onChange={(sms) => void savePrefs({ ...prefs, sms })}
           />
         </ul>
+      </section>
+
+      <section>
+        <SectionLabel>Household</SectionLabel>
+        <div className="mt-3">
+          <HouseholdPanel />
+        </div>
+      </section>
+
+      <section>
+        <SectionLabel>Appearance</SectionLabel>
+        <div className="mt-3">
+          <ThemeSetting />
+        </div>
       </section>
 
       {message ? (
@@ -360,42 +354,23 @@ function PrefToggle({
   const isDisabled = Boolean(disabled || comingSoon);
 
   return (
-    <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+    <li className="flex items-center justify-between gap-4 border-b border-regi-line px-3.5 py-3 last:border-b-0">
       <div>
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100" id={`${id}-label`}>
-            {label}
-          </p>
-          {comingSoon ? (
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-              Coming soon
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400" id={`${id}-desc`}>
+        <p className="text-base text-regi-text" id={`${id}-label`}>
+          {label}
+        </p>
+        <p className="mt-0.5 text-sm text-regi-muted" id={`${id}-desc`}>
           {description}
         </p>
       </div>
-      <button
+      <BrandSwitch
         id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-labelledby={`${id}-label`}
-        aria-describedby={`${id}-desc`}
+        checked={checked}
         disabled={isDisabled}
-        onClick={() => onChange(!checked)}
-        className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-          checked ? "bg-teal-700 dark:bg-teal-500" : "bg-slate-300 dark:bg-slate-600"
-        }`}
-      >
-        <span
-          aria-hidden
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-            checked ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
+        labelledBy={`${id}-label`}
+        describedBy={`${id}-desc`}
+        onChange={onChange}
+      />
     </li>
   );
 }

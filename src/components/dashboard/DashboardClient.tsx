@@ -1,24 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
+import { headerActionClassName } from "@/components/brand/ui";
+import {
+  RenewalsInbox,
+  type RenewalFeeSchedule,
+  type RenewalListItem,
+} from "@/components/brand/RenewalsInbox";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { VerifyEmailCallout } from "@/components/auth/VerifyEmailCallout";
 import { AddRegistrationFlow } from "@/components/garage/AddRegistrationFlow";
-import { DashboardRenewalSummary } from "@/components/dashboard/DashboardRenewalSummary";
-import { RenewalCard } from "@/components/dashboard/RenewalCard";
-import { primaryButtonClassName } from "@/components/auth/AuthFormStyles";
 import {
   ApiError,
+  listActiveStates,
   listNotifications,
   listRegistrations,
 } from "@/lib/api/client";
-import { groupDashboardRegistrations } from "@/lib/dashboard/groupRegistrations";
 import type { NotificationDto } from "@/lib/notifications/types";
+import { REGISTRATION_TYPE_LABELS, titleCaseMakeModel } from "@/lib/registrations/illustrations";
 import type { RegistrationDto } from "@/lib/registrations/types";
-import { titleCaseMakeModel } from "@/lib/registrations/illustrations";
 
 function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
@@ -33,11 +35,28 @@ function formatRelativeTime(iso: string): string {
   return rtf.format(diffMinutes, "minute");
 }
 
-function renewTargetLabel(vehicle: RegistrationDto): string {
-  if (vehicle.nickname) return vehicle.nickname;
-  const make = titleCaseMakeModel(vehicle.make);
+function renewalDetail(vehicle: RegistrationDto): string {
   const model = titleCaseMakeModel(vehicle.model);
-  return [vehicle.year, make, model].filter(Boolean).join(" ") || "your vehicle";
+  const make = titleCaseMakeModel(vehicle.make);
+  const yearLine = [vehicle.year, model || make].filter(Boolean).join(" ");
+  if (yearLine) return yearLine;
+  return REGISTRATION_TYPE_LABELS[vehicle.type];
+}
+
+function toRenewalItem(vehicle: RegistrationDto): RenewalListItem {
+  return {
+    id: vehicle.id,
+    nickname: vehicle.nickname,
+    year: vehicle.year,
+    make: vehicle.make,
+    model: vehicle.model,
+    status: vehicle.status,
+    daysUntilExpiration: vehicle.daysUntilExpiration,
+    registrationExpiresOn: vehicle.registrationExpiresOn,
+    state: vehicle.state,
+    canEdit: vehicle.canEdit,
+    detail: renewalDetail(vehicle),
+  };
 }
 
 export function DashboardClient() {
@@ -50,6 +69,9 @@ export function DashboardClient() {
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [feeByState, setFeeByState] = useState<
+    Record<string, RenewalFeeSchedule>
+  >({});
 
   useEffect(() => {
     if (authLoading) return;
@@ -69,14 +91,20 @@ export function DashboardClient() {
           return;
         }
 
-        const [vehicleRows, notificationRows] = await Promise.all([
+        const [vehicleRows, notificationRows, states] = await Promise.all([
           listRegistrations(token),
           listNotifications(token, 8),
+          listActiveStates(token).catch(() => []),
         ]);
 
         if (!cancelled) {
           setVehicles(vehicleRows);
           setNotifications(notificationRows);
+          const fees: Record<string, RenewalFeeSchedule> = {};
+          for (const state of states) {
+            if (state.fees) fees[state.code] = state.fees;
+          }
+          setFeeByState(fees);
           setError(null);
           setLoading(false);
         }
@@ -98,8 +126,12 @@ export function DashboardClient() {
     };
   }, [authLoading, idToken, getIdToken, reloadKey]);
 
-  const groups = groupDashboardRegistrations(vehicles);
   const emptyGarage = !loading && !error && vehicles.length === 0;
+  const renewalItems = vehicles.map(toRenewalItem);
+  const focusState = [...vehicles].sort(
+    (a, b) => a.daysUntilExpiration - b.daysUntilExpiration,
+  )[0]?.state;
+  const feeSchedule = focusState ? (feeByState[focusState] ?? null) : null;
 
   if (emptyGarage || adding) {
     return (
@@ -148,7 +180,7 @@ export function DashboardClient() {
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="rounded-xl bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className={headerActionClassName}
           >
             Add
           </button>
@@ -189,110 +221,15 @@ export function DashboardClient() {
             />
           ) : null}
 
-          <DashboardRenewalSummary
-            vehicleCount={vehicles.length}
-            groups={groups}
+          <RenewalsInbox
+            vehicles={renewalItems}
+            feeSchedule={feeSchedule}
+            onRenew={(vehicle) => {
+              router.push(
+                `/renewals/new?registrationId=${encodeURIComponent(vehicle.id)}`,
+              );
+            }}
           />
-
-          <section aria-labelledby="quick-actions-heading">
-            <h2
-              id="quick-actions-heading"
-              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
-            >
-              Quick actions
-            </h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                className={primaryButtonClassName}
-                onClick={() => setAdding(true)}
-              >
-                Add Registration
-              </button>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-base font-semibold text-slate-900 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                  disabled={!groups.renewTarget}
-                  data-testid="renew-now-button"
-                  onClick={() => {
-                    if (!groups.renewTarget) return;
-                    router.push(
-                      `/renewals/new?registrationId=${encodeURIComponent(groups.renewTarget.id)}`,
-                    );
-                  }}
-                  aria-describedby={
-                    groups.renewTarget ? "renew-target-hint" : "renew-disabled-hint"
-                  }
-                >
-                  Renew Now
-                </button>
-                {groups.renewTarget ? (
-                  <p
-                    id="renew-target-hint"
-                    className="text-xs text-slate-500 dark:text-slate-400"
-                  >
-                    For {renewTargetLabel(groups.renewTarget)} · concierge
-                  </p>
-                ) : (
-                  <p
-                    id="renew-disabled-hint"
-                    className="text-xs text-slate-500 dark:text-slate-400"
-                  >
-                    No renewals due yet
-                  </p>
-                )}
-              </div>
-            </div>
-            <p className="mt-3">
-              <Link
-                href="/garage/plates"
-                className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-teal-300"
-              >
-                Utah personalized / specialty plates
-              </Link>
-            </p>
-          </section>
-
-          {groups.expired.length > 0 ? (
-            <section aria-labelledby="expired-heading">
-              <h2
-                id="expired-heading"
-                className="text-sm font-semibold uppercase tracking-[0.14em] text-rose-700 dark:text-rose-300"
-              >
-                Expired — act now
-              </h2>
-              <ul className="mt-3 space-y-3">
-                {groups.expired.map((vehicle) => (
-                  <li key={vehicle.id}>
-                    <RenewalCard vehicle={vehicle} prominent />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          <section aria-labelledby="upcoming-heading">
-            <h2
-              id="upcoming-heading"
-              className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
-            >
-              Upcoming renewals
-            </h2>
-            {groups.upcoming.length === 0 ? (
-              <p className="mt-3 rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                No upcoming renewals — expired registrations are listed above.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {groups.upcoming.map((vehicle) => (
-                  <li key={vehicle.id}>
-                    <RenewalCard vehicle={vehicle} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
 
           <section aria-labelledby="notifications-heading">
             <h2

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrandSwitch } from "@/components/brand/ui";
 import {
   registerPushDeviceToken,
   unregisterPushDeviceToken,
@@ -127,11 +128,11 @@ export function PushPrefToggle({
   const isDisabled = Boolean(disabled || busy || !pushAvailable || !nativeReady);
 
   return (
-    <li className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+    <li className="flex items-center justify-between gap-4 border-b border-regi-line px-3.5 py-3">
       <div>
         <div className="flex items-center gap-2">
           <p
-            className="text-sm font-semibold text-slate-900 dark:text-slate-100"
+            className="text-base text-regi-text"
             id="pref-push-label"
           >
             Push
@@ -143,12 +144,10 @@ export function PushPrefToggle({
           ) : null}
         </div>
         <p
-          className="mt-0.5 text-sm text-slate-600 dark:text-slate-400"
+          className="mt-0.5 text-sm text-regi-muted"
           id="pref-push-desc"
         >
-          {isNative
-            ? "Alerts on this iPhone when a renewal needs attention."
-            : "Alerts on this device when REGI is installed."}
+          Renewal and maintenance alerts
         </p>
         {note ? (
           <p
@@ -159,28 +158,14 @@ export function PushPrefToggle({
           </p>
         ) : null}
       </div>
-      <button
+      <BrandSwitch
         id="pref-push"
-        type="button"
-        role="switch"
-        aria-checked={prefs.push && pushAvailable}
-        aria-labelledby="pref-push-label"
-        aria-describedby="pref-push-desc"
+        checked={Boolean(prefs.push && pushAvailable)}
         disabled={isDisabled}
-        onClick={() => void handleToggle(!(prefs.push && pushAvailable))}
-        className={`relative mt-1 h-6 w-11 shrink-0 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-          prefs.push && pushAvailable
-            ? "bg-teal-700 dark:bg-teal-500"
-            : "bg-slate-300 dark:bg-slate-600"
-        }`}
-      >
-        <span
-          aria-hidden
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-            prefs.push && pushAvailable ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
+        labelledBy="pref-push-label"
+        describedBy="pref-push-desc"
+        onChange={(next) => void handleToggle(next)}
+      />
     </li>
   );
 }
