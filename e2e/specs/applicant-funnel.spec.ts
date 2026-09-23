@@ -47,8 +47,8 @@ async function fillApplicantProfileFields(page: Page) {
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
     timeout: 20_000,
   });
+  await page.getByText("Edit profile", { exact: true }).click();
   await expect(applicantProfileForm(page)).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(/Signed in as/i)).toBeVisible();
 
   const name = applicantName(page);
   const current = await name.inputValue();

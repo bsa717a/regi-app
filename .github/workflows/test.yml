@@ -77,3 +77,11 @@ jobs:
           REGI_STAGING_DEMO_EMAIL: ${{ vars.REGI_STAGING_DEMO_EMAIL }}
           REGI_STAGING_DEMO_PASSWORD: ${{ secrets.REGI_STAGING_DEMO_PASSWORD }}
         run: npm run test:e2e
+
+      - name: Upload staging phone proof
+        if: always() && steps.e2e.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: brand-ui-staging-proof
+          path: e2e/proof/
+          if-no-files-found: ignore
