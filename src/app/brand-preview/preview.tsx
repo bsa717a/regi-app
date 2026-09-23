@@ -17,7 +17,7 @@ import {
   garageComplianceBanner,
   registrationCountLabel,
 } from "@/lib/registrations/brandCopy";
-import { registrationTypeArtUrl } from "@/lib/registrations/illustrations";
+import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
 import type { RegistrationStatus } from "@/lib/stateEngine/status";
 
 type Screen = "garage" | "renewals" | "documents" | "settings";
@@ -63,6 +63,19 @@ const CURRENT: Vehicle[] = [
     registrationExpiresOn: "2027-09-30",
     state: "UT",
     art: "passenger",
+  },
+  {
+    id: "trailer",
+    nickname: "Shop trailer 04",
+    year: 2019,
+    make: "",
+    model: "",
+    detail: "Utility trailer",
+    status: "Current",
+    daysUntilExpiration: 400,
+    registrationExpiresOn: "2027-10-30",
+    state: "UT",
+    art: "trailer",
   },
 ];
 
@@ -289,15 +302,24 @@ export function BrandPreview() {
                   <li key={vehicle.id}>
                     <GarageVehicleFace
                       title={vehicle.nickname}
-                      subtitle={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                      subtitle={
+                        vehicle.make && vehicle.model
+                          ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+                          : vehicle.detail
+                      }
                       status={vehicle.status}
                       daysUntilExpiration={vehicle.daysUntilExpiration}
                       media={
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={registrationTypeArtUrl(vehicle.art)}
-                          alt=""
-                          className="h-full w-full object-cover"
+                        <VehicleIllustration
+                          year={vehicle.year}
+                          make={vehicle.make}
+                          model={vehicle.model}
+                          label={
+                            vehicle.make && vehicle.model
+                              ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+                              : vehicle.detail
+                          }
+                          registrationType={vehicle.art}
                         />
                       }
                     />

@@ -476,6 +476,9 @@ export function VehicleCard({
           countdownTestId={`expiration-countdown-${vehicle.id}`}
           media={
             <VehicleIllustration
+              year={vehicle.year}
+              make={vehicle.make}
+              model={vehicle.model}
               bodyClass={vehicle.bodyClass}
               photoUrl={vehicle.photoUrl}
               label={label}

@@ -68,7 +68,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Registration type art should update without a stale cached SUV placeholder.
-  if (url.pathname.startsWith("/images/registration-types/")) {
+  if (
+    url.pathname.startsWith("/images/registration-types/") ||
+    url.pathname.startsWith("/images/vehicles/")
+  ) {
     event.respondWith(
       fetch(request)
         .then((response) => {

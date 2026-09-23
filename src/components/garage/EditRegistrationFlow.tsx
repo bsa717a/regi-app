@@ -292,6 +292,9 @@ export function EditRegistrationFlow({
               className="h-full w-full"
             >
               <VehicleIllustration
+                year={registration.year}
+                make={registration.make}
+                model={registration.model}
                 bodyClass={registration.bodyClass}
                 photoUrl={coverPreviewUrl}
                 label={registration.nickname || typeLabel}
@@ -300,6 +303,9 @@ export function EditRegistrationFlow({
             </TappableImagePreview>
           ) : (
             <VehicleIllustration
+              year={registration.year}
+              make={registration.make}
+              model={registration.model}
               bodyClass={registration.bodyClass}
               photoUrl={coverPreviewUrl}
               label={registration.nickname || typeLabel}
