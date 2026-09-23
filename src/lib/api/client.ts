@@ -610,6 +610,12 @@ export type ActiveStateDto = {
   name: string;
   dueSoonThresholdDays: number;
   registrationTypes: ActiveStateRegistrationTypeDto[];
+  fees: {
+    registrationFeeCents: number;
+    lateFeeCents: number;
+    regiServiceFeeCents: number;
+    lateFeeStartsAfterDays: number;
+  } | null;
 };
 
 export async function listActiveStates(

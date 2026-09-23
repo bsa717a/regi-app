@@ -41,6 +41,7 @@ export function HouseholdPanel() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   const load = useCallback(async () => {
@@ -141,19 +142,30 @@ export function HouseholdPanel() {
   return (
     <div className="space-y-6">
       {owned ? (
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              {owned.name}
-            </h3>
-            <span className="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-semibold text-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
-              Your role: Owner
-            </span>
+        <div className="overflow-hidden rounded-[10px] border border-regi-line bg-regi-surface">
+          <div className="border-b border-regi-line px-3.5 py-3">
+            <p className="text-base text-regi-text">My Household</p>
+            <p className="mt-0.5 text-sm text-regi-muted">
+              {owned.members.length} member{owned.members.length === 1 ? "" : "s"}
+            </p>
+            <p className="text-sm text-regi-muted">You are the owner</p>
           </div>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Invite a spouse or partner to view registrations, statuses,
-            documents, and reminders. Viewers cannot edit or renew.
-          </p>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 border-b border-regi-line px-3.5 py-3 text-left"
+            onClick={() => setInviteOpen((open) => !open)}
+            aria-expanded={inviteOpen}
+          >
+            <span>
+              <span className="block text-base text-regi-text">Invite a partner</span>
+              <span className="mt-0.5 block text-sm text-regi-muted">
+                They can view and get reminders
+              </span>
+            </span>
+            <span aria-hidden className="text-regi-muted">
+              ›
+            </span>
+          </button>
 
           <ul className="mt-4 space-y-2" aria-label="Household members">
             {owned.members.map((member) => (
@@ -194,7 +206,8 @@ export function HouseholdPanel() {
             ))}
           </ul>
 
-          <form onSubmit={onInvite} className="mt-5 space-y-3">
+          {inviteOpen ? (
+          <form onSubmit={onInvite} className="space-y-3 border-b border-regi-line px-3.5 py-3">
             <div>
               <label htmlFor="household-invite-email" className={labelClassName}>
                 Invite by email
@@ -218,6 +231,7 @@ export function HouseholdPanel() {
               {inviting ? "Sending invite…" : "Send invite"}
             </button>
           </form>
+          ) : null}
         </div>
       ) : (
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">

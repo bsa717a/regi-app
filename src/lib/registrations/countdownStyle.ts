@@ -7,11 +7,7 @@ import type { RegistrationStatus } from "@/lib/stateEngine/status";
 export function expirationCountdownClassName(
   status: RegistrationStatus,
 ): string {
-  if (status === "Expired") {
-    return "text-rose-700 dark:text-rose-300";
-  }
-  if (status === "Due Soon") {
-    return "text-amber-800 dark:text-amber-200";
-  }
-  return "text-teal-800 dark:text-teal-300";
+  if (status === "Expired") return "text-regi-expired";
+  if (status === "Due Soon") return "text-regi-due";
+  return "text-regi-current";
 }

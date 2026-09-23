@@ -60,6 +60,12 @@ export async function GET(request: Request) {
           decode: type.decode,
           notes: type.notes ?? null,
         })),
+        fees: {
+          registrationFeeCents: config.fees.registrationFeeCents,
+          lateFeeCents: config.fees.lateFeeCents,
+          regiServiceFeeCents: config.fees.regiServiceFeeCents,
+          lateFeeStartsAfterDays: config.renewalWindow.lateFeeStartsAfterDays,
+        },
       };
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);

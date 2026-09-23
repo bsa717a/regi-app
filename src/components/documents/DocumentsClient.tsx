@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import type { DocumentType } from "@prisma/client";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -15,6 +16,7 @@ import {
   primaryButtonClassName,
   selectClassName,
 } from "@/components/auth/AuthFormStyles";
+import { headerActionClassName, SectionLabel } from "@/components/brand/ui";
 import { AppShell } from "@/components/shell/AppShell";
 import { DocumentPreviewModal } from "@/components/documents/DocumentPreviewModal";
 import {
@@ -63,14 +65,30 @@ function documentTileLabel(
   return `${typeLabel} for ${vehicleLabel(vehicle)}`;
 }
 
+const DOCUMENT_ROW_TITLES: Record<DocumentType, string> = {
+  registration: "Registration card",
+  insurance: "Insurance",
+  emissions: "Emissions certificate",
+  title: "Title",
+  temp_permit: "Temporary permit",
+  other: "Other",
+};
+
 function formatUploadedAt(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
     month: "short",
-    day: "numeric",
     year: "numeric",
   }).format(date);
+}
+
+function fileKindLabel(filename: string): string {
+  const ext = filename.split(".").pop()?.toUpperCase() ?? "FILE";
+  if (ext === "JPEG") return "JPG";
+  if (ext.length > 4) return ext.slice(0, 4);
+  return ext;
 }
 
 export function DocumentsClient() {
@@ -270,7 +288,7 @@ export function DocumentsClient() {
           <button
             type="button"
             onClick={() => setUploadOpen(true)}
-            className="rounded-xl bg-teal-700 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            className={headerActionClassName}
           >
             Upload
           </button>
@@ -313,7 +331,7 @@ export function DocumentsClient() {
             Registration cards, insurance, and titles live with each
             registration in your garage.
           </p>
-          <a href="/garage" className={`${primaryButtonClassName} mt-8`}>
+          <a href="/garage" className="mt-8 text-sm font-medium text-regi-accent">
             Go to garage
           </a>
         </section>
@@ -321,23 +339,26 @@ export function DocumentsClient() {
 
       {!loadingVehicles && vehicles.length > 0 ? (
         <div className="space-y-5">
-          <div>
-            <label htmlFor="vault-vehicle-filter" className={labelClassName}>
-              Filter by registration
-            </label>
-            <select
-              id="vault-vehicle-filter"
-              className={selectClassName}
-              value={filterVehicleId}
-              onChange={(e) => setFilterVehicleId(e.target.value)}
+          <div
+            className="flex gap-2 overflow-x-auto pb-1"
+            role="tablist"
+            aria-label="Filter by registration"
+          >
+            <FilterChip
+              active={!filterVehicleId}
+              onClick={() => setFilterVehicleId(ALL_REGISTRATIONS)}
             >
-              <option value={ALL_REGISTRATIONS}>All registrations</option>
-              {vehicles.map((vehicle) => (
-                <option key={vehicle.id} value={vehicle.id}>
-                  {vehicleLabel(vehicle)}
-                </option>
-              ))}
-            </select>
+              All
+            </FilterChip>
+            {vehicles.map((vehicle) => (
+              <FilterChip
+                key={vehicle.id}
+                active={filterVehicleId === vehicle.id}
+                onClick={() => setFilterVehicleId(vehicle.id)}
+              >
+                {vehicleLabel(vehicle)}
+              </FilterChip>
+            ))}
           </div>
 
           {error ? (
@@ -507,56 +528,60 @@ function DocumentList({
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        {documents.length} document{documents.length === 1 ? "" : "s"} ·
-        private storage
-      </p>
+    <div className="space-y-3">
+      <SectionLabel>
+        {documents.length} document{documents.length === 1 ? "" : "s"} · newest
+        first
+      </SectionLabel>
       {actionError ? (
         <p role="alert" className="text-sm text-rose-700 dark:text-rose-300">
           {actionError}
         </p>
       ) : null}
-      <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white dark:border-slate-700 dark:bg-slate-900">
-        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+      <ul className="space-y-2">
           {documents.map((doc) => {
             const vehicle = vehicleById.get(doc.registrationId);
             const canEdit = Boolean(vehicle?.canEdit);
+            const title =
+              doc.type === "other" && /bill of sale/i.test(doc.originalFilename)
+                ? "Bill of sale"
+                : DOCUMENT_ROW_TITLES[doc.type];
+            const meta = [
+              vehicle ? vehicleLabel(vehicle) : null,
+              formatUploadedAt(doc.createdAt),
+            ]
+              .filter(Boolean)
+              .join(" · ");
 
             return (
               <li
                 key={doc.id}
-                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                className="rounded-[10px] border border-regi-line bg-regi-surface"
               >
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800 dark:text-teal-300">
-                    {documentTileLabel(doc, vehicle)}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => onView(doc)}
-                    className="mt-1 max-w-full truncate text-left text-base font-medium text-slate-900 underline-offset-4 hover:text-teal-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 dark:text-slate-100 dark:hover:text-teal-300"
-                  >
-                    {doc.originalFilename}
-                  </button>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Uploaded {formatUploadedAt(doc.createdAt)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={busyId === doc.id}
-                    className="rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-sm font-semibold text-teal-900 transition hover:bg-teal-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-950/70"
-                    onClick={() => onView(doc)}
-                    data-testid={`view-document-${doc.id}`}
-                  >
-                    {canEdit ? "View/rename" : "View"}
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => onView(doc)}
+                  data-testid={`view-document-${doc.id}`}
+                  className="flex w-full items-center gap-3 px-3.5 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-regi-accent"
+                >
+                  <DocGlyph />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base text-regi-text">
+                      {title}
+                    </span>
+                    <span className="mt-0.5 block truncate text-sm text-regi-muted">
+                      {meta}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-[6px] border border-regi-line px-2 py-1 font-regi-data text-[11px] tracking-[0.08em] text-regi-muted">
+                    {fileKindLabel(doc.originalFilename)}
+                  </span>
+                </button>
+                <div className="flex gap-4 px-3.5 pb-3 text-xs text-regi-muted">
                   <button
                     type="button"
                     disabled={busyId === doc.id}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+                    className="font-medium underline-offset-4 hover:underline disabled:opacity-60"
                     onClick={async () => {
                       setActionError(null);
                       setBusyId(doc.id);
@@ -579,7 +604,7 @@ function DocumentList({
                     <button
                       type="button"
                       disabled={busyId === doc.id}
-                      className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-sm font-semibold text-rose-800 transition hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:opacity-60"
+                      className="font-medium text-regi-expired underline-offset-4 hover:underline disabled:opacity-60"
                       onClick={async () => {
                         if (
                           !window.confirm(
@@ -610,9 +635,47 @@ function DocumentList({
               </li>
             );
           })}
-        </ul>
-      </section>
+      </ul>
     </div>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={`shrink-0 rounded-full px-3 py-1.5 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-regi-accent ${
+        active
+          ? "bg-regi-accent font-medium text-regi-ground"
+          : "border border-regi-line text-regi-text"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function DocGlyph() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden className="shrink-0 text-regi-muted">
+      <path
+        d="M7 3.5h7l4 4V20a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 20V5A1.5 1.5 0 0 1 7 3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path d="M14 3.5V8h4.5" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
   );
 }
 

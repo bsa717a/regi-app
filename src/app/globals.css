@@ -3,26 +3,33 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --brand: #0f766e;
-  --brand-strong: #115e59;
-  --surface: #ffffff;
-  --surface-muted: #f1f5f9;
-  --border: #e2e8f0;
-  --muted: #64748b;
+  --background: #0a0d12;
+  --foreground: #e9edf3;
+  --brand: #f2a93b;
+  --brand-strong: #d8912a;
+  --surface: #141922;
+  --surface-muted: #1c2330;
+  --border: #242e3a;
+  --muted: #8b97a8;
+
+  --regi-ground: #0a0d12;
+  --regi-surface: #141922;
+  --regi-surface-raised: #1c2330;
+  --regi-line: #242e3a;
+  --regi-text: #e9edf3;
+  --regi-muted: #8b97a8;
+  --regi-accent: #f2a93b;
+  --regi-accent-pressed: #d8912a;
+  --regi-current: #3dd68c;
+  --regi-due: #f2a93b;
+  --regi-expired: #ff6b5e;
+  --regi-handled: #8b97a8;
+  --radius-control: 6px;
+  --radius-card: 10px;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #020617;
-  --foreground: #f1f5f9;
-  --brand: #2dd4bf;
-  --brand-strong: #5eead4;
-  --surface: #0f172a;
-  --surface-muted: #1e293b;
-  --border: #334155;
-  --muted: #94a3b8;
 }
 
 @theme inline {
@@ -32,14 +39,50 @@
   --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
   --color-muted: var(--muted);
+  --color-regi-ground: #0a0d12;
+  --color-regi-surface: #141922;
+  --color-regi-raised: #1c2330;
+  --color-regi-line: #242e3a;
+  --color-regi-text: #e9edf3;
+  --color-regi-muted: #8b97a8;
+  --color-regi-accent: #f2a93b;
+  --color-regi-accent-pressed: #d8912a;
+  --color-regi-current: #3dd68c;
+  --color-regi-due: #f2a93b;
+  --color-regi-expired: #ff6b5e;
+  --color-regi-handled: #8b97a8;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-regi-display: var(--font-space-grotesk), sans-serif;
+  --font-regi-data: var(--font-space-mono), ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Nested flows (add vehicle, upload) inherit the Operator palette. */
+.regi-flow :where(.text-slate-950, .text-slate-900, .text-slate-800, .text-teal-950, .text-teal-900) {
+  color: #e9edf3;
+}
+
+.regi-flow :where(.text-slate-700, .text-slate-600, .text-slate-500, .text-teal-800, .text-teal-700) {
+  color: #8b97a8;
+}
+
+.regi-flow :where(.bg-white, .bg-slate-50, .bg-teal-50) {
+  background-color: #141922;
+}
+
+.regi-flow :where(.border-slate-200, .border-slate-300, .border-teal-200, .border-teal-300) {
+  border-color: #242e3a;
+}
+
+.regi-flow :where(.bg-teal-700, .bg-teal-600) {
+  background-color: #f2a93b;
+  color: #0a0d12;
 }
 
 /* Login garage door — rises into the header like a sectional door */

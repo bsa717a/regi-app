@@ -22,9 +22,8 @@ import {
 } from "@/lib/registrations/illustrations";
 import { formatMotorhomeClass } from "@/lib/registrations/motorhome";
 import { stateName } from "@/lib/registrations/states";
-import { StatusBadge } from "@/components/garage/StatusBadge";
+import { GarageVehicleFace } from "@/components/brand/GarageVehicleFace";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
-import { expirationCountdownClassName } from "@/lib/registrations/countdownStyle";
 
 function formatExpiresOn(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -449,85 +448,42 @@ export function VehicleCard({
     }
   }
 
+  const extra =
+    (vehicle.maintenanceDueCount ?? 0) > 0
+      ? "Maintenance due"
+      : (vehicle.openRecallCount ?? 0) > 0
+        ? "Open recalls"
+        : null;
+  const subtitle = [vehicle.nickname ? headline : typeLabel, extra]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/60 transition hover:shadow-md dark:border-slate-700/80 dark:bg-slate-900 dark:shadow-none dark:hover:shadow-lg dark:hover:shadow-black/20">
+    <article>
       <button
         type="button"
-        className="w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+        className="w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-regi-accent"
         aria-expanded={expanded}
         aria-controls={detailsId}
         onClick={onToggle}
         data-testid={`vehicle-expand-${vehicle.id}`}
       >
-        <div className="relative h-36 w-full overflow-hidden">
-          <VehicleIllustration
-            bodyClass={vehicle.bodyClass}
-            photoUrl={vehicle.photoUrl}
-            label={label}
-            registrationType={vehicle.type}
-          />
-          <div className="absolute left-3 top-3">
-            <span className="inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-inset ring-slate-200/80 backdrop-blur dark:bg-slate-900/90 dark:text-slate-100 dark:ring-slate-600/80">
-              {typeLabel}
-            </span>
-          </div>
-          <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
-            <StatusBadge status={vehicle.status} />
-            {(vehicle.maintenanceDueCount ?? 0) > 0 ? (
-              <span className="inline-flex items-center rounded-full bg-amber-100/95 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-200/80 backdrop-blur dark:bg-amber-950/80 dark:text-amber-100 dark:ring-amber-800/80">
-                Maintenance due
-              </span>
-            ) : null}
-            {(vehicle.openRecallCount ?? 0) > 0 ? (
-              <span className="inline-flex items-center rounded-full bg-rose-100/95 px-2.5 py-1 text-xs font-semibold text-rose-900 ring-1 ring-inset ring-rose-200/80 backdrop-blur dark:bg-rose-950/80 dark:text-rose-100 dark:ring-rose-800/80">
-                Open recalls
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex items-start justify-between gap-3 px-4 py-4">
-          <div className="min-w-0">
-            {vehicle.nickname ? (
-              <>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                  {vehicle.nickname}
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">{headline}</p>
-              </>
-            ) : (
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                {headline}
-              </h3>
-            )}
-            <p
-              data-testid={`expiration-countdown-${vehicle.id}`}
-              className={`mt-2 text-sm font-medium ${expirationCountdownClassName(vehicle.status)}`}
-            >
-              {vehicle.countdown}
-            </p>
-          </div>
-          <span
-            aria-hidden
-            className={`mt-1 shrink-0 text-slate-400 transition-transform duration-200 ${
-              expanded ? "rotate-180" : ""
-            }`}
-          >
-            <ChevronDownIcon />
-          </span>
-        </div>
+        <GarageVehicleFace
+          title={label}
+          subtitle={subtitle}
+          status={vehicle.status}
+          daysUntilExpiration={vehicle.daysUntilExpiration}
+          countdownTestId={`expiration-countdown-${vehicle.id}`}
+          media={
+            <VehicleIllustration
+              bodyClass={vehicle.bodyClass}
+              photoUrl={vehicle.photoUrl}
+              label={label}
+              registrationType={vehicle.type}
+            />
+          }
+        />
       </button>
-
-      {registrationDoc ? (
-        <div className="border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
-          <button
-            type="button"
-            onClick={() => void openRegistrationPreview()}
-            className="text-sm font-semibold text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
-          >
-            Registration card
-          </button>
-        </div>
-      ) : null}
 
       <div
         id={detailsId}
@@ -802,23 +758,5 @@ export function VehicleCard({
         onRetry={() => void openRegistrationPreview()}
       />
     </article>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      className="stroke-current"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m6 9 6 6 6-6" />
-    </svg>
   );
 }

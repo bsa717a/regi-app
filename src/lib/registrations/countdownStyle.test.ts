@@ -2,17 +2,15 @@ import { describe, expect, it } from "vitest";
 import { expirationCountdownClassName } from "@/lib/registrations/countdownStyle";
 
 describe("expirationCountdownClassName", () => {
-  it("uses rose for Expired", () => {
-    expect(expirationCountdownClassName("Expired")).toContain("text-rose-700");
+  it("uses the expired status token", () => {
+    expect(expirationCountdownClassName("Expired")).toContain("text-regi-expired");
   });
 
-  it("uses amber for Due Soon", () => {
-    expect(expirationCountdownClassName("Due Soon")).toContain(
-      "text-amber-800",
-    );
+  it("uses the due status token", () => {
+    expect(expirationCountdownClassName("Due Soon")).toContain("text-regi-due");
   });
 
-  it("uses teal for Current", () => {
-    expect(expirationCountdownClassName("Current")).toContain("text-teal-800");
+  it("uses the current status token", () => {
+    expect(expirationCountdownClassName("Current")).toContain("text-regi-current");
   });
 });

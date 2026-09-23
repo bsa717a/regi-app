@@ -17,7 +17,7 @@ createRoot(document.getElementById("root")!).render(
         </h1>
       </header>
       <main className="mx-auto w-full max-w-3xl">
-        <GarageEmptyState onAdd={() => undefined} />
+        <GarageEmptyState onScanCard={() => undefined} onEnterVin={() => undefined} />
       </main>
     </div>
 
@@ -34,7 +34,7 @@ createRoot(document.getElementById("root")!).render(
         </h1>
       </header>
       <main className="mx-auto w-full max-w-3xl">
-        <GarageEmptyState onAdd={() => undefined} />
+        <GarageEmptyState onScanCard={() => undefined} onEnterVin={() => undefined} />
       </main>
     </div>
   </div>,
