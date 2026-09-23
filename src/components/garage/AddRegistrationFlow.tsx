@@ -1445,6 +1445,9 @@ export function AddRegistrationFlow({
           <div className="overflow-hidden rounded-3xl border border-teal-200 bg-white shadow-sm dark:border-teal-800 dark:bg-slate-900">
             <div className="h-28">
               <VehicleIllustration
+                year={draft.year}
+                make={draft.make}
+                model={draft.model}
                 bodyClass={draft.bodyClass}
                 label={confirmLabel}
                 registrationType={registrationType ?? undefined}
@@ -1567,6 +1570,9 @@ export function AddRegistrationFlow({
                   className="h-full w-full"
                 >
                   <VehicleIllustration
+                    year={draft.year}
+                    make={draft.make}
+                    model={draft.model}
                     bodyClass={draft.bodyClass}
                     photoUrl={detailsPhotoUrl}
                     label={detailsHeadline || typeLabel}
@@ -1575,6 +1581,9 @@ export function AddRegistrationFlow({
                 </TappableImagePreview>
               ) : (
                 <VehicleIllustration
+                  year={draft.year}
+                  make={draft.make}
+                  model={draft.model}
                   bodyClass={draft.bodyClass}
                   photoUrl={detailsPhotoUrl}
                   label={detailsHeadline || typeLabel}

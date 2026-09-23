@@ -5,6 +5,7 @@ import {
   registrationTypeArtUrl,
   type RegistrationIllustrationKind,
 } from "@/lib/registrations/illustrations";
+import { vehicleCatalogImage } from "@/lib/registrations/vehicleCatalogImage";
 
 const gradients: Record<RegistrationIllustrationKind, string> = {
   suv: "from-teal-600 via-teal-700 to-slate-800",
@@ -136,36 +137,51 @@ export function VehicleIllustration({
   photoUrl,
   label,
   registrationType,
+  year,
+  make,
+  model,
 }: {
   bodyClass?: string | null;
   photoUrl?: string | null;
   label: string;
   registrationType?: RegistrationType;
+  year?: number | null;
+  make?: string | null;
+  model?: string | null;
 }) {
-  if (photoUrl) {
+  const catalogSrc = photoUrl
+    ? null
+    : vehicleCatalogImage({ year, make, model, registrationType });
+  const faceSrc = photoUrl ?? catalogSrc;
+
+  if (faceSrc) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- optional remote URL stub
+      // User uploads may be remote. Catalog files are owned static assets.
+      // object-contain keeps the roof, wheels, and bumpers inside the card.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={photoUrl}
+        src={faceSrc}
         alt={label}
-        className="h-full w-full object-cover"
+        className="h-full w-full bg-[#e4e7ee] object-contain"
+        data-testid="garage-vehicle-photo"
         loading="lazy"
       />
     );
   }
 
-  if (registrationType) {
+  const identityKnown = Boolean(make?.trim() && model?.trim());
+
+  if (registrationType && !identityKnown) {
     return (
-      <div className="relative h-full w-full overflow-hidden bg-slate-900">
+      <div className="relative h-full w-full overflow-hidden bg-[#e4e7ee]">
         <Image
           src={registrationTypeArtUrl(registrationType)}
           alt={label}
           fill
-          className="object-cover"
-          sizes="(max-width: 640px) 50vw, 280px"
+          className="object-contain"
+          sizes="(max-width: 640px) 100vw, 480px"
           priority={false}
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
       </div>
     );
   }
