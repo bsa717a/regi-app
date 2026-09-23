@@ -93,7 +93,7 @@ test.describe("Staging brand UI phone proof", () => {
     await expect(page.getByRole("switch", { name: /SMS/i })).toBeVisible();
     await page.getByText("Edit profile", { exact: true }).click();
     await expect(page.getByTestId("applicant-profile-form")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Dark" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Dark\b/ })).toBeVisible();
     await page.screenshot({
       path: "e2e/proof/04-settings.png",
       fullPage: true,
