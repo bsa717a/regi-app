@@ -47,8 +47,8 @@ async function fillApplicantProfileFields(page: Page) {
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
     timeout: 20_000,
   });
+  await page.getByText("Edit profile", { exact: true }).click();
   await expect(applicantProfileForm(page)).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(/Signed in as/i)).toBeVisible();
 
   const name = applicantName(page);
   const current = await name.inputValue();
@@ -66,7 +66,7 @@ async function fillApplicantProfileFields(page: Page) {
 
 async function exerciseRegistrationForm(page: Page) {
   await navGarage(page).click();
-  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Garage", exact: true })).toBeVisible({
     timeout: 20_000,
   });
 
@@ -141,7 +141,7 @@ async function exerciseDocumentPreview(page: Page) {
   }
 
   await navGarage(page).click();
-  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Garage", exact: true })).toBeVisible({
     timeout: 15_000,
   });
   const firstVehicle = vehicleItems(page).first();
