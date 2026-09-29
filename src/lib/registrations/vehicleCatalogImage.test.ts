@@ -19,6 +19,9 @@ describe("vehicleCatalogImage", () => {
     expect(
       vehicleCatalogImage({ year: 2019, make: "Tesla", model: "Model 3" }),
     ).toBe("/images/vehicles/tesla-model-3-2017.webp");
+    expect(
+      vehicleCatalogImage({ year: 2023, make: "Rivian", model: "R1T" }),
+    ).toBe("/images/vehicles/rivian-r1t-2022.webp");
   });
 
   it("accepts trim suffixes and make aliases inside the same generation", () => {
@@ -28,6 +31,12 @@ describe("vehicleCatalogImage", () => {
     expect(
       vehicleCatalogImage({ year: 2013, make: "VW", model: "Touareg" }),
     ).toBe("/images/vehicles/volkswagen-touareg-2011.webp");
+    expect(
+      vehicleCatalogImage({ year: 2022, make: "Rivian", model: "R1T Adventure" }),
+    ).toBe("/images/vehicles/rivian-r1t-2022.webp");
+    expect(
+      vehicleCatalogImage({ year: 2024, make: "Rivian", model: "R1T" }),
+    ).toBe("/images/vehicles/rivian-r1t-2022.webp");
   });
 
   it("does not reuse a generation photo for a different model year", () => {
@@ -36,6 +45,15 @@ describe("vehicleCatalogImage", () => {
     ).toBeNull();
     expect(
       vehicleCatalogImage({ year: 2018, make: "Volkswagen", model: "Touareg" }),
+    ).toBeNull();
+    expect(
+      vehicleCatalogImage({ year: 2021, make: "Rivian", model: "R1T" }),
+    ).toBeNull();
+    expect(
+      vehicleCatalogImage({ year: 2025, make: "Rivian", model: "R1T" }),
+    ).toBeNull();
+    expect(
+      vehicleCatalogImage({ year: 2023, make: "Rivian", model: "R1S" }),
     ).toBeNull();
   });
 
