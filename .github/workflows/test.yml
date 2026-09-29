@@ -77,3 +77,20 @@ jobs:
           REGI_STAGING_DEMO_EMAIL: ${{ vars.REGI_STAGING_DEMO_EMAIL }}
           REGI_STAGING_DEMO_PASSWORD: ${{ secrets.REGI_STAGING_DEMO_PASSWORD }}
         run: npm run test:e2e
+
+      - name: Staging walk screenshots
+        if: steps.e2e.outputs.run == 'true'
+        env:
+          PLAYWRIGHT_BASE_URL: https://regi-staging-90502049802.us-central1.run.app
+          REGI_STAGING_DEMO_EMAIL: ${{ vars.REGI_STAGING_DEMO_EMAIL }}
+          REGI_STAGING_DEMO_PASSWORD: ${{ secrets.REGI_STAGING_DEMO_PASSWORD }}
+          WALK_OUT: /tmp/staging-walk
+        run: node e2e/walk-staging.mjs
+
+      - name: Upload staging walk screenshots
+        if: steps.e2e.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-walk
+          path: /tmp/staging-walk/*.png
+          if-no-files-found: error
