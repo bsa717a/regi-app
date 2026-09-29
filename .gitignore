@@ -33,6 +33,7 @@ prisma/*.db
 coverage/
 playwright-report/
 test-results/
+e2e/proof/
 /blob-report/
 .playwright/
 
