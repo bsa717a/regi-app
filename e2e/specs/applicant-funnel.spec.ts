@@ -54,7 +54,10 @@ async function fillApplicantProfileFields(page: Page) {
   await expect(profile.getByText(demoEmail(), { exact: true })).toBeVisible();
   await expect(profile.getByText("VERIFIED", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Edit profile", exact: true }).click();
+  // <summary> is not exposed as a button in Chromium's accessibility tree.
+  const editProfile = page.locator("summary").filter({ hasText: "Edit profile" });
+  await expect(editProfile).toBeVisible({ timeout: 20_000 });
+  await editProfile.click();
   await expect(applicantProfileForm(page)).toBeVisible({ timeout: 20_000 });
 
   const name = applicantName(page);

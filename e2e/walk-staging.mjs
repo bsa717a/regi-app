@@ -67,7 +67,7 @@ try {
     .getByRole("heading", { name: "Settings", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByTestId("settings-profile").waitFor({ state: "visible" });
-  await page.getByRole("button", { name: "Edit profile", exact: true }).click();
+  await page.locator("summary").filter({ hasText: "Edit profile" }).click();
   await page
     .getByTestId("applicant-profile-form")
     .waitFor({ state: "visible", timeout: 20_000 });
