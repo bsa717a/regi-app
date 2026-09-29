@@ -55,6 +55,14 @@ const CATALOG: CatalogEntry[] = [
     yearTo: 2023,
     src: "/images/vehicles/tesla-model-3-2017.webp",
   },
+  // Gen 1 R1T. Rivian treats model years 2022–2024 as Gen 1 and 2025+ as Gen 2.
+  {
+    make: "rivian",
+    model: "r1t",
+    yearFrom: 2022,
+    yearTo: 2024,
+    src: "/images/vehicles/rivian-r1t-2022.webp",
+  },
 ];
 
 const TRAILER_SRC = "/images/vehicles/utility-trailer.webp";
