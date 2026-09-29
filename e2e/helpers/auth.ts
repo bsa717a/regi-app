@@ -21,11 +21,12 @@ import {
   signupPassword,
   signupPhone,
   signupSubmit,
+  garagePageHeading,
 } from "./selectors";
 
 export async function expectGarage(page: Page) {
   await expect(page).toHaveURL(/\/garage/, { timeout: 45_000 });
-  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
+  await expect(garagePageHeading(page)).toBeVisible({
     timeout: 30_000,
   });
 }
@@ -44,7 +45,7 @@ export async function signInDemoApplicant(page: Page) {
   await loginSubmit(page).click();
 
   const error = loginError(page);
-  const garageHeading = page.getByRole("heading", { name: "Garage" });
+  const garageHeading = garagePageHeading(page);
 
   await Promise.race([
     garageHeading.waitFor({ state: "visible", timeout: 45_000 }),
@@ -97,19 +98,26 @@ export async function openAddRegistration(page: Page) {
       /* already settled */
     });
 
+  // Empty garage (#81): "Scan a registration card" opens a file picker.
+  // "Enter a VIN instead" opens the add-registration form this helper asserts.
+  const enterVin = page
+    .getByTestId("enter-vin-button")
+    .or(page.getByRole("button", { name: "Enter a VIN instead", exact: true }));
   const first = addFirstRegistration(page);
   const add = addVehicle(page);
   const another = addAnotherRegistration(page);
-  const anyAdd = first.or(add).or(another);
+  const anyAdd = enterVin.or(add).or(another).or(first);
 
   await expect(anyAdd.first()).toBeVisible({ timeout: 20_000 });
 
-  if (await first.isVisible().catch(() => false)) {
-    await first.click();
+  if (await enterVin.isVisible().catch(() => false)) {
+    await enterVin.click();
   } else if (await add.isVisible().catch(() => false)) {
     await add.click();
   } else if (await another.isVisible().catch(() => false)) {
     await another.click();
+  } else if (await first.isVisible().catch(() => false)) {
+    await first.click();
   } else {
     throw new Error("Could not find an Add registration control on /garage");
   }

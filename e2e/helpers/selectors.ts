@@ -71,6 +71,14 @@ export function navGarage(page: Page) {
   return page.getByRole("link", { name: "Garage", exact: true });
 }
 
+/**
+ * App-shell page title. Exact so it does not also match
+ * "Your garage is empty" (strict-mode violation).
+ */
+export function garagePageHeading(page: Page) {
+  return page.getByRole("heading", { name: "Garage", exact: true });
+}
+
 export function navDocuments(page: Page) {
   return page.getByRole("link", { name: "Documents", exact: true });
 }
