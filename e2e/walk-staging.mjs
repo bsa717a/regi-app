@@ -88,6 +88,7 @@ try {
     path: path.join(outDir, "staging-settings-form.png"),
     type: "png",
   });
+  await page.setViewportSize({ width: 430, height: 932 });
 
   await page.goto(`${baseURL}/garage/plates`, { waitUntil: "domcontentloaded" });
   await page
