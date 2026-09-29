@@ -67,14 +67,26 @@ try {
     .getByRole("heading", { name: "Settings", exact: true })
     .waitFor({ state: "visible", timeout: 20_000 });
   await page.getByTestId("settings-profile").waitFor({ state: "visible" });
-  await page.locator("summary").filter({ hasText: "Edit profile" }).click();
-  await page
-    .getByTestId("applicant-profile-form")
-    .waitFor({ state: "visible", timeout: 20_000 });
+  const editProfile = page.locator("summary").filter({ hasText: "Edit profile" });
+  await editProfile.click();
+  const profileForm = page.getByTestId("applicant-profile-form");
+  await profileForm.waitFor({ state: "visible", timeout: 20_000 });
+  await page.locator("details").filter({ hasText: "Edit profile" }).evaluate((el) => {
+    el.open = true;
+  });
+  await profileForm.waitFor({ state: "visible", timeout: 20_000 });
+  // Tall viewport so the profile header and the opened form are in one frame.
+  // A full-page capture of this screen omitted the open <details> body.
+  await page.setViewportSize({ width: 430, height: 1700 });
+  await page.getByTestId("settings-profile").scrollIntoViewIfNeeded();
   await page.screenshot({
     path: path.join(outDir, "staging-settings-profile.png"),
     type: "png",
-    fullPage: true,
+    fullPage: false,
+  });
+  await profileForm.screenshot({
+    path: path.join(outDir, "staging-settings-form.png"),
+    type: "png",
   });
 
   await page.goto(`${baseURL}/garage/plates`, { waitUntil: "domcontentloaded" });
