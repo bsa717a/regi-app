@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import type { RegistrationStatus } from "@/lib/stateEngine/status";
 import { statusLabel } from "@/lib/registrations/brandCopy";
 
@@ -81,6 +82,21 @@ export function BrandSwitch({
         }`}
       />
     </button>
+  );
+}
+
+/** Raster REGI mark (app icon). No SVG illustration. */
+export function RegiLogo({ size = 36 }: { size?: number }) {
+  return (
+    <Image
+      src="/icons/icon-192.png"
+      alt="REGI"
+      width={size}
+      height={size}
+      loading="eager"
+      className="shrink-0"
+      data-testid="regi-logo"
+    />
   );
 }
 

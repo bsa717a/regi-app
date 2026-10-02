@@ -21,11 +21,12 @@ import {
   signupPassword,
   signupPhone,
   signupSubmit,
+  garagePageHeading,
 } from "./selectors";
 
 export async function expectGarage(page: Page) {
   await expect(page).toHaveURL(/\/garage/, { timeout: 45_000 });
-  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
+  await expect(garagePageHeading(page)).toBeVisible({
     timeout: 30_000,
   });
 }
@@ -44,7 +45,7 @@ export async function signInDemoApplicant(page: Page) {
   await loginSubmit(page).click();
 
   const error = loginError(page);
-  const garageHeading = page.getByRole("heading", { name: "Garage" });
+  const garageHeading = garagePageHeading(page);
 
   await Promise.race([
     garageHeading.waitFor({ state: "visible", timeout: 45_000 }),

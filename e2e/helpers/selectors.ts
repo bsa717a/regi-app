@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { GARAGE_PAGE_HEADING } from "../../src/lib/garage/heading";
 
 /**
  * Prefer data-testids (this PR / #58). Fall back to labels/roles that
@@ -69,6 +70,16 @@ export function signupSubmit(page: Page) {
 /** Bottom-nav tab — not CTAs like "Go to garage". */
 export function navGarage(page: Page) {
   return page.getByRole("link", { name: "Garage", exact: true });
+}
+
+/**
+ * Garage screen title. Anchored so it does not also match
+ * "Your garage is empty" (strict-mode violation from a substring "Garage").
+ * Accepts the title still on durable staging ("Garage") and the personalized
+ * header ("Your Garage", "Derek's Garage", "James' Garage").
+ */
+export function garagePageHeading(page: Page) {
+  return page.getByRole("heading", { name: GARAGE_PAGE_HEADING });
 }
 
 export function navDocuments(page: Page) {

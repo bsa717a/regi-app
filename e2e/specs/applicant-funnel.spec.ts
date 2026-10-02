@@ -8,6 +8,7 @@ import {
   confirmVehicle,
   documentPreviewModal,
   feeEstimate,
+  garagePageHeading,
   navDocuments,
   navGarage,
   navRenewals,
@@ -66,7 +67,7 @@ async function fillApplicantProfileFields(page: Page) {
 
 async function exerciseRegistrationForm(page: Page) {
   await navGarage(page).click();
-  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
+  await expect(garagePageHeading(page)).toBeVisible({
     timeout: 20_000,
   });
 
@@ -141,7 +142,7 @@ async function exerciseDocumentPreview(page: Page) {
   }
 
   await navGarage(page).click();
-  await expect(page.getByRole("heading", { name: "Garage" })).toBeVisible({
+  await expect(garagePageHeading(page)).toBeVisible({
     timeout: 15_000,
   });
   const firstVehicle = vehicleItems(page).first();
