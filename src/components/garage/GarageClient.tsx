@@ -15,7 +15,7 @@ import {
   garageComplianceBanner,
   registrationCountLabel,
 } from "@/lib/registrations/brandCopy";
-import { pageTitle } from "@/lib/seo/pageTitle";
+import { useDocumentTitle } from "@/lib/seo/useDocumentTitle";
 import type { RegistrationDto } from "@/lib/registrations/types";
 
 type ViewState = "list" | "adding" | "editing";
@@ -36,9 +36,7 @@ export function GarageClient() {
   const [addEntry, setAddEntry] = useState<"default" | "vin">("default");
   const [scanFile, setScanFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    document.title = pageTitle(heading);
-  }, [heading]);
+  useDocumentTitle(heading);
 
   useEffect(() => {
     if (authLoading) return;
