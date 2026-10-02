@@ -45,6 +45,65 @@ export function registrationTypeArtUrl(type: RegistrationType): string {
   return REGISTRATION_TYPE_ART[type];
 }
 
+/**
+ * Full-bleed side profiles when a card has no photo and no catalog render.
+ * 2400×1000 WebP (12:5, about 3× a phone card). Light sits on the #e4e7ee
+ * media well; dark is cream and amber on #0a0d12. Raster only.
+ */
+export const FALLBACK_ILLUSTRATION_ART: Record<
+  RegistrationIllustrationKind,
+  { light: string; dark: string }
+> = {
+  suv: {
+    light: "/images/garage/fallback/suv-light.webp",
+    dark: "/images/garage/fallback/suv-dark.webp",
+  },
+  pickup: {
+    light: "/images/garage/fallback/pickup-light.webp",
+    dark: "/images/garage/fallback/pickup-dark.webp",
+  },
+  sedan: {
+    light: "/images/garage/fallback/sedan-light.webp",
+    dark: "/images/garage/fallback/sedan-dark.webp",
+  },
+  van: {
+    light: "/images/garage/fallback/van-light.webp",
+    dark: "/images/garage/fallback/van-dark.webp",
+  },
+  coupe: {
+    light: "/images/garage/fallback/coupe-light.webp",
+    dark: "/images/garage/fallback/coupe-dark.webp",
+  },
+  motorcycle: {
+    light: "/images/garage/fallback/motorcycle-light.webp",
+    dark: "/images/garage/fallback/motorcycle-dark.webp",
+  },
+  motorhome: {
+    light: "/images/garage/fallback/motorhome-light.webp",
+    dark: "/images/garage/fallback/motorhome-dark.webp",
+  },
+  trailer: {
+    light: "/images/garage/fallback/trailer-light.webp",
+    dark: "/images/garage/fallback/trailer-dark.webp",
+  },
+  ohv: {
+    light: "/images/garage/fallback/ohv-light.webp",
+    dark: "/images/garage/fallback/ohv-dark.webp",
+  },
+  snowmobile: {
+    light: "/images/garage/fallback/snowmobile-light.webp",
+    dark: "/images/garage/fallback/snowmobile-dark.webp",
+  },
+  boat: {
+    light: "/images/garage/fallback/boat-light.webp",
+    dark: "/images/garage/fallback/boat-dark.webp",
+  },
+  default: {
+    light: "/images/garage/fallback/default-light.webp",
+    dark: "/images/garage/fallback/default-dark.webp",
+  },
+};
+
 export function illustrationKindFromBodyClass(
   bodyClass: string | null | undefined,
 ): RegistrationIllustrationKind {
