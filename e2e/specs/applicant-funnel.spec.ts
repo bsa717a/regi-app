@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { hasDemoPassword, missingPasswordMessage } from "../env";
+import { demoEmail, hasDemoPassword, missingPasswordMessage } from "../env";
 import { openAddRegistration, signInDemoApplicant } from "../helpers/auth";
 import {
   addManually,
@@ -45,11 +45,20 @@ test.describe("Applicant funnel against staging", () => {
 
 async function fillApplicantProfileFields(page: Page) {
   await navSettings(page).click();
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible({
     timeout: 20_000,
   });
+
+  const profile = page.getByTestId("settings-profile");
+  await expect(profile).toBeVisible({ timeout: 20_000 });
+  await expect(profile.getByText(demoEmail(), { exact: true })).toBeVisible();
+  await expect(profile.getByText("VERIFIED", { exact: true })).toBeVisible();
+
+  // The profile form lives in a closed <details>. summary is not a button.
+  const editProfile = page.locator("summary").filter({ hasText: "Edit profile" });
+  await expect(editProfile).toBeVisible({ timeout: 20_000 });
+  await editProfile.click();
   await expect(applicantProfileForm(page)).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(/Signed in as/i)).toBeVisible();
 
   const name = applicantName(page);
   const current = await name.inputValue();

@@ -85,16 +85,20 @@ export function BrandSwitch({
   );
 }
 
-/** Raster REGI mark (app icon). No SVG illustration. */
-export function RegiLogo({ size = 36 }: { size?: number }) {
+/**
+ * Light REGI wordmark for the dark Operator ground.
+ * Raster only — rendered from Space Grotesk and the amber brand pip.
+ * Intrinsic 376×127; displayed about 32px tall.
+ */
+export function RegiLogo() {
   return (
     <Image
-      src="/icons/icon-192.png"
+      src="/images/brand/regi-wordmark.png"
       alt="REGI"
-      width={size}
-      height={size}
+      width={376}
+      height={127}
       loading="eager"
-      className="shrink-0"
+      className="h-8 w-auto shrink-0"
       data-testid="regi-logo"
     />
   );
