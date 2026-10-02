@@ -30,6 +30,16 @@ export function useDocumentTitle(segment: string) {
       characterData: true,
     });
 
-    return () => observer.disconnect();
+    // Next reapplies metadata in a parent effect, which is before this timer.
+    // Once the personalized title survived that write, stop watching so a
+    // later route's commit can own `document.title` before this effect cleans up.
+    const stopWatching = window.setTimeout(() => {
+      if (document.title === next) observer.disconnect();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(stopWatching);
+      observer.disconnect();
+    };
   }, [segment]);
 }
