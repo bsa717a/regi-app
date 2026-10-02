@@ -9,6 +9,10 @@ import { chromium } from "playwright";
 
 const STAGING_ORIGIN = "https://regi-staging-90502049802.us-central1.run.app";
 
+// Same acceptance as GARAGE_PAGE_HEADING: the title still on durable
+// staging ("Garage") and the personalized header ("Your Garage", "Derek's Garage").
+const GARAGE_HEADING = /^(?:Garage|.+ Garage)$/;
+
 const PRODUCTION_HOSTS = new Set([
   "app.regireg.com",
   "www.regireg.com",
@@ -157,10 +161,6 @@ async function captureToken() {
     throw new Error("Did not capture a staging API token after login.");
   }
 }
-
-// Same acceptance as GARAGE_PAGE_HEADING: the title still on durable
-// staging ("Garage") and the personalized header ("Your Garage", "Derek's Garage").
-const GARAGE_HEADING = /^(?:Garage|.+ Garage)$/;
 
 async function waitForGarage(page) {
   const heading = page.getByRole("heading", {
