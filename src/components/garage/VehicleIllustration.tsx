@@ -70,16 +70,16 @@ export function VehicleIllustration({
       aria-hidden
       data-testid="garage-vehicle-fallback"
     >
-      {/* Raster side profile. 2400×1000 is ~3× the card. Light + dark. */}
+      {/* Raster side profile. 2400×1000 is ~3× the card. Both decode up front so dark mode is not blank. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={art.light}
         alt=""
         width={2400}
         height={1000}
-        className="h-full w-full object-contain dark:hidden"
+        className="absolute inset-0 h-full w-full object-contain dark:hidden"
         data-testid="garage-vehicle-fallback-light"
-        loading="lazy"
+        loading="eager"
       />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -87,9 +87,9 @@ export function VehicleIllustration({
         alt=""
         width={2400}
         height={1000}
-        className="hidden h-full w-full object-contain dark:block"
+        className="absolute inset-0 hidden h-full w-full object-contain dark:block"
         data-testid="garage-vehicle-fallback-dark"
-        loading="lazy"
+        loading="eager"
       />
     </div>
   );

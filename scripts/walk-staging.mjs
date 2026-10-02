@@ -224,11 +224,26 @@ async function shotFallbackCard(page) {
     throw new Error("Photo-less garage card fallback still contains an svg.");
   }
   await page.evaluate(() => document.documentElement.classList.remove("dark"));
+  await page.waitForFunction(() => {
+    const img = document.querySelector(
+      '[data-testid="garage-vehicle-fallback-light"]',
+    );
+    return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+  });
   await card.screenshot({
     path: path.join(outDir, "garage-fallback-card-light.png"),
     type: "png",
   });
   await page.evaluate(() => document.documentElement.classList.add("dark"));
+  await page.waitForFunction(() => {
+    const img = document.querySelector(
+      '[data-testid="garage-vehicle-fallback-dark"]',
+    );
+    const shown = img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+    if (!shown || !(img instanceof HTMLImageElement)) return false;
+    const box = img.getBoundingClientRect();
+    return box.height > 80 && box.width > 200;
+  });
   await card.screenshot({
     path: path.join(outDir, "garage-fallback-card-dark.png"),
     type: "png",
