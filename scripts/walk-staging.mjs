@@ -67,8 +67,13 @@ page.on("request", (request) => {
   }
 });
 
+const POSSESSIVE_NAME = "Demo Applicant";
+const POSSESSIVE_HEADING = "Demo's Garage";
+
 const cleanupErrors = [];
 let createdId = null;
+let originalName;
+let namePatched = false;
 let failure = null;
 
 try {
@@ -81,35 +86,41 @@ try {
 
   const existing = await api(token, "/api/registrations");
   const rows = existing.registrations ?? [];
-  const garageWasEmpty = rows.length === 0;
-  if (garageWasEmpty) {
-    await waitForEmptyGarage(page);
-    await shot(page, "garage-empty.png");
-
-    createdId = await seedVehicle(page, token);
-    await page.reload({ waitUntil: "domcontentloaded" });
-    hasWordmark = (await waitForGarage(page)) || hasWordmark;
-    await page
-      .getByRole("heading", { level: 3, name: "Walk car", exact: true })
-      .waitFor({
-        state: "visible",
-        timeout: 20_000,
-      });
-    await shot(page, "garage-filled.png");
-
-    await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
-    const removedId = createdId;
-    createdId = null;
-    const after = await api(token, "/api/registrations");
-    if ((after.registrations ?? []).some((row) => row.id === removedId)) {
-      throw new Error("Seeded vehicle was still listed after delete.");
-    }
-  } else {
-    // Shared demo account is not guaranteed empty. Do not delete its vehicles.
-    console.log(
-      `Demo garage already has ${rows.length} vehicle(s). Leaving them in place and skipping the empty shot.`,
+  if (rows.length > 0) {
+    throw new Error(
+      `Demo garage already has ${rows.length} vehicle(s). Refusing to delete them for an empty shot.`,
     );
-    await shot(page, "garage-filled.png");
+  }
+
+  const me = await api(token, "/api/me");
+  originalName = me.user?.name ?? null;
+  await api(token, "/api/me", {
+    method: "PATCH",
+    body: JSON.stringify({ name: POSSESSIVE_NAME }),
+  });
+  namePatched = true;
+  await page.goto(`${STAGING_ORIGIN}/garage`, { waitUntil: "domcontentloaded" });
+  hasWordmark = (await waitForGarage(page, POSSESSIVE_HEADING)) || hasWordmark;
+  await waitForEmptyGarage(page);
+  await shot(page, "garage-empty.png", POSSESSIVE_HEADING);
+
+  createdId = await seedVehicle(page, token);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  hasWordmark = (await waitForGarage(page, POSSESSIVE_HEADING)) || hasWordmark;
+  await page
+    .getByRole("heading", { level: 3, name: "Walk car", exact: true })
+    .waitFor({
+      state: "visible",
+      timeout: 20_000,
+    });
+  await shot(page, "garage-filled.png", POSSESSIVE_HEADING);
+
+  await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
+  const removedId = createdId;
+  createdId = null;
+  const after = await api(token, "/api/registrations");
+  if ((after.registrations ?? []).some((row) => row.id === removedId)) {
+    throw new Error("Seeded vehicle was still listed after delete.");
   }
 
   if (!hasWordmark) {
@@ -118,17 +129,9 @@ try {
     );
   } else {
     await presentNamelessProfile(page);
-    await waitForGarage(page);
-    await page
-      .getByRole("heading", { level: 1, name: "Your Garage", exact: true })
-      .waitFor({
-        state: "visible",
-        timeout: 20_000,
-      });
-    if (garageWasEmpty) {
-      await waitForEmptyGarage(page);
-    }
-    await shot(page, "garage-your-garage-fallback.png");
+    await waitForGarage(page, "Your Garage");
+    await waitForEmptyGarage(page);
+    await shot(page, "garage-your-garage-fallback.png", "Your Garage");
   }
 } catch (err) {
   failure = err;
@@ -138,6 +141,16 @@ try {
       await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
     } catch (err) {
       cleanupErrors.push(`delete seeded vehicle: ${err.message}`);
+    }
+  }
+  if (namePatched && token) {
+    try {
+      await api(token, "/api/me", {
+        method: "PATCH",
+        body: JSON.stringify({ name: originalName }),
+      });
+    } catch (err) {
+      cleanupErrors.push(`restore profile name: ${err.message}`);
     }
   }
   await browser.close();
@@ -164,10 +177,23 @@ async function captureToken() {
   }
 }
 
-async function waitForGarage(page) {
+async function waitForDoorGone(page) {
+  // The sign-in reveal covers the app with the garage-door image for ~1.8s.
+  // The heading underneath is already in the DOM, so a shot taken then is
+  // only the dark panels.
+  await page.locator(".garage-door").waitFor({ state: "detached", timeout: 20_000 });
+  await page
+    .getByText("Opening garage. Loading your app.")
+    .waitFor({ state: "hidden", timeout: 5_000 })
+    .catch(() => {});
+}
+
+async function waitForGarage(page, headingName) {
+  await waitForDoorGone(page);
   const heading = page.getByRole("heading", {
     level: 1,
-    name: GARAGE_HEADING,
+    name: headingName ?? GARAGE_HEADING,
+    exact: Boolean(headingName),
   });
   await heading.waitFor({ state: "visible", timeout: 45_000 });
 
@@ -191,15 +217,16 @@ async function waitForGarage(page) {
     .getByLabel("Loading registrations")
     .waitFor({ state: "hidden", timeout: 30_000 })
     .catch(() => {});
+  await waitForDoorGone(page);
   return hasWordmark;
 }
 
 async function waitForEmptyGarage(page) {
-  await page
-    .getByTestId("garage-empty-state")
-    .or(page.getByRole("heading", { name: /garage is empty/i }))
-    .first()
-    .waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByTestId("garage-empty-state").waitFor({
+    state: "visible",
+    timeout: 20_000,
+  });
+  await waitForDoorGone(page);
 }
 
 function isMeUrl(url) {
@@ -252,14 +279,29 @@ async function presentNamelessProfile(page) {
   await profileLoaded;
 }
 
-async function shot(page, filename) {
+async function shot(page, filename, headingText) {
+  await waitForDoorGone(page);
+  const heading = page.getByRole("heading", {
+    level: 1,
+    name: headingText,
+    exact: true,
+  });
+  await heading.waitFor({ state: "visible", timeout: 20_000 });
+  const box = await heading.boundingBox();
+  if (!box || box.height < 8) {
+    throw new Error(`Refusing to shoot ${filename}: heading is not painted`);
+  }
+  if ((await page.locator(".garage-door").count()) > 0) {
+    throw new Error(`Refusing to shoot ${filename}: garage door splash is still up`);
+  }
   await page.evaluate(() => window.scrollTo(0, 0));
+  const text = (await heading.innerText()).trim();
   await page.screenshot({
     path: path.join(outDir, filename),
     type: "png",
     fullPage: false,
   });
-  console.log(`wrote ${filename}`);
+  console.log(`wrote ${filename} header=${text}`);
 }
 
 async function api(authToken, apiPath, options = {}) {
