@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import type { RegistrationStatus } from "@/lib/stateEngine/status";
 import { statusLabel } from "@/lib/registrations/brandCopy";
 
@@ -81,6 +82,25 @@ export function BrandSwitch({
         }`}
       />
     </button>
+  );
+}
+
+/**
+ * Light REGI wordmark for the dark Operator ground.
+ * Raster only — rendered from Space Grotesk and the amber brand pip.
+ * Intrinsic 376×127; displayed about 32px tall.
+ */
+export function RegiLogo() {
+  return (
+    <Image
+      src="/images/brand/regi-wordmark.png"
+      alt="REGI"
+      width={376}
+      height={127}
+      loading="eager"
+      className="h-8 w-auto shrink-0"
+      data-testid="regi-logo"
+    />
   );
 }
 
