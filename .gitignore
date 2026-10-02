@@ -29,6 +29,9 @@ dist/
 # Prisma
 prisma/*.db
 
+# Runtime vehicle-catalog cache when GCS is not configured
+/data/vehicle-catalog/
+
 # Testing
 coverage/
 playwright-report/
