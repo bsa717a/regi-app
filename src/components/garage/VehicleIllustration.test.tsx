@@ -79,6 +79,31 @@ describe("VehicleIllustration catalog photos", () => {
     await unmount();
   });
 
+  it("uses the sedan render when the body class is unknown", async () => {
+    const { container, unmount } = await render(
+      <VehicleIllustration
+        year={2003}
+        make="Honda"
+        model="Accord"
+        label="Walk car"
+        registrationType="passenger"
+      />,
+    );
+
+    expect(container.querySelector("svg")).toBeNull();
+    expect(
+      container
+        .querySelector('[data-testid="garage-vehicle-fallback-light"]')
+        ?.getAttribute("src"),
+    ).toBe("/images/garage/fallback/sedan-light.webp");
+    expect(
+      container
+        .querySelector('[data-testid="garage-vehicle-fallback-dark"]')
+        ?.getAttribute("src"),
+    ).toBe("/images/garage/fallback/sedan-dark.webp");
+    await unmount();
+  });
+
   it("ships a light and dark webp for every fallback kind", () => {
     for (const art of Object.values(FALLBACK_ILLUSTRATION_ART)) {
       for (const src of [art.light, art.dark]) {

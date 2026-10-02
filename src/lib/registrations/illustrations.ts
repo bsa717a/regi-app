@@ -46,9 +46,9 @@ export function registrationTypeArtUrl(type: RegistrationType): string {
 }
 
 /**
- * Full-bleed side profiles when a card has no photo and no catalog render.
- * 2400×1000 WebP (12:5, about 3× a phone card). Light sits on the #e4e7ee
- * media well; dark is cream and amber on #0a0d12. Raster only.
+ * Photoreal side profiles when a card has no photo and no catalog render.
+ * 2400×1000 WebP. Light is the vehicle on #e4e7ee; dark is the same vehicle
+ * on #141922. Unknown body class uses the sedan. Raster only.
  */
 export const FALLBACK_ILLUSTRATION_ART: Record<
   RegistrationIllustrationKind,
@@ -99,8 +99,8 @@ export const FALLBACK_ILLUSTRATION_ART: Record<
     dark: "/images/garage/fallback/boat-dark.webp",
   },
   default: {
-    light: "/images/garage/fallback/default-light.webp",
-    dark: "/images/garage/fallback/default-dark.webp",
+    light: "/images/garage/fallback/sedan-light.webp",
+    dark: "/images/garage/fallback/sedan-dark.webp",
   },
 };
 
