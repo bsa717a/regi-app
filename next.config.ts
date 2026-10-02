@@ -7,6 +7,7 @@ const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  devIndicators: false,
   // Parent dirs may contain unrelated lockfiles; keep tracing rooted here.
   outputFileTracingRoot: appRoot,
   turbopack: {

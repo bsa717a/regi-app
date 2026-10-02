@@ -10,16 +10,20 @@ import { EditRegistrationFlow } from "@/components/garage/EditRegistrationFlow";
 import { GarageEmptyState } from "@/components/garage/GarageEmptyState";
 import { VehicleCard } from "@/components/garage/VehicleCard";
 import { ApiError, listRegistrations } from "@/lib/api/client";
+import { garageHeading } from "@/lib/garage/heading";
 import {
   garageComplianceBanner,
   registrationCountLabel,
 } from "@/lib/registrations/brandCopy";
+import { useDocumentTitle } from "@/lib/seo/useDocumentTitle";
 import type { RegistrationDto } from "@/lib/registrations/types";
 
 type ViewState = "list" | "adding" | "editing";
 
 export function GarageClient() {
-  const { idToken, getIdToken, loading: authLoading } = useAuth();
+  const { user, profile, idToken, getIdToken, loading: authLoading } = useAuth();
+  const nameOnFile = profile ? profile.name : user?.displayName;
+  const heading = garageHeading(nameOnFile);
   const [vehicles, setVehicles] = useState<RegistrationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +35,8 @@ export function GarageClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [addEntry, setAddEntry] = useState<"default" | "vin">("default");
   const [scanFile, setScanFile] = useState<File | null>(null);
+
+  useDocumentTitle(heading);
 
   useEffect(() => {
     if (authLoading) return;
@@ -86,7 +92,7 @@ export function GarageClient() {
 
   if (view === "adding") {
     return (
-      <AppShell title="Garage">
+      <AppShell title={heading} headerLayout="stacked">
         <AddRegistrationFlow
           onCancel={() => {
             setScanFile(null);
@@ -111,7 +117,7 @@ export function GarageClient() {
 
   if (view === "editing" && editingRegistration) {
     return (
-      <AppShell title="Garage">
+      <AppShell title={heading} headerLayout="stacked">
         <EditRegistrationFlow
           registration={editingRegistration}
           onCancel={() => {
@@ -147,7 +153,8 @@ export function GarageClient() {
 
   return (
     <AppShell
-      title="Garage"
+      title={heading}
+      headerLayout="stacked"
       action={
         vehicles.length > 0 ? (
           <button

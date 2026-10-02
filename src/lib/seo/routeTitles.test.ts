@@ -33,7 +33,7 @@ describe("route document titles", () => {
     expect(absoluteTitle(signup)).toBe("Sign up · REGI");
     expect(absoluteTitle(forgotPassword)).toBe("Forgot password · REGI");
     expect(absoluteTitle(dashboard)).toBe("Dashboard · REGI");
-    expect(absoluteTitle(garage)).toBe("Garage · REGI");
+    expect(absoluteTitle(garage)).toBe("Your Garage · REGI");
     expect(absoluteTitle(renewals)).toBe("Renewals · REGI");
     expect(absoluteTitle(settings)).toBe("Settings · REGI");
     expect(absoluteTitle(documents)).toBe("Documents · REGI");
