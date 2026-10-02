@@ -65,8 +65,6 @@ page.on("request", (request) => {
 
 const cleanupErrors = [];
 let createdId = null;
-let originalName;
-let nameCleared = false;
 let failure = null;
 
 try {
@@ -74,52 +72,58 @@ try {
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill(password);
   await page.getByTestId("login-submit").click();
-  await waitForGarage(page);
+  let hasWordmark = await waitForGarage(page);
   await captureToken();
 
   const existing = await api(token, "/api/registrations");
   const rows = existing.registrations ?? [];
-  if (rows.length > 0) {
-    throw new Error(
-      `Demo garage already has ${rows.length} vehicle(s). Refusing to delete them for an empty shot.`,
+  const garageWasEmpty = rows.length === 0;
+  if (garageWasEmpty) {
+    await waitForEmptyGarage(page);
+    await shot(page, "garage-empty.png");
+
+    createdId = await seedVehicle(token);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    hasWordmark = (await waitForGarage(page)) || hasWordmark;
+    await page.getByText("Walk car", { exact: true }).waitFor({
+      state: "visible",
+      timeout: 20_000,
+    });
+    await shot(page, "garage-filled.png");
+
+    await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
+    const removedId = createdId;
+    createdId = null;
+    const after = await api(token, "/api/registrations");
+    if ((after.registrations ?? []).some((row) => row.id === removedId)) {
+      throw new Error("Seeded vehicle was still listed after delete.");
+    }
+  } else {
+    // Shared demo account is not guaranteed empty. Do not delete its vehicles.
+    console.log(
+      `Demo garage already has ${rows.length} vehicle(s). Leaving them in place and skipping the empty shot.`,
     );
+    await shot(page, "garage-filled.png");
   }
 
-  await page.getByTestId("garage-empty-state").waitFor({ state: "visible" });
-  await shot(page, "garage-empty.png");
-
-  createdId = await seedVehicle(token);
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await waitForGarage(page);
-  await page.getByText("Walk car", { exact: true }).waitFor({
-    state: "visible",
-    timeout: 20_000,
-  });
-  await shot(page, "garage-filled.png");
-
-  await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
-  const removedId = createdId;
-  createdId = null;
-  const after = await api(token, "/api/registrations");
-  if ((after.registrations ?? []).some((row) => row.id === removedId)) {
-    throw new Error("Seeded vehicle was still listed after delete.");
+  if (!hasWordmark) {
+    console.log(
+      "This host still has the pre-personalization garage header. Skipping the Your Garage fallback shot.",
+    );
+  } else {
+    await presentNamelessProfile(page);
+    await waitForGarage(page);
+    await page
+      .getByRole("heading", { level: 1, name: "Your Garage", exact: true })
+      .waitFor({
+        state: "visible",
+        timeout: 20_000,
+      });
+    if (garageWasEmpty) {
+      await waitForEmptyGarage(page);
+    }
+    await shot(page, "garage-your-garage-fallback.png");
   }
-
-  const me = await api(token, "/api/me");
-  originalName = me.user?.name ?? null;
-  await api(token, "/api/me", {
-    method: "PATCH",
-    body: JSON.stringify({ name: null }),
-  });
-  nameCleared = true;
-  await page.goto(`${STAGING_ORIGIN}/garage`, { waitUntil: "domcontentloaded" });
-  await waitForGarage(page);
-  await page.getByRole("heading", { level: 1, name: "Your Garage", exact: true }).waitFor({
-    state: "visible",
-    timeout: 20_000,
-  });
-  await page.getByTestId("garage-empty-state").waitFor({ state: "visible" });
-  await shot(page, "garage-your-garage-fallback.png");
 } catch (err) {
   failure = err;
 } finally {
@@ -128,16 +132,6 @@ try {
       await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
     } catch (err) {
       cleanupErrors.push(`delete seeded vehicle: ${err.message}`);
-    }
-  }
-  if (nameCleared && token) {
-    try {
-      await api(token, "/api/me", {
-        method: "PATCH",
-        body: JSON.stringify({ name: originalName }),
-      });
-    } catch (err) {
-      cleanupErrors.push(`restore profile name: ${err.message}`);
     }
   }
   await browser.close();
@@ -164,26 +158,96 @@ async function captureToken() {
   }
 }
 
+// Same acceptance as GARAGE_PAGE_HEADING: the title still on durable
+// staging ("Garage") and the personalized header ("Your Garage", "Derek's Garage").
+const GARAGE_HEADING = /^(?:Garage|.+ Garage)$/;
+
 async function waitForGarage(page) {
+  const heading = page.getByRole("heading", {
+    level: 1,
+    name: GARAGE_HEADING,
+  });
+  await heading.waitFor({ state: "visible", timeout: 45_000 });
+
   const logo = page.getByTestId("regi-logo");
-  await logo.waitFor({ state: "visible", timeout: 45_000 });
-  const src = await logo.getAttribute("src");
-  if (!src?.includes("regi-wordmark")) {
-    throw new Error(`Expected the light REGI wordmark, got ${src}`);
+  const hasWordmark = (await logo.count()) > 0;
+  if (hasWordmark) {
+    await logo.waitFor({ state: "visible", timeout: 10_000 });
+    const src = await logo.getAttribute("src");
+    if (!src?.includes("regi-wordmark")) {
+      throw new Error(`Expected the light REGI wordmark, got ${src}`);
+    }
+    const box = await logo.boundingBox();
+    if (!box || box.height < 24 || box.height > 40 || box.width < 70) {
+      throw new Error(
+        `Wordmark box was ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : "missing"}`,
+      );
+    }
   }
-  const box = await logo.boundingBox();
-  if (!box || box.height < 24 || box.height > 40 || box.width < 70) {
-    throw new Error(
-      `Wordmark box was ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : "missing"}`,
-    );
-  }
-  await page
-    .getByRole("heading", { level: 1, name: /Garage$/ })
-    .waitFor({ state: "visible", timeout: 20_000 });
+
   await page
     .getByLabel("Loading registrations")
     .waitFor({ state: "hidden", timeout: 30_000 })
     .catch(() => {});
+  return hasWordmark;
+}
+
+async function waitForEmptyGarage(page) {
+  await page
+    .getByTestId("garage-empty-state")
+    .or(page.getByRole("heading", { name: /garage is empty/i }))
+    .first()
+    .waitFor({ state: "visible", timeout: 20_000 });
+}
+
+function isMeUrl(url) {
+  try {
+    return new URL(url).pathname === "/api/me";
+  } catch {
+    return false;
+  }
+}
+
+async function presentNamelessProfile(page) {
+  // PATCH { name: null } does not survive the next load. AuthProvider posts
+  // the Firebase displayName, and getOrCreateUser writes the token name back,
+  // so the heading stays personalized. Serve this page a nameless profile
+  // instead of mutating the shared demo account.
+  await page.route(/\/api\/me(?:\?|#|$)/, async (route) => {
+    const response = await route.fetch();
+    const text = await response.text();
+    let body = text;
+    const headers = { ...response.headers() };
+    delete headers["content-encoding"];
+    delete headers["content-length"];
+    delete headers["transfer-encoding"];
+    if (response.ok()) {
+      try {
+        const json = text ? JSON.parse(text) : null;
+        if (json && typeof json === "object" && json.user) {
+          json.user.name = null;
+        }
+        body = JSON.stringify(json);
+        headers["content-type"] = "application/json";
+      } catch {
+        body = text;
+      }
+    }
+    await route.fulfill({
+      status: response.status(),
+      headers,
+      body,
+    });
+  });
+  const profileLoaded = page.waitForResponse(
+    (response) =>
+      isMeUrl(response.url()) &&
+      response.request().method() !== "OPTIONS" &&
+      response.ok(),
+    { timeout: 20_000 },
+  );
+  await page.goto(`${STAGING_ORIGIN}/garage`, { waitUntil: "domcontentloaded" });
+  await profileLoaded;
 }
 
 async function shot(page, filename) {
