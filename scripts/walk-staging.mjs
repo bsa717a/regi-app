@@ -89,10 +89,12 @@ try {
     createdId = await seedVehicle(page, token);
     await page.reload({ waitUntil: "domcontentloaded" });
     hasWordmark = (await waitForGarage(page)) || hasWordmark;
-    await page.getByText("Walk car", { exact: true }).waitFor({
-      state: "visible",
-      timeout: 20_000,
-    });
+    await page
+      .getByRole("heading", { level: 3, name: "Walk car", exact: true })
+      .waitFor({
+        state: "visible",
+        timeout: 20_000,
+      });
     await shot(page, "garage-filled.png");
 
     await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
