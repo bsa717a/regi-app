@@ -102,6 +102,9 @@ export function createPrismaCatalogCache(): VehicleCatalogCache {
           failureReason: row.failureReason,
         },
         update: {
+          // The WebP was stored under this id. Keeping the old primary key
+          // would make the asset route reject gcsPath (it must match the row id).
+          id: row.id,
           displayMake: row.displayMake,
           displayModel: row.displayModel,
           generationLabel: row.generationLabel,
