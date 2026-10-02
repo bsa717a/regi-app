@@ -1,69 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { vehicleCatalogImage } from "@/lib/registrations/vehicleCatalogImage";
+import { genericVehicleRaster } from "@/lib/registrations/vehicleCatalogImage";
 
-describe("vehicleCatalogImage", () => {
-  it("picks the owned side profile for a known year, make, and model", () => {
-    expect(
-      vehicleCatalogImage({ year: 2022, make: "Ford", model: "F-150" }),
-    ).toBe("/images/vehicles/ford-f-150-2021.webp");
-    expect(
-      vehicleCatalogImage({
-        year: 2013,
-        make: "Volkswagen",
-        model: "Touareg",
-      }),
-    ).toBe("/images/vehicles/volkswagen-touareg-2011.webp");
-    expect(
-      vehicleCatalogImage({ year: 2021, make: "Chevrolet", model: "Tahoe" }),
-    ).toBe("/images/vehicles/chevrolet-tahoe-2021.webp");
-    expect(
-      vehicleCatalogImage({ year: 2019, make: "Tesla", model: "Model 3" }),
-    ).toBe("/images/vehicles/tesla-model-3-2017.webp");
-    expect(
-      vehicleCatalogImage({ year: 2023, make: "Rivian", model: "R1T" }),
-    ).toBe("/images/vehicles/rivian-r1t-2022.webp");
-  });
-
-  it("accepts trim suffixes and make aliases inside the same generation", () => {
-    expect(
-      vehicleCatalogImage({ year: 2021, make: "Ford", model: "F150 XLT" }),
-    ).toBe("/images/vehicles/ford-f-150-2021.webp");
-    expect(
-      vehicleCatalogImage({ year: 2013, make: "VW", model: "Touareg" }),
-    ).toBe("/images/vehicles/volkswagen-touareg-2011.webp");
-    expect(
-      vehicleCatalogImage({ year: 2022, make: "Rivian", model: "R1T Adventure" }),
-    ).toBe("/images/vehicles/rivian-r1t-2022.webp");
-    expect(
-      vehicleCatalogImage({ year: 2024, make: "Rivian", model: "R1T" }),
-    ).toBe("/images/vehicles/rivian-r1t-2022.webp");
-  });
-
-  it("does not reuse a generation photo for a different model year", () => {
-    expect(
-      vehicleCatalogImage({ year: 1999, make: "Ford", model: "F-150" }),
-    ).toBeNull();
-    expect(
-      vehicleCatalogImage({ year: 2018, make: "Volkswagen", model: "Touareg" }),
-    ).toBeNull();
-    expect(
-      vehicleCatalogImage({ year: 2021, make: "Rivian", model: "R1T" }),
-    ).toBeNull();
-    expect(
-      vehicleCatalogImage({ year: 2025, make: "Rivian", model: "R1T" }),
-    ).toBeNull();
-    expect(
-      vehicleCatalogImage({ year: 2023, make: "Rivian", model: "R1S" }),
-    ).toBeNull();
-  });
-
-  it("uses the full trailer profile and otherwise falls back when identity is missing", () => {
-    expect(vehicleCatalogImage({ registrationType: "trailer" })).toBe(
-      "/images/vehicles/utility-trailer.webp",
+describe("genericVehicleRaster", () => {
+  it("picks a neutral body raster and never a branded catalog file", () => {
+    expect(genericVehicleRaster({ bodyClass: "Pickup" })).toBe(
+      "/images/vehicles/generic/pickup.webp",
+    );
+    expect(genericVehicleRaster({ bodyClass: "Sedan/Saloon" })).toBe(
+      "/images/vehicles/generic/sedan.webp",
     );
     expect(
-      vehicleCatalogImage({ year: 2022, make: "Ford", model: "" }),
-    ).toBeNull();
-    expect(vehicleCatalogImage({ make: "Honda", model: "Civic", year: 2020 })).toBeNull();
+      genericVehicleRaster({
+        registrationType: "motorcycle",
+        bodyClass: "Motorcycle",
+      }),
+    ).toBe("/images/vehicles/generic/motorcycle.webp");
+    expect(genericVehicleRaster({ registrationType: "trailer" })).toBe(
+      "/images/vehicles/generic/trailer.webp",
+    );
+    expect(genericVehicleRaster({})).toBe("/images/vehicles/generic/default.webp");
   });
 });

@@ -34,6 +34,7 @@ type DocumentPreviewModalProps = {
   onRetry: () => void;
   kind?: PreviewKind;
   extraActions?: ReactNode;
+  note?: ReactNode;
   closeDisabled?: boolean;
   canRename?: boolean;
   onRename?: (filename: string) => Promise<void>;
@@ -57,6 +58,7 @@ function DocumentPreviewModalView({
   onRetry,
   kind,
   extraActions,
+  note,
   closeDisabled = false,
   canRename = false,
   onRename,
@@ -78,6 +80,7 @@ function DocumentPreviewModalView({
   onRetry: () => void;
   kind?: PreviewKind;
   extraActions?: ReactNode;
+  note?: ReactNode;
   closeDisabled?: boolean;
   canRename?: boolean;
   onRename?: (filename: string) => Promise<void>;
@@ -280,13 +283,16 @@ function DocumentPreviewModalView({
           ) : null}
 
           {!loading && !error && downloadUrl && image ? (
-            // Signed GCS URLs are ephemeral; next/image is not a fit here.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={downloadUrl}
-              alt={filename}
-              className="mx-auto max-h-[70vh] w-auto max-w-full rounded-xl bg-white shadow-sm"
-            />
+            <div>
+              {/* Signed GCS URLs are ephemeral; next/image is not a fit here. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={downloadUrl}
+                alt={filename}
+                className="mx-auto max-h-[70vh] w-auto max-w-full rounded-xl bg-white shadow-sm"
+              />
+              {note ? <div className="mx-auto mt-3 max-w-xl text-center">{note}</div> : null}
+            </div>
           ) : null}
 
           {!loading && !error && downloadUrl && pdf ? (

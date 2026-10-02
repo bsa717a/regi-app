@@ -13,6 +13,7 @@ import { metadata as emailAction } from "@/app/auth/action/page";
 import { metadata as privacy } from "@/app/privacy/page";
 import { metadata as support } from "@/app/support/page";
 import { metadata as terms } from "@/app/terms/page";
+import { metadata as credits } from "@/app/credits/page";
 
 function absoluteTitle(metadata: { title?: unknown }): string {
   const title = metadata.title;
@@ -43,5 +44,6 @@ describe("route document titles", () => {
     expect(absoluteTitle(privacy)).toBe("Privacy Policy · REGI");
     expect(absoluteTitle(support)).toBe("Support · REGI");
     expect(absoluteTitle(terms)).toBe("Terms of Use · REGI");
+    expect(absoluteTitle(credits)).toBe("Photo credits · REGI");
   });
 });
