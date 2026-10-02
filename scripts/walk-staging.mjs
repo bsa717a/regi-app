@@ -197,6 +197,8 @@ async function shotFallbackCard(page) {
     has: page.getByRole("heading", { level: 3, name: "Walk car", exact: true }),
   });
   await card.waitFor({ state: "visible", timeout: 20_000 });
+  // Walk car is a 2003 Honda Accord with no photo and no body class, so the
+  // card must show the photoreal sedan WebP rather than an inline SVG.
   const fallback = card.getByTestId("garage-vehicle-fallback");
   // Durable staging can still be on the pre-raster build while this PR's
   // unit job is green. Screenshot either way; require WebP once the host
@@ -215,8 +217,8 @@ async function shotFallbackCard(page) {
   const src = await card
     .getByTestId("garage-vehicle-fallback-light")
     .getAttribute("src");
-  if (!src?.endsWith(".webp") || !src.includes("/images/garage/fallback/")) {
-    throw new Error(`Expected a raster fallback image, got ${src}`);
+  if (src !== "/images/garage/fallback/sedan-light.webp") {
+    throw new Error(`Walk car should use the photoreal sedan, got ${src}`);
   }
   if ((await fallback.locator("svg").count()) > 0) {
     throw new Error("Photo-less garage card fallback still contains an svg.");
