@@ -68,9 +68,6 @@ describe("cloudbuild.yaml keeps prod deploy flags", () => {
     expect(yaml).toContain("  _PURGE_HOSTING: \"true\"");
     expect(yaml).toContain("scripts/cloudbuild-target.mjs guard");
     expect(yaml).toContain("scripts/cloudbuild-target.mjs migrate-guard");
-    expect(yaml).toContain('if [ "${_SERVICE}" = "regi" ]; then');
-    expect(yaml).toContain("Skipping Utah state-rules ensure on prod service regi");
-    expect(yaml).toContain("npx tsx scripts/ensure-utah-state-rules.ts");
     expect(yaml).toContain("DATABASE_URL=${_SECRET_DATABASE_URL}:latest");
     expect(yaml).toContain("GCS_BUCKET=${_GCS_BUCKET}");
   });

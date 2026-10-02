@@ -157,13 +157,10 @@ export async function getOrCreateUser(
     throw new Error("Authenticated user is missing an email address");
   }
 
-  const explicitName =
+  const name =
     typeof input.name === "string" && input.name.trim()
       ? input.name.trim()
-      : undefined;
-  // Token display name seeds a brand-new row only. A later sync must not
-  // write it back over a profile name the user cleared.
-  const createName = explicitName ?? (decoded.name?.trim() || null);
+      : (decoded.name?.trim() ?? null);
   const phone =
     typeof input.phone === "string" && input.phone.trim()
       ? input.phone.trim()
@@ -174,13 +171,13 @@ export async function getOrCreateUser(
     create: {
       firebaseUid: decoded.uid,
       email,
-      name: createName,
+      name,
       phone,
       notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
     },
     update: {
       email,
-      ...(explicitName ? { name: explicitName } : {}),
+      ...(name ? { name } : {}),
       ...(phone ? { phone } : {}),
     },
   });
