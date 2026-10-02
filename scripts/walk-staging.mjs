@@ -82,7 +82,7 @@ try {
     await waitForEmptyGarage(page);
     await shot(page, "garage-empty.png");
 
-    createdId = await seedVehicle(token);
+    createdId = await seedVehicle(page, token);
     await page.reload({ waitUntil: "domcontentloaded" });
     hasWordmark = (await waitForGarage(page)) || hasWordmark;
     await page.getByText("Walk car", { exact: true }).waitFor({
@@ -286,25 +286,69 @@ async function api(authToken, apiPath, options = {}) {
   return body;
 }
 
-async function seedVehicle(authToken) {
-  const listed = await api(authToken, "/api/states");
-  const states = listed.states ?? [];
-  const state = states.find((row) => row.code === "UT") ?? states[0];
-  if (!state) {
-    throw new Error("No active state on staging.");
+function summarizeStates(body) {
+  if (!body || typeof body !== "object") {
+    return String(body).slice(0, 180);
   }
-  const passenger = (state.registrationTypes ?? []).find(
+  const states = Array.isArray(body.states) ? body.states : null;
+  const codes = (states ?? [])
+    .map((row) => row?.code)
+    .filter(Boolean)
+    .slice(0, 8);
+  return `keys=${Object.keys(body).join(",") || "(none)"} states=${states ? states.length : "missing"} codes=${codes.join(",") || "(none)"}`;
+}
+
+async function listStates(page, authToken) {
+  let fromNode = null;
+  let nodeError = null;
+  try {
+    fromNode = await api(authToken, "/api/states");
+  } catch (err) {
+    nodeError = err instanceof Error ? err.message : String(err);
+  }
+  const nodeStates = Array.isArray(fromNode?.states) ? fromNode.states : [];
+  if (nodeStates.length > 0) return nodeStates;
+
+  const fromPage = await page.evaluate(async (token) => {
+    const res = await fetch("/api/states", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const text = await res.text();
+    return { status: res.status, text: text.slice(0, 400) };
+  }, authToken);
+  let pageStates = [];
+  try {
+    const parsed = JSON.parse(fromPage.text);
+    if (Array.isArray(parsed?.states)) pageStates = parsed.states;
+  } catch {
+    pageStates = [];
+  }
+  console.log(
+    `GET /api/states node=${nodeError || summarizeStates(fromNode)} page=${fromPage.status} ${fromPage.text.slice(0, 180)}`,
+  );
+  return pageStates;
+}
+
+async function seedVehicle(page, authToken) {
+  const states = await listStates(page, authToken);
+  const state = states.find((row) => row.code === "UT") ?? states[0];
+  // AddRegistrationFlow already defaults to Utah. The server's state_rules
+  // row is what actually allows the create, so an empty /api/states list
+  // (unparseable config, or a list the client could not read) still posts UT.
+  const stateCode = state?.code || "UT";
+  const passenger = (state?.registrationTypes ?? []).find(
     (row) => row.type === "passenger",
   );
-  const type = passenger?.type ?? state.registrationTypes?.[0]?.type;
-  if (!type) {
-    throw new Error(`No registration type for ${state.code}.`);
+  const type =
+    passenger?.type ?? state?.registrationTypes?.[0]?.type ?? "passenger";
+  if (!state) {
+    console.log("No active state listed. Posting UT passenger anyway.");
   }
   const created = await api(authToken, "/api/registrations", {
     method: "POST",
     body: JSON.stringify({
       type,
-      state: state.code,
+      state: stateCode,
       vin: "1HGCM82633A004352",
       plate: "WALK86",
       year: 2003,
