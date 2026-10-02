@@ -47,8 +47,10 @@ export function registrationTypeArtUrl(type: RegistrationType): string {
 
 /**
  * Photoreal side profiles when a card has no photo and no catalog render.
+ * Original unbranded renders made for this repo, not manufacturer photos.
  * 2400×1000 WebP. Light is the vehicle on #e4e7ee; dark is the same vehicle
- * on #141922. Unknown body class uses the sedan. Raster only.
+ * on #141922. Transparent masters are the *-transparent.webp files.
+ * Unknown body class uses the sedan. Raster only.
  */
 export const FALLBACK_ILLUSTRATION_ART: Record<
   RegistrationIllustrationKind,
