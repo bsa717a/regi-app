@@ -86,9 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const token = await firebaseUser.getIdToken();
       setIdToken(token);
-      const nextProfile = await fetchMe(token, {
-        name: firebaseUser.displayName ?? undefined,
-      });
+      // Do not send displayName here. A routine sync was writing the token
+      // name back over a profile the user had cleared, so "Your Garage" never stuck.
+      const nextProfile = await fetchMe(token);
       setProfile(nextProfile);
     } catch {
       setProfile(null);
@@ -226,9 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
         const token = await credential.user.getIdToken();
         setIdToken(token);
-        const nextProfile = await fetchMe(token, {
-          name: credential.user.displayName ?? undefined,
-        });
+        const nextProfile = await fetchMe(token);
         setProfile(nextProfile);
       },
       async logOut() {
