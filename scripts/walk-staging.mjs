@@ -71,7 +71,9 @@ const POSSESSIVE_NAME = "Demo Applicant";
 const POSSESSIVE_HEADING = "Demo's Garage";
 
 const cleanupErrors = [];
+const seededIds = [];
 let createdId = null;
+const artifactDir = process.env.CARIMG_DIR?.trim() || "";
 let originalName;
 let namePatched = false;
 let failure = null;
@@ -105,6 +107,8 @@ try {
   await shot(page, "garage-empty.png", POSSESSIVE_HEADING);
 
   createdId = await seedVehicle(page, token);
+  seededIds.push(createdId);
+  await seedCatalogVehicles(page, token);
   await page.reload({ waitUntil: "domcontentloaded" });
   hasWordmark = (await waitForGarage(page, POSSESSIVE_HEADING)) || hasWordmark;
   await page
@@ -113,10 +117,21 @@ try {
       state: "visible",
       timeout: 20_000,
     });
+  for (const name of ["Weekend truck", "Ram truck", "Old Civic", "CBR"]) {
+    await page.getByRole("heading", { level: 3, name, exact: true }).waitFor({
+      state: "visible",
+      timeout: 20_000,
+    });
+  }
+  await waitForCatalogPhotos(page);
   await shot(page, "garage-filled.png", POSSESSIVE_HEADING);
+  await captureCatalogShots(page);
 
-  await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
+  for (const id of seededIds) {
+    await api(token, `/api/registrations/${id}`, { method: "DELETE" });
+  }
   const removedId = createdId;
+  seededIds.length = 0;
   createdId = null;
   const after = await api(token, "/api/registrations");
   if ((after.registrations ?? []).some((row) => row.id === removedId)) {
@@ -136,11 +151,13 @@ try {
 } catch (err) {
   failure = err;
 } finally {
-  if (createdId && token) {
-    try {
-      await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
-    } catch (err) {
-      cleanupErrors.push(`delete seeded vehicle: ${err.message}`);
+  if (token) {
+    for (const id of seededIds) {
+      try {
+        await api(token, `/api/registrations/${id}`, { method: "DELETE" });
+      } catch (err) {
+        cleanupErrors.push(`delete seeded vehicle: ${err.message}`);
+      }
     }
   }
   if (namePatched && token) {
@@ -371,6 +388,132 @@ async function listStates(page, authToken) {
     `GET /api/states node=${nodeError || summarizeStates(fromNode)} page=${fromPage.status} ${fromPage.text.slice(0, 180)}`,
   );
   return pageStates;
+}
+
+async function waitForCatalogPhotos(page) {
+  if (process.env.CARIMG_WAIT !== "1") return;
+  try {
+    await page.waitForFunction(
+      () => {
+        const imgs = [
+          ...document.querySelectorAll('[data-testid="garage-vehicle-photo"]'),
+        ];
+        return (
+          imgs.length >= 5 &&
+          imgs.every((img) => img.getAttribute("data-photo-source") === "catalog")
+        );
+      },
+      { timeout: 90_000 },
+    );
+  } catch (err) {
+    console.error(
+      err instanceof Error ? err.message : "Catalog photos were not ready",
+    );
+    throw new Error("Catalog photos were not ready for every seeded vehicle");
+  }
+}
+
+async function captureCatalogShots(page) {
+  const cards = [
+    ["Walk car", "carimg-accord.png"],
+    ["Weekend truck", "carimg-f150.png"],
+    ["Ram truck", "carimg-ram1500.png"],
+    ["Old Civic", "carimg-civic.png"],
+    ["CBR", "carimg-cbr.png"],
+  ];
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await writeShot(page, "carimg-garage.png");
+  for (const [name, filename] of cards) {
+    const card = page
+      .getByRole("heading", { level: 3, name, exact: true })
+      .locator("xpath=ancestor::article");
+    await card.scrollIntoViewIfNeeded();
+    const buffer = await card.screenshot({ type: "png" });
+    await writePng(filename, buffer);
+  }
+}
+
+async function writeShot(page, filename) {
+  const buffer = await page.screenshot({ type: "png", fullPage: false });
+  await writePng(filename, buffer);
+}
+
+async function writePng(filename, buffer) {
+  const { writeFile } = await import("node:fs/promises");
+  await writeFile(path.join(outDir, filename), buffer);
+  if (artifactDir) {
+    await mkdir(artifactDir, { recursive: true });
+    await writeFile(path.join(artifactDir, filename), buffer);
+  }
+  console.log(`wrote ${filename}`);
+}
+
+async function seedCatalogVehicles(page, authToken) {
+  const specs = [
+    {
+      nickname: "Weekend truck",
+      year: 2021,
+      make: "Ford",
+      model: "F-150",
+      type: "passenger",
+      plate: "WALK21",
+      vin: "1FTFW1E84MFA12345",
+      bodyClass: "Pickup",
+    },
+    {
+      nickname: "Ram truck",
+      year: 2019,
+      make: "Ram",
+      model: "1500",
+      type: "passenger",
+      plate: "WALK19",
+      vin: "1C6SRFFT5KN123456",
+      bodyClass: "Pickup",
+    },
+    {
+      nickname: "Old Civic",
+      year: 1995,
+      make: "Honda",
+      model: "Civic",
+      type: "passenger",
+      plate: "WALK95",
+      vin: "1HGED3645SL123456",
+      bodyClass: "Sedan",
+    },
+    {
+      nickname: "CBR",
+      year: 2006,
+      make: "Honda",
+      model: "CBR600RR",
+      type: "motorcycle",
+      plate: "WALK06",
+      vin: "JH2PC37076M123456",
+      bodyClass: "Motorcycle",
+    },
+  ];
+  const ids = [];
+  for (const spec of specs) {
+    const created = await api(authToken, "/api/registrations", {
+      method: "POST",
+      body: JSON.stringify({
+        type: spec.type,
+        state: "UT",
+        vin: spec.vin,
+        plate: spec.plate,
+        year: spec.year,
+        make: spec.make,
+        model: spec.model,
+        nickname: spec.nickname,
+        bodyClass: spec.bodyClass,
+        registrationExpiresOn: "2027-08-15",
+      }),
+    });
+    const id = created.registration?.id;
+    if (!id) throw new Error(`Create ${spec.nickname} did not return an id.`);
+    seededIds.push(id);
+    ids.push(id);
+  }
+  return ids;
 }
 
 async function seedVehicle(page, authToken) {

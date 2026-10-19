@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { PRIVACY_PATH, SUPPORT_PATH, TERMS_PATH } from "@/lib/legal/constants";
+import {
+  CREDITS_PATH,
+  PRIVACY_PATH,
+  SUPPORT_PATH,
+  TERMS_PATH,
+} from "@/lib/legal/constants";
 
 export function LegalPageShell({
   title,
@@ -53,6 +58,13 @@ export function LegalPageShell({
             className="font-medium text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
           >
             Support
+          </Link>
+          {" · "}
+          <Link
+            href={CREDITS_PATH}
+            className="font-medium text-teal-800 underline-offset-4 hover:underline dark:text-teal-300"
+          >
+            Photo credits
           </Link>
         </p>
       </article>

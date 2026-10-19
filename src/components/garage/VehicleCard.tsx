@@ -24,6 +24,8 @@ import { formatMotorhomeClass } from "@/lib/registrations/motorhome";
 import { stateName } from "@/lib/registrations/states";
 import { GarageVehicleFace } from "@/components/brand/GarageVehicleFace";
 import { VehicleIllustration } from "@/components/garage/VehicleIllustration";
+import { VehiclePhotoCredit } from "@/components/garage/VehiclePhotoCredit";
+import type { CatalogClientResult } from "@/lib/registrations/vehicleCatalog/client";
 
 function formatExpiresOn(isoDate: string): string {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -97,6 +99,9 @@ export function VehicleCard({
     string | null
   >(null);
   const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
+  const [catalogImage, setCatalogImage] = useState<CatalogClientResult | null>(
+    null,
+  );
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -483,6 +488,8 @@ export function VehicleCard({
               photoUrl={vehicle.photoUrl}
               label={label}
               registrationType={vehicle.type}
+              getIdToken={getIdToken}
+              onCatalog={setCatalogImage}
             />
           }
         />
@@ -548,7 +555,7 @@ export function VehicleCard({
               />
             </dl>
 
-            {vehicle.photoUrl ? (
+            {vehicle.photoUrl || catalogImage?.status === "ready" ? (
               <button
                 type="button"
                 onClick={() => {
@@ -558,6 +565,10 @@ export function VehicleCard({
               >
                 View garage photo
               </button>
+            ) : null}
+
+            {!vehicle.photoUrl && catalogImage?.attribution ? (
+              <VehiclePhotoCredit attribution={catalogImage.attribution} />
             ) : null}
 
             {registrationDoc ? (
@@ -737,16 +748,24 @@ export function VehicleCard({
       />
 
       <DocumentPreviewModal
-        open={photoPreviewOpen && Boolean(vehicle.photoUrl)}
+        open={
+          photoPreviewOpen &&
+          Boolean(vehicle.photoUrl || catalogImage?.url)
+        }
         onClose={() => setPhotoPreviewOpen(false)}
         categoryLabel="Garage photo"
         title={label}
-        filename="garage-photo.jpg"
-        downloadUrl={vehicle.photoUrl}
+        filename="garage-photo.webp"
+        downloadUrl={vehicle.photoUrl ?? catalogImage?.url ?? null}
         kind="image"
         loading={false}
         error={null}
         onRetry={() => setPhotoPreviewOpen(true)}
+        note={
+          !vehicle.photoUrl && catalogImage?.attribution ? (
+            <VehiclePhotoCredit attribution={catalogImage.attribution} />
+          ) : null
+        }
       />
 
       <DocumentPreviewModal

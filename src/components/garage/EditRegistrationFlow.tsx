@@ -299,6 +299,7 @@ export function EditRegistrationFlow({
                 photoUrl={coverPreviewUrl}
                 label={registration.nickname || typeLabel}
                 registrationType={registration.type}
+                getIdToken={getIdToken}
               />
             </TappableImagePreview>
           ) : (
@@ -310,6 +311,7 @@ export function EditRegistrationFlow({
               photoUrl={coverPreviewUrl}
               label={registration.nickname || typeLabel}
               registrationType={registration.type}
+              getIdToken={getIdToken}
             />
           )}
         </div>
