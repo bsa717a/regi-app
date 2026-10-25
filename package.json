@@ -43,7 +43,7 @@
     "@google/genai": "^2.13.0",
     "@prisma/client": "6.19.3",
     "@sendgrid/mail": "^8.1.6",
-    "@sentry/nextjs": "^10.74.0",
+    "@sentry/nextjs": "^10.75.2",
     "firebase": "12.16.0",
     "firebase-admin": "14.5.0",
     "next": "16.4.3",
