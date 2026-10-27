@@ -77,6 +77,8 @@ let namePatched = false;
 let failure = null;
 
 try {
+  await shootPublicPages(page);
+
   await page.goto(`${STAGING_ORIGIN}/login`, { waitUntil: "domcontentloaded" });
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill(password);
@@ -114,6 +116,7 @@ try {
       timeout: 20_000,
     });
   await shot(page, "garage-filled.png", POSSESSIVE_HEADING);
+  await shotFallbackCard(page);
 
   await api(token, `/api/registrations/${createdId}`, { method: "DELETE" });
   const removedId = createdId;
@@ -166,6 +169,88 @@ if (failure || cleanupErrors.length) {
   process.exit(1);
 }
 console.log(`Wrote PNG screenshots to ${outDir}`);
+
+async function shootPublicPages(page) {
+  const pages = [
+    ["/", "public-home.png"],
+    ["/privacy", "public-privacy.png"],
+    ["/support", "public-support.png"],
+    ["/terms", "public-terms.png"],
+    ["/brand-preview", "public-brand-preview.png"],
+  ];
+  for (const [pathname, filename] of pages) {
+    await page.goto(`${STAGING_ORIGIN}${pathname}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForTimeout(800);
+    await page.screenshot({
+      path: path.join(outDir, filename),
+      type: "png",
+      fullPage: true,
+    });
+    console.log(`wrote ${filename} url=${page.url()}`);
+  }
+}
+
+async function shotFallbackCard(page) {
+  const card = page.locator("article").filter({
+    has: page.getByRole("heading", { level: 3, name: "Walk car", exact: true }),
+  });
+  await card.waitFor({ state: "visible", timeout: 20_000 });
+  // Walk car is a 2003 Honda Accord with no photo and no body class, so the
+  // card must show the photoreal sedan WebP rather than an inline SVG.
+  const fallback = card.getByTestId("garage-vehicle-fallback");
+  // Durable staging can still be on the pre-raster build while this PR's
+  // unit job is green. Screenshot either way; require WebP once the host
+  // is serving the raster fallback.
+  if ((await fallback.count()) === 0) {
+    await card.screenshot({
+      path: path.join(outDir, "garage-fallback-card-light.png"),
+      type: "png",
+    });
+    console.log(
+      "Host still paints the inline SVG silhouette. Wrote the card without a raster assertion.",
+    );
+    return;
+  }
+  await fallback.waitFor({ state: "visible", timeout: 20_000 });
+  const src = await card
+    .getByTestId("garage-vehicle-fallback-light")
+    .getAttribute("src");
+  if (src !== "/images/garage/fallback/sedan-light.webp") {
+    throw new Error(`Walk car should use the photoreal sedan, got ${src}`);
+  }
+  if ((await fallback.locator("svg").count()) > 0) {
+    throw new Error("Photo-less garage card fallback still contains an svg.");
+  }
+  await page.evaluate(() => document.documentElement.classList.remove("dark"));
+  await page.waitForFunction(() => {
+    const img = document.querySelector(
+      '[data-testid="garage-vehicle-fallback-light"]',
+    );
+    return img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+  });
+  await card.screenshot({
+    path: path.join(outDir, "garage-fallback-card-light.png"),
+    type: "png",
+  });
+  await page.evaluate(() => document.documentElement.classList.add("dark"));
+  await page.waitForFunction(() => {
+    const img = document.querySelector(
+      '[data-testid="garage-vehicle-fallback-dark"]',
+    );
+    const shown = img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0;
+    if (!shown || !(img instanceof HTMLImageElement)) return false;
+    const box = img.getBoundingClientRect();
+    return box.height > 80 && box.width > 200;
+  });
+  await card.screenshot({
+    path: path.join(outDir, "garage-fallback-card-dark.png"),
+    type: "png",
+  });
+  await page.evaluate(() => document.documentElement.classList.remove("dark"));
+  console.log(`wrote garage fallback card src=${src}`);
+}
 
 async function captureToken() {
   const deadline = Date.now() + 20_000;
