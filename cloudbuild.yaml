@@ -119,7 +119,9 @@ steps:
       - push
       - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPO}/${_IMAGE}:${_STABLE_TAG}
 
-  # Prisma migrate against Cloud SQL (no seed).
+  # Prisma migrate against Cloud SQL (no demo seed).
+  # Non-prod only: ensure an active Utah state_rules row so a garage can be filled.
+  # Prod service `regi` skips that step. The script also refuses database name `regi`.
   - name: node:22
     id: Migrate
     entrypoint: bash
@@ -144,6 +146,11 @@ steps:
         npm ci --ignore-scripts
         npx prisma generate
         npx prisma migrate deploy
+        if [ "${_SERVICE}" = "regi" ]; then
+          echo "Skipping Utah state-rules ensure on prod service regi"
+        else
+          npx tsx scripts/ensure-utah-state-rules.ts
+        fi
 
   - name: gcr.io/cloud-builders/gcloud
     id: Deploy
