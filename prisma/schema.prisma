@@ -39,6 +39,15 @@ enum RegistrationType {
   @@map("registration_type")
 }
 
+/// Shared garage-photo cache. One row per make, model, and generation — not per user.
+enum VehicleCatalogStatus {
+  pending
+  ready
+  unavailable
+
+  @@map("vehicle_catalog_status")
+}
+
 enum RenewalStatus {
   Requested
   DocumentsReceived
@@ -556,6 +565,37 @@ model Waitlist {
   @@unique([email, state])
   @@index([state])
   @@map("waitlist")
+}
+
+/// Freely licensed photo for one make, model, and generation.
+/// Household cover photos stay on Registration and always win in the UI.
+model VehicleCatalogImage {
+  id              String               @id @default(cuid())
+  makeKey         String               @map("make_key")
+  modelKey        String               @map("model_key")
+  displayMake     String               @map("display_make")
+  displayModel    String               @map("display_model")
+  yearFrom        Int                  @map("year_from")
+  yearTo          Int                  @map("year_to")
+  generationLabel String               @map("generation_label")
+  status          VehicleCatalogStatus
+  gcsPath         String?              @map("gcs_path")
+  /// Absolute path under data/vehicle-catalog when GCS is not configured.
+  storagePath     String?              @map("storage_path")
+  author          String?
+  license         String?
+  licenseUrl      String?              @map("license_url")
+  sourceUrl       String?              @map("source_url")
+  sourceTitle     String?              @map("source_title")
+  shareAlike      Boolean              @default(false) @map("share_alike")
+  retrievedAt     DateTime?            @map("retrieved_at")
+  failureReason   String?              @map("failure_reason")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  @@unique([makeKey, modelKey, yearFrom, yearTo], map: "vehicle_catalog_generation_key")
+  @@index([makeKey, modelKey])
+  @@map("vehicle_catalog_images")
 }
 
 model RegiChatMessage {

@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { PRIVACY_PATH, SUPPORT_PATH, TERMS_PATH } from "@/lib/legal/constants";
+import {
+  CREDITS_PATH,
+  PRIVACY_PATH,
+  SUPPORT_PATH,
+  TERMS_PATH,
+} from "@/lib/legal/constants";
 import { linkClassName } from "@/components/auth/AuthFormStyles";
 
 export function LegalLinks({ className }: { className?: string }) {
@@ -15,6 +20,10 @@ export function LegalLinks({ className }: { className?: string }) {
       {" · "}
       <Link href={SUPPORT_PATH} className={linkClassName}>
         Support
+      </Link>
+      {" · "}
+      <Link href={CREDITS_PATH} className={linkClassName}>
+        Photo credits
       </Link>
     </p>
   );

@@ -1,6 +1,7 @@
 export const PRIVACY_PATH = "/privacy";
 export const TERMS_PATH = "/terms";
 export const SUPPORT_PATH = "/support";
+export const CREDITS_PATH = "/credits";
 
 /** Displayed on the public legal pages. Update when the copy changes. */
 export const LEGAL_LAST_UPDATED = "September 4, 2026";

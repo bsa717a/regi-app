@@ -1451,6 +1451,7 @@ export function AddRegistrationFlow({
                 bodyClass={draft.bodyClass}
                 label={confirmLabel}
                 registrationType={registrationType ?? undefined}
+                getIdToken={getIdToken}
               />
             </div>
             <div className="px-4 py-5">
@@ -1577,6 +1578,7 @@ export function AddRegistrationFlow({
                     photoUrl={detailsPhotoUrl}
                     label={detailsHeadline || typeLabel}
                     registrationType={registrationType}
+                    getIdToken={getIdToken}
                   />
                 </TappableImagePreview>
               ) : (
@@ -1588,6 +1590,7 @@ export function AddRegistrationFlow({
                   photoUrl={detailsPhotoUrl}
                   label={detailsHeadline || typeLabel}
                   registrationType={registrationType}
+                  getIdToken={getIdToken}
                 />
               )}
             </div>
