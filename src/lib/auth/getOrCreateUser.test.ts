@@ -125,6 +125,56 @@ describe("getOrCreateUser", () => {
     expect(profile.householdId).toBe("hh-existing");
   });
 
+  it("seeds the token name on create and does not write it back on update", async () => {
+    const now = new Date("2026-07-22T12:00:00.000Z");
+    db.user.upsert.mockResolvedValue({
+      id: "user-1",
+      firebaseUid: "firebase-uid-1",
+      email: "alex@example.com",
+      name: null,
+      phone: null,
+      role: "user",
+      notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+      createdAt: now,
+      updatedAt: now,
+    });
+    db.householdMember.findFirst.mockResolvedValue({ householdId: "hh-existing" });
+
+    await getOrCreateUser(
+      makeDecoded({ name: "Token Name" }),
+      {},
+      { db: db as never },
+    );
+
+    const arg = db.user.upsert.mock.calls[0][0];
+    expect(arg.create.name).toBe("Token Name");
+    expect(arg.update).not.toHaveProperty("name");
+  });
+
+  it("stores an explicit profile name on update", async () => {
+    const now = new Date("2026-07-22T12:00:00.000Z");
+    db.user.upsert.mockResolvedValue({
+      id: "user-1",
+      firebaseUid: "firebase-uid-1",
+      email: "alex@example.com",
+      name: "Derek",
+      phone: null,
+      role: "user",
+      notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
+      createdAt: now,
+      updatedAt: now,
+    });
+    db.householdMember.findFirst.mockResolvedValue({ householdId: "hh-existing" });
+
+    await getOrCreateUser(
+      makeDecoded({ name: "Token Name" }),
+      { name: "Derek" },
+      { db: db as never },
+    );
+
+    expect(db.user.upsert.mock.calls[0][0].update.name).toBe("Derek");
+  });
+
   it("throws when the token has no email", async () => {
     await expect(
       getOrCreateUser(
